@@ -1,14 +1,9 @@
 /**
- * seed.js - Script de inicialización de datos para Cloud Firestore
+ * public/js/seed.js - Script de inicialización de datos para Cloud Firestore (Navegador/Client)
  * COMPLEJO PADEL 3
- * 
- * Este script lee 'seed.json' y escribe la estructura inicial en Firestore:
- * - Documento 'siteConfig/main' para los textos y configuraciones principales.
- * - Colección 'servicios' con la lista de servicios del complejo.
- * - Colección 'canchas' con las pistas de pádel y canchas de fútbol.
  */
 
-import { db } from "./public/js/firebaseConfig.js";
+import { db } from "./firebaseConfig.js";
 import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 export async function seedFirestore(seedData) {
