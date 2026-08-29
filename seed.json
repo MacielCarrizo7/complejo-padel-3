@@ -1,0 +1,119 @@
+{
+  "siteConfig": {
+    "nombre": "COMPLEJO PADEL 3",
+    "subtitulo": "El complejo deportivo #1 de Lavalle · Canchas de Pádel & Fútbol · Techadas y Exterior · Buffet & Estacionamiento",
+    "heroTitle": "VIVE LA PASIÓN DEL PÁDEL Y FÚTBOL",
+    "heroSubtitle": "Canchas de última generación con iluminación LED profesional, superficie sintética de nivel mundial y el mejor ambiente deportivo de Lavalle.",
+    "turnosUrl": "https://wa.me/5492613831173?text=Hola!%20Quiero%20consultar%20turnos%20en%20Complejo%20Padel%203",
+    "whatsappNumber": "5492613831173",
+    "whatsappDisplay": "2613831173",
+    "direccion": "Tulumaya, Lavalle, Mendoza",
+    "googleMapsEmbed": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13426.654812356!2d-68.59972!3d-32.72194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e35c2e0b5b82d%3A0x4a1801c801e0a20!2sTulumaya%2C%20Mendoza!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar",
+    "googleMapsUrl": "https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza",
+    "horarios": "Lunes a Domingo: 14:00 hs a 01:00 hs",
+    "email": "contacto@complejopadel3.com",
+    "heroBadge": "SISTEMA DE TURNOS Y RESERVAS EN VIVO",
+    "logoUrl": "assets/logo.png"
+  },
+  "servicios": [
+    {
+      "id": "srv_padel",
+      "icono": "🎾",
+      "titulo": "Canchas de Pádel",
+      "descripcion": "Pistas panorámicas con césped sintético oficial WPT, paredes de cristal templado y luz LED antideslumbrante.",
+      "destacado": true
+    },
+    {
+      "id": "srv_futbol",
+      "icono": "⚽",
+      "titulo": "Cancha de Fútbol",
+      "descripcion": "Canchas de Fútbol 5 y Fútbol 7 con césped sintético de alta densidad 50mm, iluminadas para partidos nocturnos.",
+      "destacado": true
+    },
+    {
+      "id": "srv_snackbar",
+      "icono": "🌮",
+      "titulo": "Snack Bar & Buffet",
+      "descripcion": "Área social para el tercer tiempo: bebidas frías, minutas, pizzas, hamburguesas y pantalla gigante para partidos.",
+      "destacado": true
+    },
+    {
+      "id": "srv_estacionamiento",
+      "icono": "🚗",
+      "titulo": "Estacionamiento Privado",
+      "descripcion": "Predio cerrado con vigilancia y amplio espacio seguro para vehículos y motocicletas sin costo adicional.",
+      "destacado": true
+    },
+    {
+      "id": "srv_turnos",
+      "icono": "👈",
+      "titulo": "Turnos Directos",
+      "descripcion": "Línea exclusiva de atención y reservas directas: 2613831173 (Atención al instante por WhatsApp).",
+      "destacado": true
+    },
+    {
+      "id": "srv_ubicacion",
+      "icono": "📍",
+      "titulo": "Ubicación Estratégica",
+      "descripcion": "Ubicados en Tulumaya, Lavalle, Mendoza. Fácil acceso con mapa interactivo en tiempo real.",
+      "destacado": true
+    }
+  ],
+  "canchas": [
+    {
+      "id": "c1",
+      "nombre": "Pista 1 - Cristal Pro WPT",
+      "deporte": "padel",
+      "tipo": "Interior Techada",
+      "superficie": "Césped Sintético Azul WPT",
+      "jugadores": 4,
+      "precio": 24000,
+      "imagen": "https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=800&q=80",
+      "descripcion": "Cancha de pádel techada de máxima calidad con paredes de cristal templado y luces LED."
+    },
+    {
+      "id": "c2",
+      "nombre": "Pista 2 - Panorámica VIP",
+      "deporte": "padel",
+      "tipo": "Interior Techada",
+      "superficie": "Vidrio Panorámico Pro",
+      "jugadores": 4,
+      "precio": 24000,
+      "imagen": "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80",
+      "descripcion": "Vista sin estructuras traseras para un juego profesional sin puntos ciegos."
+    },
+    {
+      "id": "c3",
+      "nombre": "Pista 3 - Open Sunset",
+      "deporte": "padel",
+      "tipo": "Exterior",
+      "superficie": "Césped Fibrilado Exterior",
+      "jugadores": 4,
+      "precio": 20000,
+      "imagen": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=80",
+      "descripcion": "Pista al aire libre ideal para partidos atardecidos y torneos de verano."
+    },
+    {
+      "id": "c4",
+      "nombre": "Cancha 1 - Monumental F5",
+      "deporte": "futbol",
+      "tipo": "Interior Techada",
+      "superficie": "Sintético Forbex 50mm Techada",
+      "jugadores": 10,
+      "precio": 28000,
+      "imagen": "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80",
+      "descripcion": "Cancha techada de fútbol 5 con red protectora perimetral e iluminación de alta definición."
+    },
+    {
+      "id": "c5",
+      "nombre": "Cancha 2 - Wembley F7",
+      "deporte": "futbol",
+      "tipo": "Exterior",
+      "superficie": "Césped Sintético Pro 50mm",
+      "jugadores": 14,
+      "precio": 36000,
+      "imagen": "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=800&q=80",
+      "descripcion": "Espaciosa cancha de fútbol 7 al aire libre, perfecta para ligas y campeonatos."
+    }
+  ]
+}

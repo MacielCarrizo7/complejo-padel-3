@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración CMS · Complejo Padel 3</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="admin-body">
+
+  <!-- Admin Header -->
+  <header class="admin-header">
+    <div class="container admin-nav">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <a href="index.html" class="brand-logo-link">
+          <img src="assets/logo.png" alt="Logo" class="brand-logo-img" style="height:40px;">
+        </a>
+        <div>
+          <strong style="color:#fff; font-size:1.1rem; display:block;">COMPLEJO PADEL 3</strong>
+          <span class="admin-title-badge">🛡️ PANEL DE ADMINISTRACIÓN CMS</span>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span id="user-email-badge" style="color:var(--cyan-electric); font-size:0.85rem; font-weight:600;"></span>
+        <button id="btn-admin-logout" class="btn-secondary" style="padding:6px 16px; font-size:0.85rem;">Cerrar Sesión</button>
+        <a href="index.html" class="btn-primary" style="padding:6px 18px; font-size:0.85rem;">Ver Sitio Web ↗</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Screen (Visible before Authentication) -->
+  <div id="admin-auth-screen" class="admin-auth-container">
+    <img src="assets/logo.png" alt="Logo" style="height:70px; margin-bottom:16px;">
+    <h2 class="admin-auth-title">Acceso de Administrador</h2>
+    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:24px;">Ingresá tus credenciales de Firebase Auth para gestionar el contenido del complejo y ver la agenda.</p>
+
+    <form id="admin-login-form">
+      <div class="form-group">
+        <label class="form-label" for="login-email">Correo Electrónico Admin</label>
+        <input type="email" id="login-email" class="form-control" placeholder="admin@complejopadel3.com" required value="admin@complejopadel3.com">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Contraseña</label>
+        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required value="admin123456">
+      </div>
+
+      <p id="login-error-msg" style="color:#ff4444; font-size:0.85rem; margin-bottom:14px; display:none;"></p>
+
+      <button type="submit" class="btn-primary" style="width:100%;">
+        🔑 Iniciar Sesión en Firebase
+      </button>
+    </form>
+  </div>
+
+  <!-- Main Dashboard (Visible after Authentication) -->
+  <div id="admin-dashboard" class="container admin-dashboard-layout" style="display:none;">
+    
+    <!-- Sidebar Navigation Tabs -->
+    <aside class="admin-sidebar">
+      <ul class="admin-tab-list">
+        <li>
+          <button class="admin-tab-btn active" data-tab="tab-agenda">
+            <span>📋</span> Agenda & Finanzas
+          </button>
+        </li>
+        <li>
+          <button class="admin-tab-btn" data-tab="tab-textos">
+            <span>📝</span> Textos & Enlaces
+          </button>
+        </li>
+        <li>
+          <button class="admin-tab-btn" data-tab="tab-servicios">
+            <span>🏆</span> Servicios & Canchas
+          </button>
+        </li>
+        <li>
+          <button class="admin-tab-btn" data-tab="tab-imagenes">
+            <span>📸</span> Imágen & Storage
+          </button>
+        </li>
+        <li>
+          <button class="admin-tab-btn" data-tab="tab-seed">
+            <span>🌱</span> Datos Iniciales (Seed)
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content Panels -->
+    <main class="admin-content-panel">
+      
+      <!-- Tab 0: Agenda & Métricas Financieras (Turnos Reservados) -->
+      <section id="tab-agenda" class="admin-tab-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Agenda & Control de Turnos</h2>
+          <span style="color:var(--neon-green); font-size:0.85rem;">En tiempo real con Firestore</span>
+        </div>
+
+        <!-- Metrics Dashboard Cards -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="num" id="metric-turnos-total">0</div>
+            <div class="lbl">Turnos Totales</div>
+          </div>
+          <div class="metric-card">
+            <div class="num" id="metric-turnos-hoy">0</div>
+            <div class="lbl">Turnos Hoy</div>
+          </div>
+          <div class="metric-card">
+            <div class="num" style="color:var(--accent-gold);" id="metric-ingresos-hoy">$ 0</div>
+            <div class="lbl">Ingresos Hoy</div>
+          </div>
+          <div class="metric-card">
+            <div class="num" style="color:var(--cyan-electric);" id="metric-ingresos-total">$ 0</div>
+            <div class="lbl">Total Reservas</div>
+          </div>
+        </div>
+
+        <h3 style="font-size:1.2rem; margin-bottom:14px; color:var(--cyan-electric);">Turnos Reservados por Clientes</h3>
+        <div id="admin-agenda-list" style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Generado dinámicamente -->
+        </div>
+      </section>
+
+      <!-- Tab 1: Textos & Enlaces Configurables -->
+      <section id="tab-textos" class="admin-tab-panel" style="display:none;">
+        <div class="panel-header">
+          <h2 class="panel-title">Edición de Textos & Enlaces</h2>
+          <span style="color:var(--neon-green); font-size:0.85rem;">Sincronización en vivo con Firestore</span>
+        </div>
+
+        <form id="admin-config-form">
+          <div class="form-group">
+            <label class="form-label" for="cfg-hero-title">Título del Hero (Landing Page)</label>
+            <input type="text" id="cfg-hero-title" class="form-control" placeholder="VIVE LA PASIÓN DEL PÁDEL Y FÚTBOL">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfg-hero-subtitle">Subtítulo / Descripción Hero</label>
+            <textarea id="cfg-hero-subtitle" class="form-control" rows="3" placeholder="Canchas de última generación..."></textarea>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div class="form-group">
+              <label class="form-label" for="cfg-turnos-url">URL Externa de Reservas (Botón 'Reservar Ahora')</label>
+              <input type="text" id="cfg-turnos-url" class="form-control" placeholder="#reservar">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-whatsapp">Número de WhatsApp (con código de país sin +)</label>
+              <input type="text" id="cfg-whatsapp" class="form-control" placeholder="5492613831173">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div class="form-group">
+              <label class="form-label" for="cfg-direccion">Dirección Física</label>
+              <input type="text" id="cfg-direccion" class="form-control" placeholder="Tulumaya, Lavalle, Mendoza">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-horarios">Horarios de Atención</label>
+              <input type="text" id="cfg-horarios" class="form-control" placeholder="Lunes a Domingo: 14:00 hs a 01:00 hs">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfg-maps-embed">URL de Google Maps Iframe (src)</label>
+            <input type="text" id="cfg-maps-embed" class="form-control" placeholder="https://www.google.com/maps/embed?pb=...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cfg-maps-url">Enlace Directo a Google Maps</label>
+            <input type="url" id="cfg-maps-url" class="form-control" placeholder="https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza">
+          </div>
+
+          <button type="submit" class="btn-primary" style="margin-top:10px;">
+            💾 Guardar Cambios en Cloud Firestore
+          </button>
+        </form>
+      </section>
+
+      <!-- Tab 2: Servicios & Canchas -->
+      <section id="tab-servicios" class="admin-tab-panel" style="display:none;">
+        <div class="panel-header">
+          <h2 class="panel-title">Gestión de Servicios y Canchas</h2>
+        </div>
+
+        <h3 style="font-size:1.2rem; margin-bottom:14px; color:var(--cyan-electric);">Servicios del Complejo</h3>
+        <div id="admin-servicios-list" style="margin-bottom:30px;"></div>
+
+        <h3 style="font-size:1.2rem; margin-bottom:14px; color:var(--neon-green);">Canchas de Pádel y Fútbol</h3>
+        <div id="admin-canchas-list"></div>
+      </section>
+
+      <!-- Tab 3: Gestor de Imágenes & Storage -->
+      <section id="tab-imagenes" class="admin-tab-panel" style="display:none;">
+        <div class="panel-header">
+          <h2 class="panel-title">Gestor de Imágenes (Firebase Storage)</h2>
+        </div>
+
+        <div style="display:grid; grid-template-columns:200px 1fr; gap:24px; align-items:center;">
+          <div style="text-align:center; padding:16px; background:rgba(0,0,0,0.3); border-radius:12px; border:1px solid var(--border-subtle);">
+            <img id="logo-preview-img" src="assets/logo.png" alt="Logo Preview" style="max-width:100%; height:auto;">
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:8px;">Logo Actual</div>
+          </div>
+
+          <div>
+            <label class="form-label">Subir Nuevo Logo al Complejo</label>
+            <div class="upload-dropzone" onclick="document.getElementById('logo-file-input').click()">
+              <div class="upload-icon">☁️</div>
+              <strong>Haz clic o arrastra un archivo de imagen aquí</strong>
+              <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Formatos aceptados: PNG, JPG, WEBP. Subida directa a Firebase Storage.</p>
+              <input type="file" id="logo-file-input" accept="image/*" style="display:none;">
+            </div>
+            <div id="logo-upload-progress" style="font-size:0.85rem; color:var(--neon-green); margin-top:10px; font-weight:600;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Poblamiento Firestore (Seed) -->
+      <section id="tab-seed" class="admin-tab-panel" style="display:none;">
+        <div class="panel-header">
+          <h2 class="panel-title">Inicialización y Restauración de Datos</h2>
+        </div>
+
+        <div style="padding:24px; background:rgba(0,255,102,0.05); border:1px solid rgba(0,255,102,0.2); border-radius:12px;">
+          <h3 style="color:var(--neon-green); margin-bottom:10px;">🌱 Seeding de Base de Datos</h3>
+          <p style="color:var(--text-secondary); font-size:0.95rem; margin-bottom:20px;">
+            Presiona el botón a continuación para inicializar o restaurar la estructura de datos por defecto en Cloud Firestore (Tulumaya, Lavalle, Mendoza, Turnos 2613831173, Pádel y Fútbol).
+          </p>
+          <button id="btn-seed-firestore" class="btn-primary">
+            🚀 Poblar Firestore con Datos Iniciales
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ES Modules Entrypoint -->
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPLEJO PADEL 3 · Turnos de Pádel y Fútbol en Vivo</title>
+  <meta name="description" content="El complejo deportivo #1 de Lavalle. Reservá turnos online en tiempo real para canchas de Pádel y Fútbol (Techadas y Exterior) en Complejo Padel 3.">
+  
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <header class="navbar">
+    <div class="container navbar-container">
+      <a href="#inicio" class="brand-logo-link">
+        <img src="assets/logo.png" alt="Complejo Padel 3 Logo" class="brand-logo-img" id="brand-logo-img">
+        <div class="brand-name" id="brand-name-text">PADEL <span>3</span></div>
+      </a>
+
+      <button class="mobile-toggle" id="mobile-toggle" aria-label="Abrir menú">☰</button>
+
+      <ul class="nav-menu" id="nav-menu">
+        <li><a href="#inicio" class="nav-link active">Inicio</a></li>
+        <li><a href="#reservar" class="nav-link">Reservar Turno</a></li>
+        <li><a href="#servicios" class="nav-link">Servicios</a></li>
+        <li><a href="#canchas" class="nav-link">Canchas</a></li>
+        <li><a href="#nosotros" class="nav-link">Nosotros</a></li>
+        <li><a href="#ubicacion" class="nav-link">Ubicación</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="admin.html" class="btn-admin-link">⚙️ Admin CMS</a>
+        <a href="#reservar" class="btn-primary" id="btn-reservar-nav">Reservar Ahora</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section id="inicio" class="hero-section">
+    <canvas id="hero-canvas" class="hero-particles-canvas"></canvas>
+    
+    <div class="container hero-content">
+      <div class="hero-badge">
+        <span class="live-dot"></span>
+        <span id="hero-badge-text">SISTEMA DE TURNOS Y RESERVAS EN VIVO</span>
+      </div>
+
+      <div class="hero-logo-floating-box">
+        <img src="assets/logo.png" alt="Complejo Padel 3 Emblem" class="hero-logo-main" id="hero-logo-img">
+      </div>
+
+      <h1 class="hero-title text-gradient-neon" id="hero-title">
+        VIVE LA PASIÓN DEL PÁDEL Y FÚTBOL
+      </h1>
+
+      <p class="hero-subtitle" id="hero-subtitle">
+        Canchas de última generación con iluminación LED profesional, superficie sintética de nivel mundial y el mejor ambiente deportivo de Lavalle.
+      </p>
+
+      <div class="hero-cta-wrapper">
+        <a href="#reservar" class="btn-primary" id="btn-reservar-hero" style="font-size: 1.15rem; padding: 16px 36px;">
+          <span>🎾 RESERVAR AHORA</span>
+        </a>
+        <a href="#canchas" class="btn-secondary">Ver Canchas & Precios</a>
+      </div>
+
+      <div class="hero-contact-row">
+        <div class="hero-contact-item">
+          <span>📍</span> <strong id="contact-direccion">Tulumaya, Lavalle, Mendoza</strong>
+        </div>
+        <div class="hero-contact-item">
+          <span>📲</span> <strong id="contact-phone">Turnos: 2613831173</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Turnos Booking Section -->
+  <section id="reservar" class="section" style="padding-top: 40px;">
+    <div class="container">
+      <div class="booking-card-container" id="reserva-card">
+        <div class="booking-card-header">
+          <div>
+            <span class="section-tag" style="margin-bottom:4px;">RESERVA ONLINE 24/7</span>
+            <h2 style="font-size:2.2rem;">RESERVÁ TU TURNO EN TIEMPO REAL</h2>
+          </div>
+          <div style="text-align:right;">
+            <span class="live-dot" style="display:inline-block; margin-right:6px;"></span>
+            <span style="font-size:0.85rem; color:var(--neon-green); font-weight:700;">Disponibilidad Inmediata</span>
+          </div>
+        </div>
+
+        <!-- Sport & Location Filter Buttons -->
+        <div class="courts-filter-bar" style="justify-content:flex-start; margin-bottom:24px;">
+          <div style="display:flex; gap:8px;">
+            <button class="filter-btn active" data-filter-sport="todos">🏆 Todos</button>
+            <button class="filter-btn" data-filter-sport="padel">🎾 Pádel</button>
+            <button class="filter-btn" data-filter-sport="futbol">⚽ Fútbol</button>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="filter-btn active" data-filter-location="todos">📍 Todas</button>
+            <button class="filter-btn" data-filter-location="interior">🏠 Techada</button>
+            <button class="filter-btn" data-filter-location="exterior">☀️ Exterior</button>
+          </div>
+        </div>
+
+        <!-- Step 1: Select Cancha -->
+        <div class="step-label">1. Seleccioná la Cancha:</div>
+        <div class="canchas-select-grid" id="booking-canchas-grid">
+          <!-- Generado dinámicamente -->
+        </div>
+
+        <!-- Step 2: Select Fecha -->
+        <div class="step-label">2. Seleccioná el Día:</div>
+        <div class="fechas-row" id="booking-fechas-row">
+          <!-- Generado dinámicamente -->
+        </div>
+
+        <!-- Step 3: Duration selector -->
+        <div class="step-label">3. Duración del Turno:</div>
+        <div style="display:flex; gap:12px; margin-bottom:24px;">
+          <button type="button" class="filter-btn active" data-duration="1">⏱️ 1 Hora</button>
+          <button type="button" class="filter-btn" data-duration="2">⏱️ 2 Horas (Doble Turno · Recomendado Pádel 🎾)</button>
+        </div>
+
+        <!-- Step 4: Time Slot Selector -->
+        <div class="step-label" id="horarios-section-title">4. Horarios Disponibles:</div>
+        <div class="horarios-grid" id="booking-horarios-grid">
+          <!-- Generado dinámicamente -->
+        </div>
+        <p id="sin-horarios" style="color:var(--text-secondary); display:none; margin-bottom:20px;">No hay horarios disponibles para esta cancha en la fecha seleccionada.</p>
+
+        <!-- Booking Form -->
+        <div id="booking-form-box" style="display:none; background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:24px; margin-top:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
+            <div>
+              <strong id="selected-slot-label" style="font-size:1.1rem; color:var(--cyan-electric); display:block;"></strong>
+              <span id="selected-slot-tags"></span>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:0.8rem; color:var(--text-muted);">Valor del Turno:</span>
+              <div id="selected-slot-price-val" style="font-size:1.6rem; font-weight:800; color:var(--neon-green);"></div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div>
+              <label class="form-label">Nombre y Apellido del Jugador / Capitán *</label>
+              <input type="text" id="cliente-nombre" class="form-control" placeholder="Ej: Lucas Martínez" required>
+            </div>
+            <div>
+              <label class="form-label">WhatsApp de Contacto (opcional)</label>
+              <input type="tel" id="cliente-whatsapp" class="form-control" placeholder="Ej: 261 4455667">
+            </div>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <label class="form-label">Nombre de Pareja o Equipo (opcional)</label>
+            <input type="text" id="cliente-equipo" class="form-control" placeholder="Ej: Los Smashers / Galácticos FC">
+          </div>
+
+          <p id="form-error" style="color:#ff4444; font-size:0.9rem; margin-bottom:14px;"></p>
+
+          <button id="btn-reservar-submit" class="btn-primary" style="width:100%; font-size:1.1rem;">
+            Confirmar Reserva de Turno 🎾⚽
+          </button>
+        </div>
+
+        <!-- Confirmation Panel -->
+        <div id="confirm-panel-box" style="display:none;" class="confirm-box-card">
+          <div style="font-size:3rem; margin-bottom:10px;" id="confirm-icon-box">🎾</div>
+          <h3 style="font-size:2rem; color:var(--neon-green);">¡TURNO RESERVADO CON ÉXITO!</h3>
+          <p style="color:var(--text-secondary); margin-bottom:20px;">Tu lugar ha sido registrado en el sistema del complejo.</p>
+
+          <div id="confirm-card-content" style="text-align:left; margin-bottom:24px;"></div>
+
+          <button id="btn-confirmar-whatsapp" class="btn-primary" style="background:#25d366; width:100%; font-size:1.1rem; margin-bottom:12px;">
+            📲 Confirmar Asistencia por WhatsApp
+          </button>
+          <button id="btn-reservar-otro" class="btn-secondary" style="width:100%;">
+            Reservar Otro Turno
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Services & Facilities Section -->
+  <section id="servicios" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">INSTALACIONES PREMIUM</span>
+        <h2 class="section-title">SERVICIOS DEL COMPLEJO</h2>
+        <p class="section-description">Diseñado para deportistas y familias. Infraestructura completa con atención personalizada.</p>
+      </div>
+
+      <div class="services-grid" id="services-grid-container">
+        <!-- Generado dinámicamente -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Courts & Specs Section -->
+  <section id="canchas" class="section" style="background: rgba(0, 0, 0, 0.2);">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">TECNOLOGÍA DE JUEGO</span>
+        <h2 class="section-title">NUESTRAS CANCHAS</h2>
+        <p class="section-description">Pistas de pádel reglamentarias y canchas de fútbol con césped de nivel profesional.</p>
+      </div>
+
+      <div class="courts-filter-bar">
+        <button class="filter-btn active" data-filter="todos">🏆 Todas las Canchas</button>
+        <button class="filter-btn" data-filter="padel">🎾 Pádel</button>
+        <button class="filter-btn" data-filter="futbol">⚽ Fútbol</button>
+      </div>
+
+      <div class="courts-grid" id="courts-grid-container">
+        <!-- Generado dinámicamente -->
+      </div>
+    </div>
+  </section>
+
+  <!-- About Us Section -->
+  <section id="nosotros" class="section">
+    <div class="container">
+      <div class="about-box">
+        <div class="about-text">
+          <span class="section-tag">SOBRE NOSOTROS</span>
+          <h3>EL COMPLEJO DEPORTIVO DE REFERENCIA EN LAVALLE</h3>
+          <p>
+            En <strong>Complejo Padel 3</strong> nos apasiona el deporte. Contamos con instalaciones modernas equipadas con iluminación LED de alta potencia para partidas nocturnas, canchas techadas para jugar sin importar el clima y un buffet climatizado.
+          </p>
+          <ul class="about-features-list">
+            <li class="about-feature-item"><span>✓</span> Iluminación LED proyectada para máxima visibilidad</li>
+            <li class="about-feature-item"><span>✓</span> Césped sintético de densidad profesional</li>
+            <li class="about-feature-item"><span>✓</span> Vestuarios con duchas de agua caliente</li>
+            <li class="about-feature-item"><span>✓</span> Ambiente 100% familiar y deportivo</li>
+          </ul>
+        </div>
+        <div class="about-visual">
+          <img src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1000&q=80" alt="Canchas de Pádel Complejo Padel 3">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Location & Google Maps Section -->
+  <section id="ubicacion" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">COMO LLEGAR</span>
+        <h2 class="section-title">UBICACIÓN Y CONTACTO</h2>
+        <p class="section-description">Visítanos en el corazón de Lavalle, Mendoza.</p>
+      </div>
+
+      <div class="location-wrapper">
+        <div class="location-info">
+          <h3>COMPLEJO PADEL 3</h3>
+          
+          <div class="location-details-list">
+            <div class="location-detail-item">
+              <div class="location-icon">📍</div>
+              <div class="location-detail-text">
+                <strong>Dirección:</strong>
+                <span>Tulumaya, Lavalle, Mendoza</span>
+              </div>
+            </div>
+
+            <div class="location-detail-item">
+              <div class="location-icon">👈</div>
+              <div class="location-detail-text">
+                <strong>Turnos & Reservas:</strong>
+                <span id="contact-phone-box">2613831173</span>
+              </div>
+            </div>
+
+            <div class="location-detail-item">
+              <div class="location-icon">🕒</div>
+              <div class="location-detail-text">
+                <strong>Horarios de Atención:</strong>
+                <span id="contact-horarios">Lunes a Domingo: 14:00 hs a 01:00 hs</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; display:flex; gap:14px; flex-wrap:wrap;">
+            <a href="https://wa.me/5492613831173" target="_blank" class="btn-primary">
+              <span>📲 WhatsApp Directo</span>
+            </a>
+            <a href="https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza" target="_blank" id="google-map-direct-link" class="btn-secondary">
+              🗺️ Ver en Google Maps
+            </a>
+          </div>
+        </div>
+
+        <div class="map-container">
+          <iframe 
+            id="google-map-iframe" 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13426.654812356!2d-68.59972!3d-32.72194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e35c2e0b5b82d%3A0x4a1801c801e0a20!2sTulumaya%2C%20Mendoza!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Google Maps Location - Complejo Padel 3">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <img src="assets/logo.png" alt="Complejo Padel 3" style="height: 40px;">
+          <div>
+            <strong style="color:#fff; font-size:1.1rem; display:block;">COMPLEJO PADEL 3</strong>
+            <span style="color:var(--text-muted); font-size:0.85rem;">Pádel & Fútbol · Tulumaya, Lavalle</span>
+          </div>
+        </div>
+
+        <div class="footer-socials">
+          <a href="https://wa.me/5492613831173" target="_blank" class="social-link" title="WhatsApp">📲</a>
+          <a href="#inicio" class="social-link" title="Ir Arriba">⬆️</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        &copy; 2026 Complejo Padel 3. Todos los derechos reservados. Desarrollado con Firebase BaaS.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating WhatsApp Action Button -->
+  <a href="https://wa.me/5492613831173" target="_blank" class="floating-whatsapp" id="whatsapp-floating-link" title="Consultar Turnos por WhatsApp">
+    📲
+  </a>
+
+  <!-- ES Modules Entrypoint -->
+  <script type="module" src="js/landing.js"></script>
+</body>
+</html>
