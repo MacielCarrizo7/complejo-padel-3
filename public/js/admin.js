@@ -4,6 +4,7 @@
  */
 
 import { auth, db, storage } from "./firebaseConfig.js";
+
 import { 
   signInWithEmailAndPassword, 
   signOut, 
@@ -18,7 +19,7 @@ import {
   collection, 
   getDocs, 
   addDoc, 
-  deleteDoc,
+  deleteDoc, 
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -28,7 +29,7 @@ import {
   getDownloadURL 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-import { seedFirestore } from "../../seed.js";
+import { seedFirestore } from "/seed.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Observador de Estado de Autenticación
