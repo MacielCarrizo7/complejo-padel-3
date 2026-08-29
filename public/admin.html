@@ -248,7 +248,364 @@
     </main>
   </div>
 
-  <!-- ES Modules Entrypoint -->
-  <script type="module" src="/js/admin.js"></script>
+  <!-- Firebase SDK Compat Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
+      authDomain: "complejo-padel-3.firebaseapp.com",
+      projectId: "complejo-padel-3",
+      storageBucket: "complejo-padel-3.firebasestorage.app",
+      messagingSenderId: "975322009594",
+      appId: "1:975322009594:web:e81ead05c09307e7255e43",
+      measurementId: "G-RY4RW29MRS"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // Control de estado de Auth
+    auth.onAuthStateChanged((user) => {
+      const authBox = document.getElementById("admin-auth-screen");
+      const dashboard = document.getElementById("admin-dashboard");
+      const userBadge = document.getElementById("user-email-badge");
+      const btnLogout = document.getElementById("btn-admin-logout");
+
+      if (user) {
+        if (authBox) authBox.style.display = "none";
+        if (dashboard) dashboard.style.display = "grid";
+        if (userBadge) userBadge.textContent = user.email;
+        if (btnLogout) btnLogout.style.display = "inline-flex";
+        loadAdminData();
+        listenRealtimeTurnos();
+      } else {
+        if (authBox) authBox.style.display = "block";
+        if (dashboard) dashboard.style.display = "none";
+        if (userBadge) userBadge.textContent = "";
+        if (btnLogout) btnLogout.style.display = "none";
+      }
+    });
+
+    // Controladores de UI y Eventos
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginForm = document.getElementById("admin-login-form");
+      if (loginForm) {
+        loginForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("login-email").value.trim();
+          const password = document.getElementById("login-password").value.trim();
+          const errorMsg = document.getElementById("login-error-msg");
+          if (errorMsg) errorMsg.style.display = "none";
+
+          try {
+            await auth.signInWithEmailAndPassword(email, password);
+            showToast("✓ Sesión iniciada correctamente.");
+          } catch (err) {
+            console.error("Error de login:", err);
+            if (errorMsg) {
+              errorMsg.textContent = "Credenciales incorrectas o usuario no registrado.";
+              errorMsg.style.display = "block";
+            }
+          }
+        });
+      }
+
+      const btnLogout = document.getElementById("btn-admin-logout");
+      if (btnLogout) {
+        btnLogout.addEventListener("click", () => {
+          auth.signOut().then(() => showToast("Sesión cerrada correctamente."));
+        });
+      }
+
+      setupTabs();
+
+      const configForm = document.getElementById("admin-config-form");
+      if (configForm) {
+        configForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          await saveConfigData();
+        });
+      }
+
+      setupStorageUploads();
+
+      const btnSeed = document.getElementById("btn-seed-firestore");
+      if (btnSeed) {
+        btnSeed.addEventListener("click", async () => {
+          if (confirm("¿Deseas poblar/restaurar Firestore con los datos iniciales?")) {
+            await seedFirestoreData();
+          }
+        });
+      }
+    });
+
+    async function loadAdminData() {
+      try {
+        const snap = await db.collection("siteConfig").doc("main").get();
+        if (snap.exists) {
+          const data = snap.data();
+          setVal("cfg-hero-title", data.heroTitle || "");
+          setVal("cfg-hero-subtitle", data.heroSubtitle || "");
+          setVal("cfg-turnos-url", data.turnosUrl || "");
+          setVal("cfg-whatsapp", data.whatsappNumber || "");
+          setVal("cfg-direccion", data.direccion || "");
+          setVal("cfg-horarios", data.horarios || "");
+          setVal("cfg-maps-embed", data.googleMapsEmbed || "");
+          setVal("cfg-maps-url", data.googleMapsUrl || "");
+
+          if (data.logoUrl) {
+            const preview = document.getElementById("logo-preview-img");
+            if (preview) preview.src = data.logoUrl;
+          }
+        }
+        loadAdminServicios();
+        loadAdminCanchas();
+      } catch (err) {
+        console.error("Error al cargar datos:", err);
+      }
+    }
+
+    function setVal(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+
+    async function saveConfigData() {
+      const updateData = {
+        heroTitle: document.getElementById("cfg-hero-title").value,
+        heroSubtitle: document.getElementById("cfg-hero-subtitle").value,
+        turnosUrl: document.getElementById("cfg-turnos-url").value,
+        whatsappNumber: document.getElementById("cfg-whatsapp").value,
+        whatsappDisplay: document.getElementById("cfg-whatsapp").value.replace(/^549/, ""),
+        direccion: document.getElementById("cfg-direccion").value,
+        horarios: document.getElementById("cfg-horarios").value,
+        googleMapsEmbed: document.getElementById("cfg-maps-embed").value,
+        googleMapsUrl: document.getElementById("cfg-maps-url").value
+      };
+
+      try {
+        await db.collection("siteConfig").doc("main").set(updateData, { merge: true });
+        showToast("💾 Configuración guardada en Firestore.");
+      } catch (err) {
+        console.error(err);
+        showToast("⚠️ Error al guardar: " + err.message);
+      }
+    }
+
+    function setupStorageUploads() {
+      const logoInput = document.getElementById("logo-file-input");
+      if (logoInput) {
+        logoInput.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const progressBox = document.getElementById("logo-upload-progress");
+          if (progressBox) progressBox.textContent = "Subiendo archivo a Firebase Storage...";
+
+          const storageRef = storage.ref(`complejo/branding/${Date.now()}_${file.name}`);
+          const uploadTask = storageRef.put(file);
+
+          uploadTask.on("state_changed",
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              if (progressBox) progressBox.textContent = `Subiendo: ${Math.round(progress)}%`;
+            },
+            (err) => {
+              console.error(err);
+              showToast("❌ Error al subir imagen.");
+            },
+            async () => {
+              const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+              await db.collection("siteConfig").doc("main").set({ logoUrl: downloadURL }, { merge: true });
+              const preview = document.getElementById("logo-preview-img");
+              if (preview) preview.src = downloadURL;
+              if (progressBox) progressBox.textContent = "¡Carga completada!";
+              showToast("📸 Logo actualizado con éxito.");
+            }
+          );
+        });
+      }
+    }
+
+    async function loadAdminServicios() {
+      const container = document.getElementById("admin-servicios-list");
+      if (!container) return;
+      try {
+        const snap = await db.collection("servicios").get();
+        container.innerHTML = snap.docs.map(doc => {
+          const srv = doc.data();
+          return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:8px; border:1px solid var(--border-subtle);">
+              <div>
+                <strong>${srv.icono || '🏆'} ${srv.titulo}</strong>
+                <div style="font-size:0.85rem; color:var(--text-secondary);">${srv.descripcion}</div>
+              </div>
+              <button type="button" class="btn-secondary" onclick="window.borrarServicio('${doc.id}')" style="padding:4px 10px; font-size:0.8rem; border-color:#ff4444; color:#ff4444;">Eliminar</button>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {}
+    }
+
+    async function loadAdminCanchas() {
+      const container = document.getElementById("admin-canchas-list");
+      if (!container) return;
+      try {
+        const snap = await db.collection("canchas").get();
+        container.innerHTML = snap.docs.map(doc => {
+          const c = doc.data();
+          return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:8px; border:1px solid var(--border-subtle);">
+              <div>
+                <strong>${c.deporte === 'padel' ? '🎾' : '⚽'} ${c.nombre}</strong>
+                <div style="font-size:0.85rem; color:var(--text-secondary);">${c.tipo} · ${c.superficie} · $ ${Number(c.precio).toLocaleString('es-AR')}</div>
+              </div>
+              <button type="button" class="btn-secondary" onclick="window.borrarCancha('${doc.id}')" style="padding:4px 10px; font-size:0.8rem; border-color:#ff4444; color:#ff4444;">Eliminar</button>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {}
+    }
+
+    window.borrarServicio = async (id) => {
+      if (confirm("¿Eliminar servicio?")) {
+        await db.collection("servicios").doc(id).delete();
+        showToast("Servicio eliminado.");
+        loadAdminServicios();
+      }
+    };
+
+    window.borrarCancha = async (id) => {
+      if (confirm("¿Eliminar cancha?")) {
+        await db.collection("canchas").doc(id).delete();
+        showToast("Cancha eliminada.");
+        loadAdminCanchas();
+      }
+    };
+
+    function listenRealtimeTurnos() {
+      db.collection("turnos").onSnapshot((snap) => {
+        const turnos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const container = document.getElementById("admin-agenda-list");
+        if (!container) return;
+
+        const hoyISO = new Date().toISOString().split("T")[0];
+        const turnosHoy = turnos.filter(t => t.fecha === hoyISO);
+        const ingresosHoy = turnosHoy.reduce((acc, t) => acc + (Number(t.precio) || 0), 0);
+        const ingresosTotal = turnos.reduce((acc, t) => acc + (Number(t.precio) || 0), 0);
+
+        const el = (id) => document.getElementById(id);
+        if (el("metric-turnos-total")) el("metric-turnos-total").textContent = turnos.length;
+        if (el("metric-turnos-hoy")) el("metric-turnos-hoy").textContent = turnosHoy.length;
+        if (el("metric-ingresos-hoy")) el("metric-ingresos-hoy").textContent = `$ ${ingresosHoy.toLocaleString('es-AR')}`;
+        if (el("metric-ingresos-total")) el("metric-ingresos-total").textContent = `$ ${ingresosTotal.toLocaleString('es-AR')}`;
+
+        if (turnos.length === 0) {
+          container.innerHTML = `<p style="color:var(--text-secondary);">No hay turnos registrados.</p>`;
+          return;
+        }
+
+        container.innerHTML = turnos.map(t => `
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:14px; background:rgba(0,0,0,0.3); border-radius:10px; border:1px solid var(--border-subtle);">
+            <div>
+              <strong style="font-size:1.1rem; color:#fff;">${t.deporte === 'padel' ? '🎾' : '⚽'} ${t.canchaNombre}</strong>
+              <div style="font-size:0.9rem; color:var(--cyan-electric); margin-top:2px;">📅 ${t.fecha} · ⏰ ${t.hora} hs (${t.duracion || 1}h)</div>
+              <div style="font-size:0.85rem; color:var(--text-secondary);">👤 Capitán: ${t.nombre} ${t.whatsapp ? '· 📲 ' + t.whatsapp : ''}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:1.3rem; font-weight:800; color:var(--neon-green); margin-bottom:6px;">$ ${Number(t.precio).toLocaleString('es-AR')}</div>
+              <button type="button" class="btn-secondary" onclick="window.cancelarTurnoAdmin('${t.id}')" style="padding:4px 10px; font-size:0.8rem; border-color:#ff4444; color:#ff4444;">Cancelar Turno</button>
+            </div>
+          </div>
+        `).join("");
+      });
+    }
+
+    window.cancelarTurnoAdmin = async (id) => {
+      if (confirm("¿Confirmas la cancelación del turno?")) {
+        await db.collection("turnos").doc(id).delete();
+        showToast("Turno cancelado.");
+      }
+    };
+
+    async function seedFirestoreData() {
+      try {
+        const seedData = {
+          siteConfig: {
+            nombre: "COMPLEJO PADEL 3",
+            subtitulo: "El complejo deportivo #1 de Lavalle · Canchas de Pádel & Fútbol · Techadas y Exterior",
+            heroTitle: "VIVE LA PASIÓN DEL PÁDEL Y FÚTBOL",
+            heroSubtitle: "Canchas de última generación con iluminación LED profesional, superficie sintética de nivel mundial y el mejor ambiente deportivo de Lavalle.",
+            turnosUrl: "#reservar",
+            whatsappNumber: "5492613831173",
+            whatsappDisplay: "2613831173",
+            direccion: "Tulumaya, Lavalle, Mendoza",
+            googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13426.654812356!2d-68.59972!3d-32.72194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e35c2e0b5b82d%3A0x4a1801c801e0a20!2sTulumaya%2C%20Mendoza!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar",
+            googleMapsUrl: "https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza",
+            horarios: "Lunes a Domingo: 14:00 hs a 01:00 hs",
+            heroBadge: "SISTEMA DE TURNOS Y RESERVAS EN VIVO",
+            logoUrl: "assets/logo.png"
+          },
+          servicios: [
+            { id: "s1", icono: "🎾", titulo: "Canchas de Pádel", descripcion: "Pistas panorámicas con césped sintético oficial WPT, cristal templado y luces LED." },
+            { id: "s2", icono: "⚽", titulo: "Cancha de Fútbol", descripcion: "Canchas de Fútbol 5 y Fútbol 7 techadas y al aire libre con césped Forbex 50mm." },
+            { id: "s3", icono: "🌮", titulo: "Snack bar", descripcion: "Buffet equipado para el tercer tiempo: minutas, picadas, pizzas y bebidas heladas." },
+            { id: "s4", icono: "🚗", titulo: "Estacionamiento privado", descripcion: "Predio cerrado, iluminado y monitoreado con seguridad sin costo adicional." },
+            { id: "s5", icono: "👈", titulo: "Turnos: 2613831173", descripcion: "Reserva inmediata de turnos vía WhatsApp o desde el botón de la web." },
+            { id: "s6", icono: "📍", titulo: "Tulumaya, Lavalle, Mendoza", descripcion: "Fácil acceso en la mejor zona deportiva del departamento de Lavalle." }
+          ],
+          canchas: [
+            { id: "c1", nombre: "Pista 1 - Cristal Pro WPT", deporte: "padel", tipo: "Interior Techada", superficie: "Césped Sintético Azul WPT", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=800&q=80" },
+            { id: "c2", nombre: "Pista 2 - Panorámica VIP", deporte: "padel", tipo: "Interior Techada", superficie: "Vidrio Templado LED", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80" },
+            { id: "c3", nombre: "Pista 3 - Sunset Open", deporte: "padel", tipo: "Exterior", superficie: "Césped Fibrilado", jugadores: 4, precio: 20000, imagen: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=80" },
+            { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", tipo: "Interior Techada", superficie: "Sintético Forbex 50mm", jugadores: 10, precio: 28000, imagen: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80" },
+            { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", tipo: "Exterior", superficie: "Césped Sintético Pro 50mm", jugadores: 14, precio: 36000, imagen: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=800&q=80" }
+          ]
+        };
+
+        await db.collection("siteConfig").doc("main").set(seedData.siteConfig);
+        for (const srv of seedData.servicios) {
+          await db.collection("servicios").doc(srv.id).set(srv);
+        }
+        for (const c of seedData.canchas) {
+          await db.collection("canchas").doc(c.id).set(c);
+        }
+        showToast("🌱 Firestore poblado correctamente.");
+        loadAdminData();
+      } catch (err) {
+        console.error(err);
+        showToast("Error al poblar Firestore.");
+      }
+    }
+
+    function setupTabs() {
+      const tabBtns = document.querySelectorAll(".admin-tab-btn");
+      const tabPanels = document.querySelectorAll(".admin-tab-panel");
+      tabBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          tabBtns.forEach(b => b.classList.remove("active"));
+          tabPanels.forEach(p => p.style.display = "none");
+          btn.classList.add("active");
+          const targetId = btn.getAttribute("data-tab");
+          const targetPanel = document.getElementById(targetId);
+          if (targetPanel) targetPanel.style.display = "block";
+        });
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement("div");
+      toast.className = "toast-notification";
+      toast.innerHTML = `<span>${msg}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+  </script>
 </body>
 </html>
