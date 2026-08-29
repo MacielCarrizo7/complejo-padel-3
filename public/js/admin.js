@@ -1,35 +1,69 @@
 /**
  * admin.js - Panel de Administración CMS para Complejo Padel 3
- * Maneja Autenticación por Firebase Auth, Firestore, agenda de turnos y subida de archivos a Firebase Storage.
+ * Inicialización autónoma y directa de Firebase Auth, Firestore y Storage sin dependencias externas.
  */
 
-import { auth, db, storage } from "./firebaseConfig.js";
-
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
+  getAuth, 
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
 import { 
+  getFirestore, 
   doc, 
   getDoc, 
   setDoc, 
-  updateDoc, 
   collection, 
   getDocs, 
-  addDoc, 
   deleteDoc, 
   onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
 import { 
+  getStorage, 
   ref, 
   uploadBytesResumable, 
   getDownloadURL 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-import { seedFirestore } from "./seed.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
+  authDomain: "complejo-padel-3.firebaseapp.com",
+  projectId: "complejo-padel-3",
+  storageBucket: "complejo-padel-3.firebasestorage.app",
+  messagingSenderId: "975322009594",
+  appId: "1:975322009594:web:e81ead05c09307e7255e43",
+  measurementId: "G-RY4RW29MRS"
+};
+
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// Función de Seeding Autónomo
+async function seedFirestoreDirect(seedData) {
+  try {
+    if (seedData.siteConfig) {
+      await setDoc(doc(db, "siteConfig", "main"), seedData.siteConfig);
+    }
+    if (Array.isArray(seedData.servicios)) {
+      for (const srv of seedData.servicios) {
+        await setDoc(doc(db, "servicios", srv.id), srv);
+      }
+    }
+    if (Array.isArray(seedData.canchas)) {
+      for (const cancha of seedData.canchas) {
+        await setDoc(doc(db, "canchas", cancha.id), cancha);
+      }
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("Error al poblar Firestore:", error);
+    return { success: false, error: error.message };
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Observador de Estado de Autenticación
@@ -37,16 +71,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const authBox = document.getElementById("admin-auth-screen");
     const dashboard = document.getElementById("admin-dashboard");
     const userBadge = document.getElementById("user-email-badge");
+    const logoutBtn = document.getElementById("btn-admin-logout");
 
     if (user) {
       if (authBox) authBox.style.display = "none";
       if (dashboard) dashboard.style.display = "grid";
       if (userBadge) userBadge.textContent = user.email;
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
       loadAdminData();
       listenRealtimeTurnos();
     } else {
       if (authBox) authBox.style.display = "block";
       if (dashboard) dashboard.style.display = "none";
+      if (userBadge) userBadge.textContent = "";
+      if (logoutBtn) logoutBtn.style.display = "none";
     }
   });
 
@@ -103,9 +141,40 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSeed.addEventListener("click", async () => {
       if (confirm("¿Deseas poblar/restaurar la base de datos de Firestore con los datos iniciales por defecto de Complejo Padel 3?")) {
         try {
-          const response = await fetch("./seed.json");
-          const seedJson = await response.json();
-          await seedFirestore(seedJson);
+          const defaultSeedData = {
+            siteConfig: {
+              nombre: "COMPLEJO PADEL 3",
+              subtitulo: "El complejo deportivo #1 de Lavalle · Canchas de Pádel & Fútbol · Techadas y Exterior · Buffet & Estacionamiento",
+              heroTitle: "VIVE LA PASIÓN DEL PÁDEL Y FÚTBOL",
+              heroSubtitle: "Canchas de última generación con iluminación LED profesional, superficie sintética de nivel mundial y el mejor ambiente deportivo de Lavalle.",
+              turnosUrl: "#reservar",
+              whatsappNumber: "5492613831173",
+              whatsappDisplay: "2613831173",
+              direccion: "Tulumaya, Lavalle, Mendoza",
+              googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13426.654812356!2d-68.59972!3d-32.72194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e35c2e0b5b82d%3A0x4a1801c801e0a20!2sTulumaya%2C%20Mendoza!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar",
+              googleMapsUrl: "https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza",
+              horarios: "Lunes a Domingo: 14:00 hs a 01:00 hs",
+              heroBadge: "SISTEMA DE TURNOS Y RESERVAS EN VIVO",
+              logoUrl: "assets/logo.png"
+            },
+            servicios: [
+              { id: "s1", icono: "🎾", titulo: "Canchas de Pádel", descripcion: "Pistas panorámicas con césped sintético oficial WPT, cristal templado y luces LED." },
+              { id: "s2", icono: "⚽", titulo: "Cancha de Fútbol", descripcion: "Canchas de Fútbol 5 y Fútbol 7 techadas y al aire libre con césped Forbex 50mm." },
+              { id: "s3", icono: "🌮", titulo: "Snack bar", descripcion: "Buffet equipado para el tercer tiempo: minutas, picadas, pizzas y bebidas heladas." },
+              { id: "s4", icono: "🚗", titulo: "Estacionamiento privado", descripcion: "Predio cerrado, iluminado y monitoreado con seguridad sin costo adicional." },
+              { id: "s5", icono: "👈", titulo: "Turnos: 2613831173", descripcion: "Reserva inmediata de turnos vía WhatsApp o desde el botón de la web." },
+              { id: "s6", icono: "📍", titulo: "Tulumaya, Lavalle, Mendoza", descripcion: "Fácil acceso en la mejor zona deportiva del departamento de Lavalle." }
+            ],
+            canchas: [
+              { id: "c1", nombre: "Pista 1 - Cristal Pro WPT", deporte: "padel", tipo: "Interior Techada", superficie: "Césped Sintético Azul WPT", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=800&q=80" },
+              { id: "c2", nombre: "Pista 2 - Panorámica VIP", deporte: "padel", tipo: "Interior Techada", superficie: "Vidrio Templado LED", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80" },
+              { id: "c3", nombre: "Pista 3 - Sunset Open", deporte: "padel", tipo: "Exterior", superficie: "Césped Fibrilado", jugadores: 4, precio: 20000, imagen: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=80" },
+              { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", tipo: "Interior Techada", superficie: "Sintético Forbex 50mm", jugadores: 10, precio: 28000, imagen: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80" },
+              { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", tipo: "Exterior", superficie: "Césped Sintético Pro 50mm", jugadores: 14, precio: 36000, imagen: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=800&q=80" }
+            ]
+          };
+
+          await seedFirestoreDirect(defaultSeedData);
           showToast("🌱 Firestore poblado correctamente.");
           loadAdminData();
         } catch (err) {
