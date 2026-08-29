@@ -1,8 +1,3 @@
-/**
- * firebaseConfig.js - Configuración e inicialización del SDK modular de Firebase (v10+)
- * COMPLEJO PADEL 3
- */
-
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -14,14 +9,12 @@ export const firebaseConfig = {
   projectId: "complejo-padel-3",
   storageBucket: "complejo-padel-3.firebasestorage.app",
   messagingSenderId: "975322009594",
-  appId: "1:975322009594:web:e81ead05c09307e7"
+  appId: "1:975322009594:web:e81ead05c09307e7255e43",
+  measurementId: "G-RY4RW29MRS"
 };
 
-// Inicializar la app de Firebase (evitando duplicaciones)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
 export default app;
