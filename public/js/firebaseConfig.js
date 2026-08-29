@@ -8,15 +8,15 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-// Reemplazar con las credenciales de tu proyecto de Firebase Console:
-// https://console.firebase.google.com
+// Credenciales reales de Firebase Console:
 export const firebaseConfig = {
-  apiKey: "AIzaSyCOMPLEJO_PADEL_3_DEMO_API_KEY",
+  apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
   authDomain: "complejo-padel-3.firebaseapp.com",
   projectId: "complejo-padel-3",
-  storageBucket: "complejo-padel-3.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  storageBucket: "complejo-padel-3.firebasestorage.app",
+  messagingSenderId: "975322009594",
+  appId: "1:975322009594:web:e81ead05c09307e7255e43",
+  measurementId: "G-RY4RW29MRS"
 };
 
 // Verificar si se ha iniciado la app para evitar múltiples inicializaciones
