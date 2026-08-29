@@ -13,6 +13,60 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* Estilos para filas editables de canchas */
+    .cancha-row-item {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr 1.2fr 1.3fr 1.2fr auto;
+      gap: 12px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 12px;
+      transition: border-color 0.2s ease;
+    }
+    .cancha-row-item:hover {
+      border-color: rgba(0, 255, 102, 0.3);
+    }
+    .cancha-price-input {
+      font-weight: 800;
+      color: var(--neon-green) !important;
+      font-size: 1.1rem;
+      background: rgba(0, 255, 102, 0.08) !important;
+      border-color: rgba(0, 255, 102, 0.3) !important;
+    }
+    .btn-delete-row {
+      background: rgba(255, 68, 68, 0.15);
+      border: 1px solid rgba(255, 68, 68, 0.4);
+      color: #ff4444;
+      border-radius: var(--radius-sm);
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.2s ease;
+    }
+    .btn-delete-row:hover {
+      background: #ff4444;
+      color: #fff;
+    }
+    @media (max-width: 900px) {
+      .cancha-row-item {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+    }
+    @media (max-width: 600px) {
+      .cancha-row-item {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body class="admin-body">
 
@@ -21,17 +75,17 @@
     <div class="container admin-nav">
       <div style="display:flex; align-items:center; gap:16px;">
         <a href="index.html" class="brand-logo-link">
-          <img src="assets/logo.png" alt="Logo" class="brand-logo-img" style="height:40px;">
+          <img src="assets/logo.png" alt="Logo" class="brand-logo-img" style="height:42px;">
         </a>
         <div>
-          <strong style="color:#fff; font-size:1.1rem; display:block;">COMPLEJO PADEL 3</strong>
-          <span class="admin-title-badge">🛡️ PANEL DE ADMINISTRACIÓN CMS</span>
+          <strong style="color:#fff; font-size:1.15rem; display:block;">COMPLEJO PADEL 3</strong>
+          <span class="admin-title-badge">🛡️ PANEL DE CONTROL & ADMINISTRACIÓN</span>
         </div>
       </div>
 
       <div style="display:flex; align-items:center; gap:16px;">
         <span id="user-email-badge" style="color:var(--cyan-electric); font-size:0.85rem; font-weight:600;"></span>
-        <button id="btn-admin-logout" class="btn-secondary" style="display:none; padding:6px 16px; font-size:0.85rem;">Cerrar Sesión</button>
+        <button id="btn-admin-logout" class="btn-secondary" style="display:none; padding:6px 16px; font-size:0.85rem; border-color:#ff4444; color:#ff4444;">Cerrar Sesión</button>
         <a href="index.html" class="btn-primary" style="padding:6px 18px; font-size:0.85rem;">Ver Sitio Web ↗</a>
       </div>
     </div>
@@ -41,7 +95,7 @@
   <div id="admin-auth-screen" class="admin-auth-container">
     <img src="assets/logo.png" alt="Logo" style="height:70px; margin-bottom:16px;">
     <h2 class="admin-auth-title">Acceso de Administrador</h2>
-    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:24px;">Ingresá tus credenciales de Firebase Auth para gestionar el contenido del complejo y ver la agenda.</p>
+    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:24px;">Ingresá tus credenciales de Firebase Auth para gestionar canchas, precios, turnos y configuración.</p>
 
     <form id="admin-login-form">
       <div class="form-group">
@@ -69,28 +123,18 @@
     <aside class="admin-sidebar">
       <ul class="admin-tab-list">
         <li>
-          <button class="admin-tab-btn active" data-tab="tab-agenda">
+          <button class="admin-tab-btn active" data-tab="tab-canchas-config">
+            <span>🏟️</span> Canchas & Configuración
+          </button>
+        </li>
+        <li>
+          <button class="admin-tab-btn" data-tab="tab-agenda">
             <span>📋</span> Agenda & Finanzas
           </button>
         </li>
         <li>
-          <button class="admin-tab-btn" data-tab="tab-textos">
-            <span>📝</span> Textos & Enlaces
-          </button>
-        </li>
-        <li>
-          <button class="admin-tab-btn" data-tab="tab-servicios">
-            <span>🏆</span> Servicios & Canchas
-          </button>
-        </li>
-        <li>
           <button class="admin-tab-btn" data-tab="tab-imagenes">
-            <span>📸</span> Imágen & Storage
-          </button>
-        </li>
-        <li>
-          <button class="admin-tab-btn" data-tab="tab-seed">
-            <span>🌱</span> Datos Iniciales (Seed)
+            <span>📸</span> Logo & Multimedia
           </button>
         </li>
       </ul>
@@ -99,14 +143,95 @@
     <!-- Main Content Panels -->
     <main class="admin-content-panel">
       
-      <!-- Tab 0: Agenda & Métricas Financieras (Turnos Reservados) -->
-      <section id="tab-agenda" class="admin-tab-panel">
+      <!-- Tab 1: Canchas del Complejo & Configuración General -->
+      <section id="tab-canchas-config" class="admin-tab-panel">
+        
+        <!-- Sesión activa badge -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:12px 18px; background:rgba(0,255,102,0.06); border:1px solid rgba(0,255,102,0.25); border-radius:var(--radius-md);">
+          <span style="color:var(--neon-green); font-weight:800; font-size:14px; display:flex; align-items:center; gap:8px;">
+            <span class="live-dot"></span> ✓ Sesión de Administrador Activa
+          </span>
+          <span style="font-size:0.8rem; color:var(--text-secondary);">Sincronización en Vivo con Firestore</span>
+        </div>
+
+        <!-- 1. Configuración General del Complejo -->
+        <div class="panel-header">
+          <h2 class="panel-title">1. Configuración General del Complejo</h2>
+        </div>
+
+        <form id="admin-main-form">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="cfg-nombre">Nombre del Complejo</label>
+              <input type="text" id="cfg-nombre" class="form-control" placeholder="COMPLEJO PADEL 3">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfg-subtitulo">Subtítulo / Características</label>
+              <input type="text" id="cfg-subtitulo" class="form-control" placeholder="Canchas de Pádel & Fútbol · Techadas y Exterior">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="cfg-direccion">Dirección del Complejo</label>
+              <input type="text" id="cfg-direccion" class="form-control" placeholder="Tulumaya, Lavalle, Mendoza">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfg-maps">Link a Google Maps</label>
+              <input type="url" id="cfg-maps" class="form-control" placeholder="https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="cfg-whatsapp">WhatsApp del Complejo (con código de país sin +)</label>
+              <input type="text" id="cfg-whatsapp" class="form-control" placeholder="5492613831173">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfg-turnos-url">URL Externa de Reservas (Botón 'Reservar Ahora')</label>
+              <input type="text" id="cfg-turnos-url" class="form-control" placeholder="#reservar">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+            <div class="form-group">
+              <label class="form-label" for="cfg-hora-inicio">Horario de Apertura</label>
+              <input type="time" id="cfg-hora-inicio" class="form-control" value="14:00">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cfg-hora-fin">Horario de Cierre</label>
+              <input type="time" id="cfg-hora-fin" class="form-control" value="24:00">
+            </div>
+          </div>
+
+          <!-- 2. Canchas del Complejo (Precios, Deporte y Ubicación) -->
+          <div class="panel-header" style="margin-top:30px;">
+            <div>
+              <h2 class="panel-title">2. Canchas del Complejo (Precios, Deporte y Ubicación)</h2>
+              <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:4px;">Define los nombres, deportes, formatos, superficie y valor por hora de cada cancha.</p>
+            </div>
+          </div>
+
+          <!-- Container de filas de canchas -->
+          <div id="canchas-config-container" style="margin-bottom:16px;"></div>
+
+          <button type="button" class="btn-secondary" id="btn-agregar-cancha" style="width:100%; margin-bottom:24px; padding:12px; font-weight:700;">
+            + AGREGAR OTRA CANCHA
+          </button>
+
+          <button type="submit" class="btn-primary" id="btn-guardar-todo" style="width:100%; font-size:1.15rem; padding:16px;">
+            💾 GUARDAR TODOS LOS CAMBIOS EN EL SERVIDOR
+          </button>
+        </form>
+      </section>
+
+      <!-- Tab 2: Agenda & Métricas Financieras -->
+      <section id="tab-agenda" class="admin-tab-panel" style="display:none;">
         <div class="panel-header">
           <h2 class="panel-title">Agenda & Control de Turnos</h2>
           <span style="color:var(--neon-green); font-size:0.85rem;">En tiempo real con Firestore</span>
         </div>
 
-        <!-- Metrics Dashboard Cards -->
         <div class="metrics-grid">
           <div class="metric-card">
             <div class="num" id="metric-turnos-total">0</div>
@@ -126,87 +251,14 @@
           </div>
         </div>
 
-        <h3 style="font-size:1.2rem; margin-bottom:14px; color:var(--cyan-electric);">Turnos Reservados por Clientes</h3>
-        <div id="admin-agenda-list" style="display:flex; flex-direction:column; gap:12px;">
-          <!-- Generado dinámicamente -->
-        </div>
+        <h3 style="font-size:1.2rem; margin-bottom:14px; color:var(--cyan-electric);">Turnos Registrados en la Base de Datos</h3>
+        <div id="admin-agenda-list" style="display:flex; flex-direction:column; gap:12px;"></div>
       </section>
 
-      <!-- Tab 1: Textos & Enlaces Configurables -->
-      <section id="tab-textos" class="admin-tab-panel" style="display:none;">
-        <div class="panel-header">
-          <h2 class="panel-title">Edición de Textos & Enlaces</h2>
-          <span style="color:var(--neon-green); font-size:0.85rem;">Sincronización en vivo con Firestore</span>
-        </div>
-
-        <form id="admin-config-form">
-          <div class="form-group">
-            <label class="form-label" for="cfg-hero-title">Título del Hero (Landing Page)</label>
-            <input type="text" id="cfg-hero-title" class="form-control" placeholder="VIVE LA PASIÓN DEL PÁDEL Y FÚTBOL">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="cfg-hero-subtitle">Subtítulo / Descripción Hero</label>
-            <textarea id="cfg-hero-subtitle" class="form-control" rows="3" placeholder="Canchas de última generación..."></textarea>
-          </div>
-
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-            <div class="form-group">
-              <label class="form-label" for="cfg-turnos-url">URL Externa de Reservas (Botón 'Reservar Ahora')</label>
-              <input type="text" id="cfg-turnos-url" class="form-control" placeholder="#reservar">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="cfg-whatsapp">Número de WhatsApp (con código de país sin +)</label>
-              <input type="text" id="cfg-whatsapp" class="form-control" placeholder="5492613831173">
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-            <div class="form-group">
-              <label class="form-label" for="cfg-direccion">Dirección Física</label>
-              <input type="text" id="cfg-direccion" class="form-control" placeholder="Tulumaya, Lavalle, Mendoza">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="cfg-horarios">Horarios de Atención</label>
-              <input type="text" id="cfg-horarios" class="form-control" placeholder="Lunes a Domingo: 14:00 hs a 01:00 hs">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="cfg-maps-embed">URL de Google Maps Iframe (src)</label>
-            <input type="text" id="cfg-maps-embed" class="form-control" placeholder="https://www.google.com/maps/embed?pb=...">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="cfg-maps-url">Enlace Directo a Google Maps</label>
-            <input type="url" id="cfg-maps-url" class="form-control" placeholder="https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza">
-          </div>
-
-          <button type="submit" class="btn-primary" style="margin-top:10px;">
-            💾 Guardar Cambios en Cloud Firestore
-          </button>
-        </form>
-      </section>
-
-      <!-- Tab 2: Servicios & Canchas -->
-      <section id="tab-servicios" class="admin-tab-panel" style="display:none;">
-        <div class="panel-header">
-          <h2 class="panel-title">Gestión de Servicios y Canchas</h2>
-        </div>
-
-        <h3 style="font-size:1.2rem; margin-bottom:14px; color:var(--cyan-electric);">Servicios del Complejo</h3>
-        <div id="admin-servicios-list" style="margin-bottom:30px;"></div>
-
-        <h3 style="font-size:1.2rem; margin-bottom:14px; color:var(--neon-green);">Canchas de Pádel y Fútbol</h3>
-        <div id="admin-canchas-list"></div>
-      </section>
-
-      <!-- Tab 3: Gestor de Imágenes & Storage -->
+      <!-- Tab 3: Logo & Multimedia Storage -->
       <section id="tab-imagenes" class="admin-tab-panel" style="display:none;">
         <div class="panel-header">
-          <h2 class="panel-title">Gestor de Imágenes (Firebase Storage)</h2>
+          <h2 class="panel-title">Logotipo & Firebase Storage</h2>
         </div>
 
         <div style="display:grid; grid-template-columns:200px 1fr; gap:24px; align-items:center;">
@@ -220,7 +272,7 @@
             <div class="upload-dropzone" onclick="document.getElementById('logo-file-input').click()">
               <div class="upload-icon">☁️</div>
               <strong>Haz clic o arrastra un archivo de imagen aquí</strong>
-              <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Formatos aceptados: PNG, JPG, WEBP. Subida directa a Firebase Storage.</p>
+              <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Formatos: PNG, JPG, WEBP. Subida directa a Firebase Storage.</p>
               <input type="file" id="logo-file-input" accept="image/*" style="display:none;">
             </div>
             <div id="logo-upload-progress" style="font-size:0.85rem; color:var(--neon-green); margin-top:10px; font-weight:600;"></div>
@@ -228,27 +280,10 @@
         </div>
       </section>
 
-      <!-- Tab 4: Poblamiento Firestore (Seed) -->
-      <section id="tab-seed" class="admin-tab-panel" style="display:none;">
-        <div class="panel-header">
-          <h2 class="panel-title">Inicialización y Restauración de Datos</h2>
-        </div>
-
-        <div style="padding:24px; background:rgba(0,255,102,0.05); border:1px solid rgba(0,255,102,0.2); border-radius:12px;">
-          <h3 style="color:var(--neon-green); margin-bottom:10px;">🌱 Seeding de Base de Datos</h3>
-          <p style="color:var(--text-secondary); font-size:0.95rem; margin-bottom:20px;">
-            Presiona el botón a continuación para inicializar o restaurar la estructura de datos por defecto en Cloud Firestore (Tulumaya, Lavalle, Mendoza, Turnos 2613831173, Pádel y Fútbol).
-          </p>
-          <button id="btn-seed-firestore" class="btn-primary">
-            🚀 Poblar Firestore con Datos Iniciales
-          </button>
-        </div>
-      </section>
-
     </main>
   </div>
 
-  <!-- Firebase SDK Compat Scripts -->
+  <!-- Firebase SDK Compat CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -270,7 +305,22 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    // Control de estado de Auth
+    let canchasState = [];
+
+    // Formatos disponibles según deporte
+    const FORMATOS_PADEL = [
+      { val: "doble", label: "🎾 Pádel Doble (4 jug.)" },
+      { val: "simple", label: "🎾 Pádel Simple (2 jug.)" }
+    ];
+    const FORMATOS_FUTBOL = [
+      { val: "f5", label: "⚽ Fútbol 5 (10 jug.)" },
+      { val: "f7", label: "⚽ Fútbol 7 (14 jug.)" },
+      { val: "f8", label: "⚽ Fútbol 8 (16 jug.)" },
+      { val: "f9", label: "⚽ Fútbol 9 (18 jug.)" },
+      { val: "f11", label: "⚽ Fútbol 11 (22 jug.)" }
+    ];
+
+    // Auth State Observer
     auth.onAuthStateChanged((user) => {
       const authBox = document.getElementById("admin-auth-screen");
       const dashboard = document.getElementById("admin-dashboard");
@@ -292,8 +342,8 @@
       }
     });
 
-    // Controladores de UI y Eventos
     document.addEventListener("DOMContentLoaded", () => {
+      // Login Form
       const loginForm = document.getElementById("admin-login-form");
       if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
@@ -316,6 +366,7 @@
         });
       }
 
+      // Logout Button
       const btnLogout = document.getElementById("btn-admin-logout");
       if (btnLogout) {
         btnLogout.addEventListener("click", () => {
@@ -323,81 +374,222 @@
         });
       }
 
+      // Tabs Navigation
       setupTabs();
 
-      const configForm = document.getElementById("admin-config-form");
-      if (configForm) {
-        configForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          await saveConfigData();
+      // Botón Agregar Cancha
+      document.getElementById("btn-agregar-cancha").addEventListener("click", () => {
+        const newId = `c_${Date.now()}`;
+        canchasState.push({
+          id: newId,
+          nombre: `Pista ${canchasState.length + 1} - Pro`,
+          deporte: "padel",
+          ubicacion: "interior",
+          formato: "doble",
+          jugadores: 4,
+          superficie: "Césped Sintético WPT",
+          precio: 24000
         });
-      }
+        renderCanchasRows();
+      });
 
+      // Guardar Todo Form
+      document.getElementById("admin-main-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await saveAllChanges();
+      });
+
+      // Storage Uploads
       setupStorageUploads();
-
-      const btnSeed = document.getElementById("btn-seed-firestore");
-      if (btnSeed) {
-        btnSeed.addEventListener("click", async () => {
-          if (confirm("¿Deseas poblar/restaurar Firestore con los datos iniciales?")) {
-            await seedFirestoreData();
-          }
-        });
-      }
     });
 
+    // Cargar datos desde Firestore
     async function loadAdminData() {
       try {
-        const snap = await db.collection("siteConfig").doc("main").get();
-        if (snap.exists) {
-          const data = snap.data();
-          setVal("cfg-hero-title", data.heroTitle || "");
-          setVal("cfg-hero-subtitle", data.heroSubtitle || "");
-          setVal("cfg-turnos-url", data.turnosUrl || "");
-          setVal("cfg-whatsapp", data.whatsappNumber || "");
-          setVal("cfg-direccion", data.direccion || "");
-          setVal("cfg-horarios", data.horarios || "");
-          setVal("cfg-maps-embed", data.googleMapsEmbed || "");
-          setVal("cfg-maps-url", data.googleMapsUrl || "");
+        // 1. Config General
+        const configSnap = await db.collection("siteConfig").doc("main").get();
+        if (configSnap.exists) {
+          const cfg = configSnap.data();
+          setVal("cfg-nombre", cfg.nombre || "COMPLEJO PADEL 3");
+          setVal("cfg-subtitulo", cfg.subtitulo || "Canchas de Pádel & Fútbol · Techadas y Exterior");
+          setVal("cfg-direccion", cfg.direccion || "Tulumaya, Lavalle, Mendoza");
+          setVal("cfg-maps", cfg.googleMapsUrl || "https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza");
+          setVal("cfg-whatsapp", cfg.whatsappNumber || "5492613831173");
+          setVal("cfg-turnos-url", cfg.turnosUrl || "#reservar");
+          setVal("cfg-hora-inicio", cfg.horaInicio || "14:00");
+          setVal("cfg-hora-fin", cfg.horaFin || "24:00");
 
-          if (data.logoUrl) {
+          if (cfg.logoUrl) {
             const preview = document.getElementById("logo-preview-img");
-            if (preview) preview.src = data.logoUrl;
+            if (preview) preview.src = cfg.logoUrl;
           }
         }
-        loadAdminServicios();
-        loadAdminCanchas();
+
+        // 2. Canchas
+        const canchasSnap = await db.collection("canchas").get();
+        if (!canchasSnap.empty) {
+          canchasState = canchasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } else {
+          // Default fallback courts
+          canchasState = [
+            { id: "c1", nombre: "Pista 1 - Cristal Pro", deporte: "padel", ubicacion: "interior", formato: "doble", jugadores: 4, superficie: "Césped Sintético Azul WPT", precio: 24000 },
+            { id: "c2", nombre: "Pista 2 - Panorámica", deporte: "padel", ubicacion: "interior", formato: "doble", jugadores: 4, superficie: "Vidrio Panorámico LED", precio: 24000 },
+            { id: "c3", nombre: "Pista 3 - Sunset Open", deporte: "padel", ubicacion: "exterior", formato: "doble", jugadores: 4, superficie: "Césped Texturado Fibrilado", precio: 20000 },
+            { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", ubicacion: "interior", formato: "f5", jugadores: 10, superficie: "Sintético Forbex 50mm", precio: 28000 },
+            { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", ubicacion: "exterior", formato: "f7", jugadores: 14, superficie: "Césped Sintético Pro 50mm", precio: 36000 }
+          ];
+        }
+
+        renderCanchasRows();
       } catch (err) {
-        console.error("Error al cargar datos:", err);
+        console.error("Error al cargar configuración:", err);
       }
     }
 
-    function setVal(id, val) {
-      const el = document.getElementById(id);
-      if (el) el.value = val;
+    // Renderizar filas editables de canchas
+    function renderCanchasRows() {
+      const container = document.getElementById("canchas-config-container");
+      if (!container) return;
+
+      container.innerHTML = canchasState.map((c, index) => {
+        const isPadel = c.deporte === "padel";
+        const formatosOptions = (isPadel ? FORMATOS_PADEL : FORMATOS_FUTBOL)
+          .map(f => `<option value="${f.val}" ${c.formato === f.val ? 'selected' : ''}>${f.label}</option>`)
+          .join("");
+
+        return `
+          <div class="cancha-row-item" data-index="${index}">
+            <div>
+              <label class="form-label" style="font-size:0.75rem;">Nombre Cancha</label>
+              <input type="text" class="form-control field-nombre" value="${c.nombre || ''}" placeholder="Ej: Pista 1 - Cristal Pro" required>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size:0.75rem;">Deporte</label>
+              <select class="form-control field-deporte" onchange="window.cambiarDeporteFila(${index}, this.value)">
+                <option value="padel" ${c.deporte === 'padel' ? 'selected' : ''}>🎾 Pádel</option>
+                <option value="futbol" ${c.deporte === 'futbol' ? 'selected' : ''}>⚽ Fútbol</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size:0.75rem;">Ubicación</label>
+              <select class="form-control field-ubicacion">
+                <option value="interior" ${c.ubicacion === 'interior' ? 'selected' : ''}>🏠 Techada</option>
+                <option value="exterior" ${c.ubicacion === 'exterior' ? 'selected' : ''}>☀️ Exterior</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size:0.75rem;">Formato / Jugadores</label>
+              <select class="form-control field-formato">
+                ${formatosOptions}
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size:0.75rem; color:var(--neon-green);">Precio / Turno ($)</label>
+              <input type="number" class="form-control cancha-price-input field-precio" value="${c.precio || 20000}" min="0" step="500" required>
+            </div>
+
+            <div style="padding-top:20px;">
+              <button type="button" class="btn-delete-row" title="Eliminar Cancha" onclick="window.eliminarFilaCancha(${index})">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
-    async function saveConfigData() {
-      const updateData = {
-        heroTitle: document.getElementById("cfg-hero-title").value,
-        heroSubtitle: document.getElementById("cfg-hero-subtitle").value,
-        turnosUrl: document.getElementById("cfg-turnos-url").value,
-        whatsappNumber: document.getElementById("cfg-whatsapp").value,
-        whatsappDisplay: document.getElementById("cfg-whatsapp").value.replace(/^549/, ""),
-        direccion: document.getElementById("cfg-direccion").value,
-        horarios: document.getElementById("cfg-horarios").value,
-        googleMapsEmbed: document.getElementById("cfg-maps-embed").value,
-        googleMapsUrl: document.getElementById("cfg-maps-url").value
-      };
+    // Cambiar deporte actualiza las opciones de formato
+    window.cambiarDeporteFila = (index, nuevoDeporte) => {
+      canchasState[index].deporte = nuevoDeporte;
+      canchasState[index].formato = nuevoDeporte === "padel" ? "doble" : "f5";
+      canchasState[index].jugadores = nuevoDeporte === "padel" ? 4 : 10;
+      syncInputsToState();
+      renderCanchasRows();
+    };
+
+    window.eliminarFilaCancha = (index) => {
+      if (confirm(`¿Eliminar la cancha "${canchasState[index].nombre}"?`)) {
+        canchasState.splice(index, 1);
+        renderCanchasRows();
+      }
+    };
+
+    // Sincronizar los inputs del DOM hacia el estado canchasState
+    function syncInputsToState() {
+      const rows = document.querySelectorAll(".cancha-row-item");
+      rows.forEach((row, i) => {
+        if (!canchasState[i]) return;
+        canchasState[i].nombre = row.querySelector(".field-nombre").value.trim();
+        canchasState[i].deporte = row.querySelector(".field-deporte").value;
+        canchasState[i].ubicacion = row.querySelector(".field-ubicacion").value;
+        canchasState[i].formato = row.querySelector(".field-formato").value;
+        canchasState[i].precio = Number(row.querySelector(".field-precio").value) || 20000;
+        
+        // Jugadores count
+        if (canchasState[i].deporte === 'padel') {
+          canchasState[i].jugadores = canchasState[i].formato === 'simple' ? 2 : 4;
+          canchasState[i].tipo = canchasState[i].ubicacion === 'interior' ? 'Interior Techada' : 'Exterior';
+          canchasState[i].superficie = canchasState[i].superficie || 'Césped Sintético Azul WPT';
+        } else {
+          const num = parseInt(canchasState[i].formato.replace(/\D/g, '')) || 5;
+          canchasState[i].jugadores = num * 2;
+          canchasState[i].tipo = canchasState[i].ubicacion === 'interior' ? 'Interior Techada' : 'Exterior';
+          canchasState[i].superficie = canchasState[i].superficie || 'Césped Sintético Forbex 50mm';
+        }
+      });
+    }
+
+    // Guardar todos los cambios en Firestore
+    async function saveAllChanges() {
+      syncInputsToState();
+
+      const btn = document.getElementById("btn-guardar-todo");
+      btn.disabled = true;
+      btn.textContent = "Guardando en Firestore...";
 
       try {
-        await db.collection("siteConfig").doc("main").set(updateData, { merge: true });
-        showToast("💾 Configuración guardada en Firestore.");
+        // 1. Guardar Config
+        const cfgData = {
+          nombre: document.getElementById("cfg-nombre").value.trim(),
+          subtitulo: document.getElementById("cfg-subtitulo").value.trim(),
+          direccion: document.getElementById("cfg-direccion").value.trim(),
+          googleMapsUrl: document.getElementById("cfg-maps").value.trim(),
+          googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13426.654812356!2d-68.59972!3d-32.72194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e35c2e0b5b82d%3A0x4a1801c801e0a20!2sTulumaya%2C%20Mendoza!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar",
+          whatsappNumber: document.getElementById("cfg-whatsapp").value.trim(),
+          whatsappDisplay: document.getElementById("cfg-whatsapp").value.trim().replace(/^549/, ""),
+          turnosUrl: document.getElementById("cfg-turnos-url").value.trim(),
+          horaInicio: document.getElementById("cfg-hora-inicio").value,
+          horaFin: document.getElementById("cfg-hora-fin").value,
+          horarios: `${document.getElementById("cfg-hora-inicio").value} hs a ${document.getElementById("cfg-hora-fin").value} hs`
+        };
+
+        await db.collection("siteConfig").doc("main").set(cfgData, { merge: true });
+
+        // 2. Guardar Canchas en Colección 'canchas'
+        // Borrar anteriores para reemplazo limpio
+        const snap = await db.collection("canchas").get();
+        const batch = db.batch();
+        snap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+
+        // Agregar nuevas
+        for (const c of canchasState) {
+          await db.collection("canchas").doc(c.id).set(c);
+        }
+
+        showToast("💾 ¡Configuración y canchas guardadas exitosamente!");
       } catch (err) {
-        console.error(err);
-        showToast("⚠️ Error al guardar: " + err.message);
+        console.error("Error al guardar:", err);
+        showToast("⚠️ Error al guardar en Firestore: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 GUARDAR TODOS LOS CAMBIOS EN EL SERVIDOR";
       }
     }
 
+    // Uploads
     function setupStorageUploads() {
       const logoInput = document.getElementById("logo-file-input");
       if (logoInput) {
@@ -433,62 +625,7 @@
       }
     }
 
-    async function loadAdminServicios() {
-      const container = document.getElementById("admin-servicios-list");
-      if (!container) return;
-      try {
-        const snap = await db.collection("servicios").get();
-        container.innerHTML = snap.docs.map(doc => {
-          const srv = doc.data();
-          return `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:8px; border:1px solid var(--border-subtle);">
-              <div>
-                <strong>${srv.icono || '🏆'} ${srv.titulo}</strong>
-                <div style="font-size:0.85rem; color:var(--text-secondary);">${srv.descripcion}</div>
-              </div>
-              <button type="button" class="btn-secondary" onclick="window.borrarServicio('${doc.id}')" style="padding:4px 10px; font-size:0.8rem; border-color:#ff4444; color:#ff4444;">Eliminar</button>
-            </div>
-          `;
-        }).join("");
-      } catch (err) {}
-    }
-
-    async function loadAdminCanchas() {
-      const container = document.getElementById("admin-canchas-list");
-      if (!container) return;
-      try {
-        const snap = await db.collection("canchas").get();
-        container.innerHTML = snap.docs.map(doc => {
-          const c = doc.data();
-          return `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:8px; border:1px solid var(--border-subtle);">
-              <div>
-                <strong>${c.deporte === 'padel' ? '🎾' : '⚽'} ${c.nombre}</strong>
-                <div style="font-size:0.85rem; color:var(--text-secondary);">${c.tipo} · ${c.superficie} · $ ${Number(c.precio).toLocaleString('es-AR')}</div>
-              </div>
-              <button type="button" class="btn-secondary" onclick="window.borrarCancha('${doc.id}')" style="padding:4px 10px; font-size:0.8rem; border-color:#ff4444; color:#ff4444;">Eliminar</button>
-            </div>
-          `;
-        }).join("");
-      } catch (err) {}
-    }
-
-    window.borrarServicio = async (id) => {
-      if (confirm("¿Eliminar servicio?")) {
-        await db.collection("servicios").doc(id).delete();
-        showToast("Servicio eliminado.");
-        loadAdminServicios();
-      }
-    };
-
-    window.borrarCancha = async (id) => {
-      if (confirm("¿Eliminar cancha?")) {
-        await db.collection("canchas").doc(id).delete();
-        showToast("Cancha eliminada.");
-        loadAdminCanchas();
-      }
-    };
-
+    // Listen Realtime Turnos Agenda
     function listenRealtimeTurnos() {
       db.collection("turnos").onSnapshot((snap) => {
         const turnos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -534,56 +671,6 @@
       }
     };
 
-    async function seedFirestoreData() {
-      try {
-        const seedData = {
-          siteConfig: {
-            nombre: "COMPLEJO PADEL 3",
-            subtitulo: "El complejo deportivo #1 de Lavalle · Canchas de Pádel & Fútbol · Techadas y Exterior",
-            heroTitle: "VIVE LA PASIÓN DEL PÁDEL Y FÚTBOL",
-            heroSubtitle: "Canchas de última generación con iluminación LED profesional, superficie sintética de nivel mundial y el mejor ambiente deportivo de Lavalle.",
-            turnosUrl: "#reservar",
-            whatsappNumber: "5492613831173",
-            whatsappDisplay: "2613831173",
-            direccion: "Tulumaya, Lavalle, Mendoza",
-            googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13426.654812356!2d-68.59972!3d-32.72194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e35c2e0b5b82d%3A0x4a1801c801e0a20!2sTulumaya%2C%20Mendoza!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar",
-            googleMapsUrl: "https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza",
-            horarios: "Lunes a Domingo: 14:00 hs a 01:00 hs",
-            heroBadge: "SISTEMA DE TURNOS Y RESERVAS EN VIVO",
-            logoUrl: "assets/logo.png"
-          },
-          servicios: [
-            { id: "s1", icono: "🎾", titulo: "Canchas de Pádel", descripcion: "Pistas panorámicas con césped sintético oficial WPT, cristal templado y luces LED." },
-            { id: "s2", icono: "⚽", titulo: "Cancha de Fútbol", descripcion: "Canchas de Fútbol 5 y Fútbol 7 techadas y al aire libre con césped Forbex 50mm." },
-            { id: "s3", icono: "🌮", titulo: "Snack bar", descripcion: "Buffet equipado para el tercer tiempo: minutas, picadas, pizzas y bebidas heladas." },
-            { id: "s4", icono: "🚗", titulo: "Estacionamiento privado", descripcion: "Predio cerrado, iluminado y monitoreado con seguridad sin costo adicional." },
-            { id: "s5", icono: "👈", titulo: "Turnos: 2613831173", descripcion: "Reserva inmediata de turnos vía WhatsApp o desde el botón de la web." },
-            { id: "s6", icono: "📍", titulo: "Tulumaya, Lavalle, Mendoza", descripcion: "Fácil acceso en la mejor zona deportiva del departamento de Lavalle." }
-          ],
-          canchas: [
-            { id: "c1", nombre: "Pista 1 - Cristal Pro WPT", deporte: "padel", tipo: "Interior Techada", superficie: "Césped Sintético Azul WPT", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=800&q=80" },
-            { id: "c2", nombre: "Pista 2 - Panorámica VIP", deporte: "padel", tipo: "Interior Techada", superficie: "Vidrio Templado LED", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80" },
-            { id: "c3", nombre: "Pista 3 - Sunset Open", deporte: "padel", tipo: "Exterior", superficie: "Césped Fibrilado", jugadores: 4, precio: 20000, imagen: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=80" },
-            { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", tipo: "Interior Techada", superficie: "Sintético Forbex 50mm", jugadores: 10, precio: 28000, imagen: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80" },
-            { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", tipo: "Exterior", superficie: "Césped Sintético Pro 50mm", jugadores: 14, precio: 36000, imagen: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=800&q=80" }
-          ]
-        };
-
-        await db.collection("siteConfig").doc("main").set(seedData.siteConfig);
-        for (const srv of seedData.servicios) {
-          await db.collection("servicios").doc(srv.id).set(srv);
-        }
-        for (const c of seedData.canchas) {
-          await db.collection("canchas").doc(c.id).set(c);
-        }
-        showToast("🌱 Firestore poblado correctamente.");
-        loadAdminData();
-      } catch (err) {
-        console.error(err);
-        showToast("Error al poblar Firestore.");
-      }
-    }
-
     function setupTabs() {
       const tabBtns = document.querySelectorAll(".admin-tab-btn");
       const tabPanels = document.querySelectorAll(".admin-tab-panel");
@@ -597,6 +684,11 @@
           if (targetPanel) targetPanel.style.display = "block";
         });
       });
+    }
+
+    function setVal(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
     }
 
     function showToast(msg) {

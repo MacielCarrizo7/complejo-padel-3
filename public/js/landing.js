@@ -1,7 +1,6 @@
 /**
- * landing.js - Lógica principal de la Landing Page One-Page & Sistema de Turnos en Vivo
+ * landing.js - Lógica principal de la Landing Page One-Page & Sistema de Turnos con Siluetas Tácticas
  * COMPLEJO PADEL 3
- * Inicialización autónoma y directa de Firebase Firestore sin archivos externos.
  */
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -40,7 +39,9 @@ window.state = {
     direccion: "Tulumaya, Lavalle, Mendoza",
     googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13426.654812356!2d-68.59972!3d-32.72194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x967e35c2e0b5b82d%3A0x4a1801c801e0a20!2sTulumaya%2C%20Mendoza!5e0!3m2!1ses!2sar!4v1700000000000!5m2!1ses!2sar",
     googleMapsUrl: "https://maps.google.com/?q=Tulumaya,+Lavalle,+Mendoza",
-    horarios: "Lunes a Domingo: 14:00 hs a 01:00 hs",
+    horarios: "14:00 hs a 24:00 hs",
+    horaInicio: "14:00",
+    horaFin: "24:00",
     heroBadge: "SISTEMA DE TURNOS Y RESERVAS EN VIVO",
     logoUrl: "assets/logo.png"
   },
@@ -53,11 +54,11 @@ window.state = {
     { id: "s6", icono: "📍", titulo: "Tulumaya, Lavalle, Mendoza", descripcion: "Fácil acceso en la mejor zona deportiva del departamento de Lavalle." }
   ],
   canchas: [
-    { id: "c1", nombre: "Pista 1 - Cristal Pro WPT", deporte: "padel", tipo: "Interior Techada", superficie: "Césped Sintético Azul WPT", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=800&q=80" },
-    { id: "c2", nombre: "Pista 2 - Panorámica VIP", deporte: "padel", tipo: "Interior Techada", superficie: "Vidrio Templado LED", jugadores: 4, precio: 24000, imagen: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80" },
-    { id: "c3", nombre: "Pista 3 - Sunset Open", deporte: "padel", tipo: "Exterior", superficie: "Césped Fibrilado", jugadores: 4, precio: 20000, imagen: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=80" },
-    { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", tipo: "Interior Techada", superficie: "Sintético Forbex 50mm", jugadores: 10, precio: 28000, imagen: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80" },
-    { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", tipo: "Exterior", superficie: "Césped Sintético Pro 50mm", jugadores: 14, precio: 36000, imagen: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=800&q=80" }
+    { id: "c1", nombre: "Pista 1 - Cristal Pro", deporte: "padel", ubicacion: "interior", formato: "doble", jugadores: 4, superficie: "Césped Sintético Azul WPT", precio: 24000 },
+    { id: "c2", nombre: "Pista 2 - Panorámica", deporte: "padel", ubicacion: "interior", formato: "doble", jugadores: 4, superficie: "Vidrio Panorámico LED", precio: 24000 },
+    { id: "c3", nombre: "Pista 3 - Sunset Open", deporte: "padel", ubicacion: "exterior", formato: "doble", jugadores: 4, superficie: "Césped Texturado Fibrilado", precio: 20000 },
+    { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", ubicacion: "interior", formato: "f5", jugadores: 10, superficie: "Sintético Forbex 50mm", precio: 28000 },
+    { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", ubicacion: "exterior", formato: "f7", jugadores: 14, superficie: "Césped Sintético Pro 50mm", precio: 36000 }
   ],
   turnos: [],
   selectedSport: 'todos',
@@ -83,6 +84,55 @@ function formatFechaLarga(iso) {
   return `${DIAS_SEMANA[date.getDay()]} ${d} de ${MESES[m - 1]}`;
 }
 
+// Generador de Silueta Táctica SVG (Pádel vs Fútbol)
+function getCourtSvgHtml(cancha) {
+  if (cancha.deporte === 'padel') {
+    const isSingle = cancha.formato === 'simple' || cancha.jugadores === 2;
+    return `
+      <div class="pitch-container pitch-padel">
+        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Glass perimeter back and side walls with neon glow -->
+          <rect x="6" y="6" width="188" height="78" fill="none" stroke="rgba(0, 229, 255, 0.7)" stroke-width="2" />
+          <rect x="8" y="8" width="184" height="74" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
+          <!-- Service boxes -->
+          <line x1="38" y1="8" x2="38" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
+          <line x1="162" y1="8" x2="162" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
+          <line x1="38" y1="45" x2="162" y2="45" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
+          <!-- Center Net with metallic posts -->
+          <line x1="100" y1="4" x2="100" y2="86" stroke="#00ff66" stroke-width="2.5" stroke-dasharray="3,2" />
+          <circle cx="100" cy="5" r="2.5" fill="#00ff66" />
+          <circle cx="100" cy="85" r="2.5" fill="#00ff66" />
+        </svg>
+        <div class="pitch-indicator">
+          <span>🎾 ${isSingle ? 'Pádel Simple (1 vs 1 · 2 jug.)' : 'Pádel Doble (2 vs 2 · 4 jug.)'}</span>
+        </div>
+      </div>
+    `;
+  } else {
+    const numJug = cancha.jugadores ? Math.round(cancha.jugadores / 2) : (cancha.formato ? parseInt(cancha.formato.replace(/\D/g, '')) : 5) || 5;
+    return `
+      <div class="pitch-container pitch-futbol">
+        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer border -->
+          <rect x="5" y="5" width="190" height="80" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <!-- Halfway line -->
+          <line x1="100" y1="5" x2="100" y2="85" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <!-- Center circle -->
+          <circle cx="100" cy="45" r="16" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <circle cx="100" cy="45" r="1.5" fill="#FFF" />
+          <!-- Penalty Area Left -->
+          <rect x="5" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <!-- Penalty Area Right -->
+          <rect x="169" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+        </svg>
+        <div class="pitch-indicator">
+          <span>⚽ Fútbol ${numJug} (${numJug} vs ${numJug})</span>
+        </div>
+      </div>
+    `;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Particle Canvas
   initSportsParticles("hero-canvas");
@@ -103,6 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 5. Setup Form Actions
   setupBookingFormActions();
+  setupFilterButtons();
 });
 
 // Render Config Data
@@ -125,7 +176,7 @@ function renderConfig(config) {
   if (el("contact-direccion")) el("contact-direccion").textContent = config.direccion || window.state.siteConfig.direccion;
   if (el("contact-phone")) el("contact-phone").textContent = `Turnos: ${config.whatsappDisplay || "2613831173"}`;
   if (el("contact-phone-box")) el("contact-phone-box").textContent = config.whatsappDisplay || "2613831173";
-  if (el("contact-horarios")) el("contact-horarios").textContent = config.horarios || window.state.siteConfig.horarios;
+  if (el("contact-horarios")) el("contact-horarios").textContent = config.horarios || "14:00 hs a 24:00 hs";
 
   if (el("google-map-iframe") && config.googleMapsEmbed) {
     el("google-map-iframe").src = config.googleMapsEmbed;
@@ -149,31 +200,38 @@ function renderServicios(servicios) {
   `).join("");
 }
 
-// Render Courts Gallery
+// Render Courts Gallery in Section
 function renderCanchasGallery(canchas) {
   const container = document.getElementById("courts-grid-container");
   if (!container) return;
 
-  container.innerHTML = canchas.map(c => `
-    <div class="court-card" data-sport="${c.deporte}">
-      <div class="court-img-wrapper">
-        <img src="${c.imagen || 'https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=800&q=80'}" alt="${c.nombre}" class="court-img" loading="lazy">
-        <span class="court-badge-type">${c.tipo || 'Profesional'}</span>
-      </div>
-      <div class="court-body">
-        <h3 class="court-title">${c.nombre}</h3>
-        <div class="court-specs">
-          <div class="court-spec-item">🌱 <span>${c.superficie}</span></div>
-          <div class="court-spec-item">👥 <span>${c.jugadores} Jugadores</span></div>
+  container.innerHTML = canchas.map(c => {
+    const isPadel = c.deporte === 'padel';
+    const locLabel = c.ubicacion === 'interior' ? '🏠 Interior Techada' : '☀️ Exterior';
+    const formatLabel = isPadel 
+      ? (c.formato === 'simple' ? '🎾 Pádel Simple' : '🎾 Pádel Doble') 
+      : `⚽ Fútbol ${c.jugadores ? Math.round(c.jugadores / 2) : 5}`;
+
+    return `
+      <div class="court-card" data-sport="${c.deporte}">
+        <div class="court-img-wrapper">
+          <img src="${c.imagen || (isPadel ? 'https://images.unsplash.com/photo-1626248801379-51a0748a5f96?auto=format&fit=crop&w=800&q=80' : 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80')}" alt="${c.nombre}" class="court-img" loading="lazy">
+          <span class="court-badge-type">${locLabel}</span>
         </div>
-        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:16px;">${c.descripcion || ''}</p>
-        <div class="court-price-row">
-          <div class="court-price-val">$ ${Number(c.precio).toLocaleString('es-AR')} <span>/ hora</span></div>
-          <a href="#reservar" onclick="window.seleccionarCanchaDirecta('${c.id}')" class="btn-primary" style="padding:8px 18px; font-size:0.85rem;">Reservar</a>
+        <div class="court-body">
+          <h3 class="court-title">${c.nombre}</h3>
+          <div class="court-specs">
+            <div class="court-spec-item">🌱 <span>${c.superficie || 'Césped Sintético Pro'}</span></div>
+            <div class="court-spec-item">👥 <span>${formatLabel}</span></div>
+          </div>
+          <div class="court-price-row">
+            <div class="court-price-val">$ ${Number(c.precio).toLocaleString('es-AR')} <span>/ turno</span></div>
+            <a href="#reservar" onclick="window.seleccionarCanchaDirecta('${c.id}')" class="btn-primary" style="padding:8px 18px; font-size:0.85rem;">Reservar</a>
+          </div>
         </div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 window.seleccionarCanchaDirecta = (id) => {
@@ -182,7 +240,7 @@ window.seleccionarCanchaDirecta = (id) => {
   renderBookingHorarios();
 };
 
-// ================= BOOKING ENGINE LOGIC =================
+// ================= BOOKING ENGINE & TACTICAL SILHOUETTES =================
 
 function renderBookingCanchas() {
   const grid = document.getElementById("booking-canchas-grid");
@@ -193,11 +251,11 @@ function renderBookingCanchas() {
     filtered = filtered.filter(c => c.deporte === window.state.selectedSport);
   }
   if (window.state.selectedLocation !== 'todos') {
-    filtered = filtered.filter(c => c.tipo.toLowerCase().includes(window.state.selectedLocation));
+    filtered = filtered.filter(c => c.ubicacion === window.state.selectedLocation);
   }
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<p style="color:var(--text-secondary);">No hay canchas con los filtros seleccionados.</p>`;
+    grid.innerHTML = `<p style="color:var(--text-secondary); grid-column:1/-1;">No hay canchas disponibles con los filtros seleccionados.</p>`;
     return;
   }
 
@@ -208,11 +266,33 @@ function renderBookingCanchas() {
   grid.innerHTML = filtered.map(c => {
     const isSel = c.id === window.state.selectedCanchaId;
     const isPadel = c.deporte === 'padel';
+    const pitchSvg = getCourtSvgHtml(c);
+    const locBadge = c.ubicacion === 'interior' ? '🏠 Techada' : '☀️ Exterior';
+    const locClass = c.ubicacion === 'interior' ? 'badge-interior' : 'badge-exterior';
+    const sportBadge = isPadel 
+      ? (c.formato === 'simple' ? '🎾 Simple (2 jug.)' : '🎾 Doble (4 jug.)')
+      : `⚽ Fútbol ${c.jugadores ? Math.round(c.jugadores / 2) : 5}`;
+
     return `
       <div class="cancha-select-card ${isSel ? 'selected' : ''}" onclick="window.selectCancha('${c.id}')">
-        <strong style="font-size:1.2rem; display:block; margin-bottom:4px; color:#fff;">${isPadel ? '🎾' : '⚽'} ${c.nombre}</strong>
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">${c.tipo} · ${c.superficie}</div>
-        <div style="font-size:1.2rem; font-weight:800; color:var(--neon-green);">$ ${Number(c.precio).toLocaleString('es-AR')} <span style="font-size:0.8rem; color:var(--text-muted);">/ h</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong style="font-size:1.2rem; color:#fff;">${c.nombre}</strong>
+        </div>
+        
+        <div class="cancha-tags-row">
+          <span class="cancha-sport-badge ${isPadel ? 'badge-padel' : 'badge-futbol'}">${sportBadge}</span>
+          <span class="${locClass}">${locBadge}</span>
+          <span class="badge-duration">⏱️ 1h a 2h</span>
+        </div>
+
+        ${pitchSvg}
+
+        <div class="cancha-surface-info">🌱 ${c.superficie || 'Césped Pro WPT'}</div>
+
+        <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+          <div class="cancha-price-tag">$ ${Number(c.precio).toLocaleString('es-AR')} <span class="hour-label">/ hora</span></div>
+          <span style="font-size:0.75rem; color:var(--neon-green); font-weight:700;">${isSel ? '✓ SELECCIONADA' : 'Elegir ➔'}</span>
+        </div>
       </div>
     `;
   }).join("");
@@ -310,7 +390,11 @@ function showBookingForm(cancha, hora, dur) {
 
   formBox.style.display = "block";
   document.getElementById("selected-slot-label").textContent = `${cancha.nombre} · ${formatFechaLarga(window.state.selectedFecha)} · ${hora} hs`;
-  document.getElementById("selected-slot-tags").innerHTML = `<span class="court-badge-type">${cancha.tipo}</span>`;
+  document.getElementById("selected-slot-tags").innerHTML = `
+    <span class="cancha-sport-badge ${cancha.deporte === 'padel' ? 'badge-padel' : 'badge-futbol'}">${cancha.deporte === 'padel' ? '🎾 Pádel' : '⚽ Fútbol'}</span>
+    <span class="${cancha.ubicacion === 'interior' ? 'badge-interior' : 'badge-exterior'}">${cancha.ubicacion === 'interior' ? '🏠 Techada' : '☀️ Exterior'}</span>
+    ${dur === 2 ? '<span class="badge-duration" style="color:var(--neon-green);">⏱️ Turno Doble (2hs)</span>' : ''}
+  `;
   
   const total = Number(cancha.precio) * dur;
   document.getElementById("selected-slot-price-val").textContent = `$ ${total.toLocaleString('es-AR')}`;
@@ -385,6 +469,40 @@ function setupBookingFormActions() {
   }
 }
 
+function setupFilterButtons() {
+  // Filtro Deporte
+  document.querySelectorAll('[data-filter-sport]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter-sport]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window.state.selectedSport = btn.getAttribute('data-filter-sport');
+      renderBookingCanchas();
+    });
+  });
+
+  // Filtro Ubicación
+  document.querySelectorAll('[data-filter-location]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter-location]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window.state.selectedLocation = btn.getAttribute('data-filter-location');
+      renderBookingCanchas();
+    });
+  });
+
+  // Selector Duración 1h vs 2h
+  document.querySelectorAll('[data-duration]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-duration]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      window.state.selectedDuration = parseInt(btn.getAttribute('data-duration')) || 1;
+      window.state.selectedHora = null;
+      document.getElementById('booking-form-box').style.display = 'none';
+      renderBookingHorarios();
+    });
+  });
+}
+
 function showConfirmation(turno) {
   const box = document.getElementById("confirm-panel-box");
   const content = document.getElementById("confirm-card-content");
@@ -393,7 +511,7 @@ function showConfirmation(turno) {
   content.innerHTML = `
     <div class="confirm-row"><span>🏟️ Cancha:</span> <strong>${turno.canchaNombre}</strong></div>
     <div class="confirm-row"><span>📅 Fecha:</span> <strong>${formatFechaLarga(turno.fecha)}</strong></div>
-    <div class="confirm-row"><span>⏰ Hora:</span> <strong>${turno.hora} hs</strong></div>
+    <div class="confirm-row"><span>⏰ Hora:</span> <strong>${turno.hora} hs (${turno.duracion}h)</strong></div>
     <div class="confirm-row"><span>👤 Capitán:</span> <strong>${turno.nombre}</strong></div>
     <div class="confirm-row"><span>💰 Total:</span> <strong style="color:var(--neon-green);">$ ${turno.precio.toLocaleString('es-AR')}</strong></div>
   `;
