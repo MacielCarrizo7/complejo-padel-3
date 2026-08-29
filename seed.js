@@ -1,15 +1,23 @@
 /**
  * seed.js - Script de inicialización de datos para Cloud Firestore
  * COMPLEJO PADEL 3
- * 
- * Este script lee 'seed.json' y escribe la estructura inicial en Firestore:
- * - Documento 'siteConfig/main' para los textos y configuraciones principales.
- * - Colección 'servicios' con la lista de servicios del complejo.
- * - Colección 'canchas' con las pistas de pádel y canchas de fútbol.
  */
 
-import { db } from "./public/js/firebaseConfig.js";
-import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
+  authDomain: "complejo-padel-3.firebaseapp.com",
+  projectId: "complejo-padel-3",
+  storageBucket: "complejo-padel-3.firebasestorage.app",
+  messagingSenderId: "975322009594",
+  appId: "1:975322009594:web:e81ead05c09307e7255e43",
+  measurementId: "G-RY4RW29MRS"
+};
+
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const db = getFirestore(app);
 
 export async function seedFirestore(seedData) {
   console.log("🌱 Inicializando poblamiento de Firestore para Complejo Padel 3...");
