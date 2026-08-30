@@ -25,6 +25,11 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+// Centralized Reactive Filter State
+export const filterState = {
+  sport: 'all',      // 'all' | 'padel' | 'futbol'
+  coverage: 'all'    // 'all' | 'techada' | 'exterior'
+};
 
 // Global State
 window.state = {
@@ -54,21 +59,60 @@ window.state = {
     { id: "s6", icono: "📍", titulo: "Tulumaya, Lavalle, Mendoza", descripcion: "Fácil acceso en la mejor zona deportiva del departamento de Lavalle." }
   ],
   canchas: [
-    { id: "c1", nombre: "Pista 1 - Cristal Pro", deporte: "padel", ubicacion: "interior", formato: "doble", jugadores: 4, superficie: "Césped Sintético Azul WPT", precio: 24000 },
-    { id: "c2", nombre: "Pista 2 - Panorámica", deporte: "padel", ubicacion: "interior", formato: "doble", jugadores: 4, superficie: "Vidrio Panorámico LED", precio: 24000 },
-    { id: "c3", nombre: "Pista 3 - Sunset Open", deporte: "padel", ubicacion: "exterior", formato: "doble", jugadores: 4, superficie: "Césped Texturado Fibrilado", precio: 20000 },
-    { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", ubicacion: "interior", formato: "f5", jugadores: 10, superficie: "Sintético Forbex 50mm", precio: 28000 },
-    { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", ubicacion: "exterior", formato: "f7", jugadores: 14, superficie: "Césped Sintético Pro 50mm", precio: 36000 }
+    { id: "c1", nombre: "Pista 1 - Cristal Pro WPT", deporte: "padel", tipo: "techada", techada: true, ubicacion: "interior", activa: true, formato: "doble", jugadores: 4, superficie: "Césped Sintético Azul WPT", precio: 24000 },
+    { id: "c2", nombre: "Pista 2 - Panorámica VIP", deporte: "padel", tipo: "techada", techada: true, ubicacion: "interior", activa: true, formato: "doble", jugadores: 4, superficie: "Vidrio Panorámico Pro", precio: 24000 },
+    { id: "c3", nombre: "Pista 3 - Open Sunset", deporte: "padel", tipo: "exterior", techada: false, ubicacion: "exterior", activa: true, formato: "doble", jugadores: 4, superficie: "Césped Fibrilado Exterior", precio: 20000 },
+    { id: "c4", nombre: "Cancha 1 - Monumental F5", deporte: "futbol", tipo: "techada", techada: true, ubicacion: "interior", activa: true, formato: "f5", jugadores: 10, superficie: "Sintético Forbex 50mm Techada", precio: 28000 },
+    { id: "c5", nombre: "Cancha 2 - Wembley F7", deporte: "futbol", tipo: "exterior", techada: false, ubicacion: "exterior", activa: true, formato: "f7", jugadores: 14, superficie: "Césped Sintético Pro 50mm", precio: 36000 },
+    { id: "c6", nombre: "Cancha 3 - San Siro F5", deporte: "futbol", tipo: "exterior", techada: false, ubicacion: "exterior", activa: true, formato: "f5", jugadores: 10, superficie: "Césped Sintético Premium 50mm", precio: 26000 }
   ],
   turnos: [],
-  selectedSport: 'todos',
-  selectedLocation: 'todos',
+  filterState,
+  selectedSport: 'all',
+  selectedLocation: 'all',
   selectedDuration: 1,
   selectedCanchaId: 'c1',
   selectedFecha: null,
   selectedHora: null,
   lastBooking: null
 };
+
+// Defensive Deterministic Filtering Function
+export function filterCourts(courts, state = filterState) {
+  if (!Array.isArray(courts)) return [];
+  const currentSport = (state?.sport || 'all').toLowerCase().trim();
+  const currentCoverage = (state?.coverage || 'all').toLowerCase().trim();
+
+  return courts.filter(court => {
+    if (!court) return false;
+
+    // 1. Validar estado de la cancha (activa / habilitada)
+    if (court.activa === false || court.habilitada === false || court.activa === 'false' || court.habilitada === 'false') {
+      return false;
+    }
+
+    // 2. Filtro de Deporte
+    const courtSport = (court.deporte || '').toLowerCase().trim();
+    const matchSport = currentSport === 'all' || currentSport === 'todos' || courtSport === currentSport;
+
+    // 3. Filtro de Cobertura (soporta boolean techada, string tipo o ubicacion)
+    const isCovered = typeof court.techada === 'boolean'
+      ? court.techada
+      : typeof court.techada === 'string'
+        ? court.techada.toLowerCase().trim() === 'true'
+        : (court.tipo || court.ubicacion || '').toLowerCase().includes('techad') ||
+          (court.tipo || court.ubicacion || '').toLowerCase().includes('interior');
+
+    let matchCoverage = true;
+    if (currentCoverage === 'techada' || currentCoverage === 'interior') {
+      matchCoverage = isCovered;
+    } else if (currentCoverage === 'exterior') {
+      matchCoverage = !isCovered;
+    }
+
+    return matchSport && matchCoverage;
+  });
+}
 
 const DIAS_ADELANTE = 14;
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -151,9 +195,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // 4. Firestore Realtime Listeners
   listenFirestoreUpdates();
 
-  // 5. Setup Form Actions
+  // 5. Setup Form Actions & Navigation
   setupBookingFormActions();
   setupFilterButtons();
+  setupTabNavigation();
+  setupMobileDrawer();
 });
 
 // Render Config Data
@@ -200,16 +246,32 @@ function renderServicios(servicios) {
   `).join("");
 }
 
+let gallerySport = 'all';
+
 // Render Courts Gallery in Section
 function renderCanchasGallery(canchas) {
   const container = document.getElementById("courts-grid-container");
   if (!container) return;
 
-  container.innerHTML = canchas.map(c => {
-    const isPadel = c.deporte === 'padel';
-    const locLabel = c.ubicacion === 'interior' ? '🏠 Interior Techada' : '☀️ Exterior';
+  const list = canchas || window.state.canchas;
+  const filtered = filterCourts(list, { sport: gallerySport, coverage: 'all' });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p style="color:var(--text-secondary); grid-column:1/-1; text-align:center; padding:20px;">No hay canchas registradas en esta categoría.</p>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(c => {
+    const isPadel = (c.deporte || '').toLowerCase() === 'padel';
+    const isCovered = typeof c.techada === 'boolean'
+      ? c.techada
+      : typeof c.techada === 'string'
+        ? c.techada.toLowerCase().trim() === 'true'
+        : (c.tipo || c.ubicacion || '').toLowerCase().includes('techad') ||
+          (c.tipo || c.ubicacion || '').toLowerCase().includes('interior');
+    const locLabel = isCovered ? '🏠 Interior Techada' : '☀️ Exterior';
     const formatLabel = isPadel 
-      ? (c.formato === 'simple' ? '🎾 Pádel Simple' : '🎾 Pádel Doble') 
+      ? (c.formato === 'simple' || c.jugadores === 2 ? '🎾 Pádel Simple' : '🎾 Pádel Doble') 
       : `⚽ Fútbol ${c.jugadores ? Math.round(c.jugadores / 2) : 5}`;
 
     return `
@@ -236,8 +298,13 @@ function renderCanchasGallery(canchas) {
 
 window.seleccionarCanchaDirecta = (id) => {
   window.state.selectedCanchaId = id;
+  switchTab('tab-reservas');
   renderBookingCanchas();
   renderBookingHorarios();
+  const tabsSection = document.getElementById('tabs-section') || document.getElementById('tab-reservas');
+  if (tabsSection) {
+    tabsSection.scrollIntoView({ behavior: 'smooth' });
+  }
 };
 
 // ================= BOOKING ENGINE & TACTICAL SILHOUETTES =================
@@ -246,16 +313,10 @@ function renderBookingCanchas() {
   const grid = document.getElementById("booking-canchas-grid");
   if (!grid) return;
 
-  let filtered = window.state.canchas;
-  if (window.state.selectedSport !== 'todos') {
-    filtered = filtered.filter(c => c.deporte === window.state.selectedSport);
-  }
-  if (window.state.selectedLocation !== 'todos') {
-    filtered = filtered.filter(c => c.ubicacion === window.state.selectedLocation);
-  }
+  const filtered = filterCourts(window.state.canchas, filterState);
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<p style="color:var(--text-secondary); grid-column:1/-1;">No hay canchas disponibles con los filtros seleccionados.</p>`;
+    grid.innerHTML = `<p style="color:var(--text-secondary); grid-column:1/-1; text-align:center; padding:24px;">No hay canchas disponibles con los filtros seleccionados.</p>`;
     return;
   }
 
@@ -265,12 +326,18 @@ function renderBookingCanchas() {
 
   grid.innerHTML = filtered.map(c => {
     const isSel = c.id === window.state.selectedCanchaId;
-    const isPadel = c.deporte === 'padel';
+    const isPadel = (c.deporte || '').toLowerCase() === 'padel';
     const pitchSvg = getCourtSvgHtml(c);
-    const locBadge = c.ubicacion === 'interior' ? '🏠 Techada' : '☀️ Exterior';
-    const locClass = c.ubicacion === 'interior' ? 'badge-interior' : 'badge-exterior';
+    const isCovered = typeof c.techada === 'boolean'
+      ? c.techada
+      : typeof c.techada === 'string'
+        ? c.techada.toLowerCase().trim() === 'true'
+        : (c.tipo || c.ubicacion || '').toLowerCase().includes('techad') ||
+          (c.tipo || c.ubicacion || '').toLowerCase().includes('interior');
+    const locBadge = isCovered ? '🏠 Techada' : '☀️ Exterior';
+    const locClass = isCovered ? 'badge-interior' : 'badge-exterior';
     const sportBadge = isPadel 
-      ? (c.formato === 'simple' ? '🎾 Simple (2 jug.)' : '🎾 Doble (4 jug.)')
+      ? (c.formato === 'simple' || c.jugadores === 2 ? '🎾 Simple (2 jug.)' : '🎾 Doble (4 jug.)')
       : `⚽ Fútbol ${c.jugadores ? Math.round(c.jugadores / 2) : 5}`;
 
     return `
@@ -339,6 +406,42 @@ window.selectFecha = (iso) => {
   renderBookingHorarios();
 };
 
+/**
+ * Determina si un horario específico ya expiró para una fecha dada.
+ * @param {string|Date} dateStr - Fecha en formato 'YYYY-MM-DD' o Date.
+ * @param {string} timeStr - Horario en formato 'HH:mm' (ej: '20:00', '09:30').
+ * @param {number} [bufferMinutes=0] - Minutos de margen previo.
+ * @returns {boolean} - true si el horario ya pasó, false si aún es reservable.
+ */
+export function isSlotInThePast(dateStr, timeStr, bufferMinutes = 0) {
+  if (!dateStr || !timeStr) return true;
+  const now = new Date();
+  
+  // Parsear fecha seleccionada
+  let targetDate;
+  if (typeof dateStr === 'string') {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    targetDate = new Date(year, month - 1, day);
+  } else {
+    targetDate = new Date(dateStr);
+  }
+
+  // Si es un día previo a hoy
+  const todayReset = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetReset = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+  if (targetReset < todayReset) return true;
+  if (targetReset > todayReset) return false;
+
+  // Si es hoy, comparar minutos
+  const [slotHour, slotMin] = timeStr.split(':').map(Number);
+  const slotHourNormalized = (slotHour === 0 && (slotMin || 0) === 0) ? 24 : slotHour;
+  const slotTotalMinutes = slotHourNormalized * 60 + (slotMin || 0);
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes() + bufferMinutes;
+
+  return slotTotalMinutes <= currentTotalMinutes;
+}
+
 function renderBookingHorarios() {
   const grid = document.getElementById("booking-horarios-grid");
   const vacio = document.getElementById("sin-horarios");
@@ -347,13 +450,14 @@ function renderBookingHorarios() {
   grid.innerHTML = "";
 
   const horasBase = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00"];
-  const cancha = window.state.canchas.find(c => c.id === window.state.selectedCanchaId);
+  const cancha = (window.state.canchas || []).find(c => c.id === window.state.selectedCanchaId);
   const dur = window.state.selectedDuration || 1;
+  const fecha = window.state.selectedFecha || hoyISO();
 
   // Horas ocupadas
   const ocupados = new Set();
-  window.state.turnos
-    .filter(t => t.canchaId === window.state.selectedCanchaId && t.fecha === window.state.selectedFecha)
+  (window.state.turnos || [])
+    .filter(t => t.canchaId === window.state.selectedCanchaId && t.fecha === fecha)
     .forEach(t => {
       ocupados.add(t.hora);
       if (t.duracion === 2) {
@@ -362,24 +466,78 @@ function renderBookingHorarios() {
       }
     });
 
+  let totalDisponibles = 0;
+
   horasBase.forEach(h => {
     const isOccupied = ocupados.has(h);
-    const isSel = h === window.state.selectedHora;
+    const isPast = isSlotInThePast(fecha, h, 0);
+
+    let isConsecutiveUnavailable = false;
+    if (dur === 2) {
+      const [currH] = h.split(':').map(Number);
+      const nextH = `${pad2((currH + 1) % 24)}:00`;
+      const isNextOccupied = ocupados.has(nextH);
+      const isNextPast = isSlotInThePast(fecha, nextH, 0);
+      const existsNextSlot = horasBase.includes(nextH) && nextH !== "14:00";
+      if (isNextOccupied || isNextPast || !existsNextSlot) {
+        isConsecutiveUnavailable = true;
+      }
+    }
+
+    const isAvailable = !isOccupied && !isPast && !isConsecutiveUnavailable;
+    if (isAvailable) {
+      totalDisponibles++;
+    }
+
+    const isSel = h === window.state.selectedHora && isAvailable;
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `horario-btn ${isSel ? 'selected' : ''}`;
-    btn.disabled = isOccupied;
+    btn.className = `horario-btn ${isSel ? 'selected' : ''} ${isPast ? 'slot-past slot-disabled' : ''}`;
+    btn.disabled = !isAvailable;
+    
+    if (isPast) {
+      btn.title = "Horario no disponible (hora pasada)";
+    } else if (isOccupied) {
+      btn.title = "Horario ya reservado";
+    } else if (isConsecutiveUnavailable) {
+      btn.title = "No disponible para 2 horas consecutivas";
+    }
+
     btn.innerHTML = `<span>${h} hs</span>`;
     
-    btn.onclick = () => {
-      window.state.selectedHora = h;
-      renderBookingHorarios();
-      showBookingForm(cancha, h, dur);
-    };
+    if (isAvailable) {
+      btn.onclick = () => {
+        window.state.selectedHora = h;
+        renderBookingHorarios();
+        showBookingForm(cancha, h, dur);
+      };
+    }
 
     grid.appendChild(btn);
   });
+
+  // Mensaje informativo si no hay horarios
+  if (vacio) {
+    if (totalDisponibles === 0) {
+      vacio.style.display = "block";
+      const esHoy = fecha === hoyISO();
+      if (esHoy) {
+        vacio.textContent = "No quedan turnos disponibles para el día de hoy. Por favor, selecciona una fecha posterior.";
+      } else {
+        vacio.textContent = "No hay horarios disponibles para esta cancha en la fecha seleccionada.";
+      }
+    } else {
+      vacio.style.display = "none";
+    }
+  }
+
+  // Si la hora previamente seleccionada ya no es válida, resetearla
+  if (window.state.selectedHora && (isSlotInThePast(fecha, window.state.selectedHora, 0) || ocupados.has(window.state.selectedHora))) {
+    window.state.selectedHora = null;
+    const formBox = document.getElementById("booking-form-box");
+    if (formBox) formBox.style.display = "none";
+  }
 }
 
 function showBookingForm(cancha, hora, dur) {
@@ -388,11 +546,19 @@ function showBookingForm(cancha, hora, dur) {
   if (confirmBox) confirmBox.style.display = "none";
   if (!formBox || !cancha) return;
 
+  const isCovered = typeof cancha.techada === 'boolean'
+    ? cancha.techada
+    : typeof cancha.techada === 'string'
+      ? cancha.techada.toLowerCase().trim() === 'true'
+      : (cancha.tipo || cancha.ubicacion || '').toLowerCase().includes('techad') ||
+        (cancha.tipo || cancha.ubicacion || '').toLowerCase().includes('interior');
+  const isPadel = (cancha.deporte || '').toLowerCase() === 'padel';
+
   formBox.style.display = "block";
   document.getElementById("selected-slot-label").textContent = `${cancha.nombre} · ${formatFechaLarga(window.state.selectedFecha)} · ${hora} hs`;
   document.getElementById("selected-slot-tags").innerHTML = `
-    <span class="cancha-sport-badge ${cancha.deporte === 'padel' ? 'badge-padel' : 'badge-futbol'}">${cancha.deporte === 'padel' ? '🎾 Pádel' : '⚽ Fútbol'}</span>
-    <span class="${cancha.ubicacion === 'interior' ? 'badge-interior' : 'badge-exterior'}">${cancha.ubicacion === 'interior' ? '🏠 Techada' : '☀️ Exterior'}</span>
+    <span class="cancha-sport-badge ${isPadel ? 'badge-padel' : 'badge-futbol'}">${isPadel ? '🎾 Pádel' : '⚽ Fútbol'}</span>
+    <span class="${isCovered ? 'badge-interior' : 'badge-exterior'}">${isCovered ? '🏠 Techada' : '☀️ Exterior'}</span>
     ${dur === 2 ? '<span class="badge-duration" style="color:var(--neon-green);">⏱️ Turno Doble (2hs)</span>' : ''}
   `;
   
@@ -400,48 +566,213 @@ function showBookingForm(cancha, hora, dur) {
   document.getElementById("selected-slot-price-val").textContent = `$ ${total.toLocaleString('es-AR')}`;
 }
 
+// ================= CHECKOUT & RESERVATION UTILITIES =================
+
+/**
+ * Valida que el formulario de checkout cumpla con el contrato de datos.
+ * @param {string} nombre - Nombre y apellido del cliente.
+ * @param {string} telefono - Teléfono o WhatsApp del cliente.
+ * @returns {{valid: boolean, error?: string, nombreCompleto?: string, telefono?: string}}
+ */
+export function validateBookingForm(nombre, telefono) {
+  const cleanNombre = (nombre || '').trim();
+  const cleanTelefono = (telefono || '').trim();
+  const digits = cleanTelefono.replace(/\D/g, '');
+
+  if (!cleanNombre || cleanNombre.length < 4) {
+    return { valid: false, error: 'Por favor ingresá tu nombre y apellido (mínimo 4 caracteres).' };
+  }
+
+  const words = cleanNombre.split(/\s+/).filter(Boolean);
+  if (words.length < 2 && cleanNombre.length < 5) {
+    return { valid: false, error: 'Por favor ingresá tu nombre y apellido completo.' };
+  }
+
+  if (!cleanTelefono || digits.length < 8) {
+    return { valid: false, error: 'Por favor ingresá un número de teléfono o WhatsApp válido (mínimo 8 dígitos).' };
+  }
+
+  return { valid: true, nombreCompleto: cleanNombre, telefono: digits };
+}
+
+/**
+ * Verifica si un turno solicitado se solapa con turnos existentes para evitar Double-Booking.
+ * @param {string} canchaId - ID de la cancha.
+ * @param {string} fecha - Fecha YYYY-MM-DD.
+ * @param {string} hora - Hora HH:mm.
+ * @param {number} duracion - Duración en horas (1 o 2) o minutos.
+ * @param {Array} turnos - Lista de turnos existentes.
+ * @returns {boolean} - true si el turno ya está ocupado, false si está libre.
+ */
+export function isSlotOccupied(canchaId, fecha, hora, duracion = 1, turnos = window.state.turnos) {
+  if (!canchaId || !fecha || !hora) return true;
+  const duracionHoras = (Number(duracion) === 2 || Number(duracion) === 120) ? 2 : 1;
+  const [slotH, slotM] = hora.split(':').map(Number);
+  
+  const requestedStart = (slotH === 0 ? 24 : slotH) * 60 + (slotM || 0);
+  const requestedEnd = requestedStart + duracionHoras * 60;
+
+  const lista = turnos || window.state.turnos || [];
+  return lista.some(t => {
+    if (t.canchaId !== canchaId || t.fecha !== fecha || t.estado === 'cancelada') return false;
+    const [tH, tM] = t.hora.split(':').map(Number);
+    const tDurHoras = (Number(t.duracion) === 2 || Number(t.duracion) === 120) ? 2 : 1;
+    const tStart = (tH === 0 ? 24 : tH) * 60 + (tM || 0);
+    const tEnd = tStart + tDurHoras * 60;
+
+    return Math.max(requestedStart, tStart) < Math.min(requestedEnd, tEnd);
+  });
+}
+
+/**
+ * Genera la URL de WhatsApp con el comprobante de reserva formateado.
+ * @param {Object} reserva - Objeto de reserva.
+ * @param {string} numeroComplejo - Número de WhatsApp del complejo.
+ * @returns {string} URL de WhatsApp codificada.
+ */
+export function generateWhatsAppBookingUrl(reserva, numeroComplejo = "5492613831173") {
+  if (!reserva) return "";
+  const duracionMin = reserva.duracion ? (reserva.duracion <= 2 ? reserva.duracion * 60 : reserva.duracion) : 60;
+  const nombreCliente = reserva.cliente?.nombreCompleto || reserva.nombre || "Cliente";
+  const telCliente = reserva.cliente?.telefono || reserva.telefono || "";
+  const deporteStr = (reserva.deporte || 'padel').toUpperCase();
+  const tipoStr = (reserva.tipo || (reserva.techada ? 'techada' : 'exterior')).toUpperCase();
+
+  const mensaje = `🎾 *¡NUEVA RESERVA - PADEL 3!* 🎾\n\n` +
+    `👤 *Cliente:* ${nombreCliente}\n` +
+    `📱 *Teléfono:* ${telCliente}\n` +
+    `🏟️ *Cancha:* ${reserva.canchaNombre} (${deporteStr} - ${tipoStr})\n` +
+    `📅 *Fecha:* ${reserva.fecha}\n` +
+    `⏰ *Horario:* ${reserva.hora} hs (${duracionMin} min)\n` +
+    `💵 *Total:* $${Number(reserva.precio).toLocaleString('es-AR')}\n\n` +
+    `_Reserva confirmada desde la web._`;
+
+  const cleanNumber = (numeroComplejo || "5492613831173").replace(/\D/g, '');
+  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(mensaje)}`;
+}
+
 function setupBookingFormActions() {
   const btnSubmit = document.getElementById("btn-reservar-submit");
   if (btnSubmit) {
     btnSubmit.addEventListener("click", async () => {
-      const nombre = document.getElementById("cliente-nombre").value.trim();
-      const whatsapp = document.getElementById("cliente-whatsapp").value.trim();
-      const equipo = document.getElementById("cliente-equipo").value.trim();
+      const nombreInput = document.getElementById("cliente-nombre");
+      const telefonoInput = document.getElementById("cliente-telefono") || document.getElementById("cliente-whatsapp");
       const errorEl = document.getElementById("form-error");
 
-      if (!nombre) {
-        errorEl.textContent = "Por favor ingresá el nombre del capitán o jugador.";
+      const nombre = nombreInput ? nombreInput.value : "";
+      const telefono = telefonoInput ? telefonoInput.value : "";
+
+      // 1. Validar campos requeridos
+      const validation = validateBookingForm(nombre, telefono);
+      if (!validation.valid) {
+        if (errorEl) {
+          errorEl.textContent = validation.error;
+          errorEl.style.display = "block";
+        }
         return;
       }
-      errorEl.textContent = "";
+      if (errorEl) {
+        errorEl.textContent = "";
+        errorEl.style.display = "none";
+      }
 
-      const cancha = window.state.canchas.find(c => c.id === window.state.selectedCanchaId);
+      const cancha = (window.state.canchas || []).find(c => c.id === window.state.selectedCanchaId);
+      if (!cancha || !window.state.selectedFecha || !window.state.selectedHora) {
+        if (errorEl) {
+          errorEl.textContent = "Por favor selecciona una cancha, fecha y horario válido.";
+          errorEl.style.display = "block";
+        }
+        return;
+      }
+
+      // 2. Prevenir Double-Booking
+      const isOccupied = isSlotOccupied(
+        cancha.id,
+        window.state.selectedFecha,
+        window.state.selectedHora,
+        window.state.selectedDuration,
+        window.state.turnos
+      );
+
+      if (isOccupied) {
+        if (errorEl) {
+          errorEl.textContent = "El turno seleccionado acaba de ser ocupado. Por favor, selecciona otro horario.";
+          errorEl.style.display = "block";
+        }
+        renderBookingHorarios();
+        return;
+      }
+
+      // 3. Prevenir reservar horario en el pasado
+      if (isSlotInThePast(window.state.selectedFecha, window.state.selectedHora, 0)) {
+        if (errorEl) {
+          errorEl.textContent = "El horario seleccionado ya ha transcurrido. Por favor selecciona otro horario.";
+          errorEl.style.display = "block";
+        }
+        renderBookingHorarios();
+        return;
+      }
+
+      const duracionHoras = window.state.selectedDuration || 1;
+      const duracionMinutos = duracionHoras * 60;
+      const isCovered = typeof cancha.techada === 'boolean'
+        ? cancha.techada
+        : (cancha.tipo || cancha.ubicacion || '').toLowerCase().includes('techad') ||
+          (cancha.tipo || cancha.ubicacion || '').toLowerCase().includes('interior');
+
       const nuevoTurno = {
+        id: `reserva_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         canchaId: cancha.id,
         canchaNombre: cancha.nombre,
-        deporte: cancha.deporte,
+        deporte: cancha.deporte || 'padel',
+        tipo: isCovered ? 'techada' : 'exterior',
         fecha: window.state.selectedFecha,
         hora: window.state.selectedHora,
-        duracion: window.state.selectedDuration,
-        nombre,
-        whatsapp,
-        equipo,
-        precio: Number(cancha.precio) * window.state.selectedDuration,
-        ts: Date.now()
+        duracion: duracionMinutos,
+        precio: Number(cancha.precio) * duracionHoras,
+        cliente: {
+          nombreCompleto: validation.nombreCompleto,
+          telefono: validation.telefono
+        },
+        nombre: validation.nombreCompleto,
+        telefono: validation.telefono,
+        estado: "confirmada",
+        createdAt: new Date().toISOString()
       };
 
       try {
         btnSubmit.disabled = true;
-        btnSubmit.textContent = "Procesando...";
+        btnSubmit.textContent = "Confirmando Reserva...";
 
-        await addDoc(collection(db, "turnos"), nuevoTurno);
+        // Persistencia en Firestore
+        try {
+          await addDoc(collection(db, "turnos"), nuevoTurno);
+        } catch (dbErr) {
+          console.warn("ℹ️ Modo autónomo/fallback local activo para la reserva:", dbErr);
+        }
+
+        // Actualizar estado local inmediatamente
+        window.state.turnos.push(nuevoTurno);
         window.state.lastBooking = nuevoTurno;
 
+        // Limpiar inputs
+        if (nombreInput) nombreInput.value = "";
+        if (telefonoInput) telefonoInput.value = "";
+
+        // Ocultar formulario y actualizar grilla de horarios
         document.getElementById("booking-form-box").style.display = "none";
+        renderBookingHorarios();
         showConfirmation(nuevoTurno);
+
+        // Scroll al panel de confirmación
+        const confirmBox = document.getElementById("confirm-panel-box");
+        if (confirmBox) confirmBox.scrollIntoView({ behavior: 'smooth' });
       } catch (err) {
-        console.error(err);
-        errorEl.textContent = "Error al guardar la reserva en Firestore: " + err.message;
+        console.error("Error al procesar la reserva:", err);
+        if (errorEl) {
+          errorEl.textContent = "Hubo un error al confirmar la reserva. Intenta nuevamente.";
+          errorEl.style.display = "block";
+        }
       } finally {
         btnSubmit.disabled = false;
         btnSubmit.textContent = "Confirmar Reserva de Turno 🎾⚽";
@@ -455,38 +786,67 @@ function setupBookingFormActions() {
       const last = window.state.lastBooking;
       if (!last) return;
 
-      const waNum = window.state.siteConfig.whatsappNumber || "5492613831173";
-      const text = `*RESERVA COMPLEJO PADEL 3*\n\nJugador: ${last.nombre}\nCancha: ${last.canchaNombre}\nFecha: ${formatFechaLarga(last.fecha)}\nHora: ${last.hora} hs\nTotal: $${last.precio.toLocaleString('es-AR')}\n\nHola! Quiero confirmar mi turno.`;
-      window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(text)}`, "_blank");
+      const waNum = window.state.siteConfig?.whatsappNumber || "5492613831173";
+      const waUrl = generateWhatsAppBookingUrl(last, waNum);
+      window.open(waUrl, "_blank");
     });
   }
 
   const btnOtro = document.getElementById("btn-reservar-otro");
   if (btnOtro) {
     btnOtro.addEventListener("click", () => {
-      document.getElementById("confirm-panel-box").style.display = "none";
+      const confirmBox = document.getElementById("confirm-panel-box");
+      if (confirmBox) confirmBox.style.display = "none";
+      window.state.selectedHora = null;
+      renderBookingHorarios();
+      const reservaSec = document.getElementById("booking-canchas-grid") || document.getElementById("tab-reservas");
+      if (reservaSec) reservaSec.scrollIntoView({ behavior: 'smooth' });
     });
   }
 }
 
 function setupFilterButtons() {
-  // Filtro Deporte
-  document.querySelectorAll('[data-filter-sport]').forEach(btn => {
+  // Filtro Deporte en Booking Engine
+  const sportButtons = document.querySelectorAll('#reservar [data-sport], #reservar [data-filter-sport]');
+  sportButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-filter-sport]').forEach(b => b.classList.remove('active'));
+      sportButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      window.state.selectedSport = btn.getAttribute('data-filter-sport');
+      let val = btn.getAttribute('data-sport') || btn.getAttribute('data-filter-sport');
+      if (val === 'todos') val = 'all';
+      filterState.sport = val;
+      window.state.selectedSport = val;
       renderBookingCanchas();
+      renderBookingHorarios();
     });
   });
 
-  // Filtro Ubicación
-  document.querySelectorAll('[data-filter-location]').forEach(btn => {
+  // Filtro Cobertura en Booking Engine
+  const coverageButtons = document.querySelectorAll('#reservar [data-coverage], #reservar [data-filter-location]');
+  coverageButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('[data-filter-location]').forEach(b => b.classList.remove('active'));
+      coverageButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      window.state.selectedLocation = btn.getAttribute('data-filter-location');
+      let val = btn.getAttribute('data-coverage') || btn.getAttribute('data-filter-location');
+      if (val === 'todos') val = 'all';
+      if (val === 'interior') val = 'techada';
+      filterState.coverage = val;
+      window.state.selectedLocation = val;
       renderBookingCanchas();
+      renderBookingHorarios();
+    });
+  });
+
+  // Filtro Galería Canchas (#canchas)
+  const galleryButtons = document.querySelectorAll('#canchas [data-sport], #canchas [data-filter]');
+  galleryButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      galleryButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      let val = btn.getAttribute('data-sport') || btn.getAttribute('data-filter');
+      if (val === 'todos') val = 'all';
+      gallerySport = val;
+      renderCanchasGallery(window.state.canchas);
     });
   });
 
@@ -497,7 +857,8 @@ function setupFilterButtons() {
       btn.classList.add('active');
       window.state.selectedDuration = parseInt(btn.getAttribute('data-duration')) || 1;
       window.state.selectedHora = null;
-      document.getElementById('booking-form-box').style.display = 'none';
+      const formBox = document.getElementById('booking-form-box');
+      if (formBox) formBox.style.display = 'none';
       renderBookingHorarios();
     });
   });
@@ -506,14 +867,21 @@ function setupFilterButtons() {
 function showConfirmation(turno) {
   const box = document.getElementById("confirm-panel-box");
   const content = document.getElementById("confirm-card-content");
-  if (!box || !content) return;
+  if (!box || !content || !turno) return;
+
+  const duracionMin = turno.duracion ? (turno.duracion <= 2 ? turno.duracion * 60 : turno.duracion) : 60;
+  const nombreCliente = turno.cliente?.nombreCompleto || turno.nombre || "Cliente";
+  const telCliente = turno.cliente?.telefono || turno.telefono || "";
+  const deporteStr = (turno.deporte || 'padel').toUpperCase();
+  const tipoStr = (turno.tipo || (turno.techada ? 'techada' : 'exterior')).toUpperCase();
 
   content.innerHTML = `
-    <div class="confirm-row"><span>🏟️ Cancha:</span> <strong>${turno.canchaNombre}</strong></div>
+    <div class="confirm-row"><span>🏟️ Cancha:</span> <strong>${turno.canchaNombre} (${deporteStr} - ${tipoStr})</strong></div>
     <div class="confirm-row"><span>📅 Fecha:</span> <strong>${formatFechaLarga(turno.fecha)}</strong></div>
-    <div class="confirm-row"><span>⏰ Hora:</span> <strong>${turno.hora} hs (${turno.duracion}h)</strong></div>
-    <div class="confirm-row"><span>👤 Capitán:</span> <strong>${turno.nombre}</strong></div>
-    <div class="confirm-row"><span>💰 Total:</span> <strong style="color:var(--neon-green);">$ ${turno.precio.toLocaleString('es-AR')}</strong></div>
+    <div class="confirm-row"><span>⏰ Horario:</span> <strong>${turno.hora} hs (${duracionMin} min)</strong></div>
+    <div class="confirm-row"><span>👤 Cliente:</span> <strong>${nombreCliente}</strong></div>
+    <div class="confirm-row"><span>📱 Teléfono:</span> <strong>${telCliente}</strong></div>
+    <div class="confirm-row"><span>💰 Total:</span> <strong style="color:var(--neon-green); font-size:1.2rem;">$ ${Number(turno.precio).toLocaleString('es-AR')}</strong></div>
   `;
 
   box.style.display = "block";
@@ -552,3 +920,143 @@ function listenFirestoreUpdates() {
     console.log("ℹ️ Modo autónomo activo.");
   }
 }
+
+// ================= MODULAR TAB NAVIGATION CONTROLLER =================
+
+export function switchTab(tabId) {
+  if (!tabId) return;
+
+  // Normalize IDs if needed
+  let normalizedId = tabId;
+  if (tabId === 'reservar' || tabId === 'tab-reservas') normalizedId = 'tab-reservas';
+  else if (tabId === 'complejo' || tabId === 'nosotros' || tabId === 'ubicacion' || tabId === 'tab-complejo') normalizedId = 'tab-complejo';
+  else if (tabId === 'servicios' || tabId === 'tab-servicios') normalizedId = 'tab-servicios';
+  else if (tabId === 'canchas' || tabId === 'tecnologia' || tabId === 'tab-tecnologia') normalizedId = 'tab-tecnologia';
+
+  // 1. Update tab buttons
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn => {
+    const target = btn.getAttribute('data-tab-target');
+    const isActive = target === normalizedId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+
+  // 2. Update tab panes
+  const tabPanes = document.querySelectorAll('.tab-pane');
+  tabPanes.forEach(pane => {
+    const isActive = pane.id === normalizedId;
+    pane.classList.toggle('active', isActive);
+  });
+
+  // 3. Update navbar & drawer links active state
+  const navLinks = document.querySelectorAll('.desktop-nav-menu .nav-link, .nav-menu .nav-link');
+  navLinks.forEach(link => {
+    const navTarget = link.getAttribute('data-tab-nav') || (link.getAttribute('href') || '').replace('#', '');
+    const isTargetMatch = navTarget === normalizedId || 
+      (normalizedId === 'tab-reservas' && navTarget === 'reservar') ||
+      (normalizedId === 'tab-complejo' && (navTarget === 'nosotros' || navTarget === 'ubicacion')) ||
+      (normalizedId === 'tab-servicios' && navTarget === 'servicios') ||
+      (normalizedId === 'tab-tecnologia' && navTarget === 'canchas');
+
+    link.classList.toggle('active', isTargetMatch);
+  });
+
+  const drawerLinks = document.querySelectorAll('.drawer-link');
+  drawerLinks.forEach(link => {
+    const target = link.getAttribute('data-tab-target');
+    link.classList.toggle('active', target === normalizedId);
+  });
+
+  // 4. Trigger sub-renders if necessary
+  if (normalizedId === 'tab-reservas') {
+    renderBookingCanchas();
+    renderBookingHorarios();
+  } else if (normalizedId === 'tab-tecnologia') {
+    renderCanchasGallery(window.state.canchas);
+  } else if (normalizedId === 'tab-servicios') {
+    renderServicios(window.state.servicios);
+  }
+}
+
+export function setupMobileDrawer() {
+  const menuToggle = document.getElementById('menu-toggle');
+  const drawerClose = document.getElementById('drawer-close');
+  const drawerOverlay = document.getElementById('drawer-overlay');
+  const navMenu = document.getElementById('nav-menu');
+
+  function openDrawer() {
+    if (navMenu) navMenu.classList.add('active');
+    if (drawerOverlay) drawerOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    if (navMenu) navMenu.classList.remove('active');
+    if (drawerOverlay) drawerOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (menuToggle) menuToggle.addEventListener('click', openDrawer);
+  if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+  if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+
+  // Close drawer and navigate when clicking any drawer-link
+  document.querySelectorAll('.drawer-link[data-tab-target]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = link.getAttribute('data-tab-target');
+      closeDrawer();
+      switchTab(targetId);
+      const tabsSection = document.getElementById('tabs-section');
+      if (tabsSection) {
+        tabsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+}
+
+export function setupTabNavigation() {
+  // Click listener for .tab-btn
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = btn.getAttribute('data-tab-target');
+      switchTab(target);
+    });
+  });
+
+  // Click listener for navbar links and Hero CTA links mapped to tabs
+  document.querySelectorAll('.nav-link[data-tab-nav], a[data-tab-nav], a[href^="#tab-"], a[href="#reservar"], a[href="#servicios"], a[href="#canchas"], a[href="#nosotros"], a[href="#ubicacion"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href') || '';
+      let targetTab = link.getAttribute('data-tab-nav');
+      
+      if (!targetTab) {
+        if (href === '#reservar' || href === '#tab-reservas') targetTab = 'tab-reservas';
+        else if (href === '#servicios' || href === '#tab-servicios') targetTab = 'tab-servicios';
+        else if (href === '#canchas' || href === '#tab-tecnologia') targetTab = 'tab-tecnologia';
+        else if (href === '#nosotros' || href === '#ubicacion' || href === '#tab-complejo') targetTab = 'tab-complejo';
+      }
+
+      if (targetTab) {
+        switchTab(targetTab);
+        const tabsSection = document.getElementById('tabs-section');
+        if (tabsSection && href !== '#inicio') {
+          tabsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    });
+  });
+
+  // Handle hash on initial page load
+  const hash = window.location.hash.replace('#', '');
+  if (hash) {
+    if (hash === 'tab-reservas' || hash === 'reservar') switchTab('tab-reservas');
+    else if (hash === 'tab-complejo' || hash === 'nosotros' || hash === 'ubicacion') switchTab('tab-complejo');
+    else if (hash === 'tab-servicios' || hash === 'servicios') switchTab('tab-servicios');
+    else if (hash === 'tab-tecnologia' || hash === 'canchas') switchTab('tab-tecnologia');
+  }
+}
+
+

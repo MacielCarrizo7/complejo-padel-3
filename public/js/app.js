@@ -2,6 +2,12 @@
 // COMPLEJO PADEL 3 - CLIENT LOGIC & BOOKING SYSTEM
 // =========================================================
 
+// Centralized Reactive Filter State
+const filterState = {
+  sport: 'all',      // 'all' | 'padel' | 'futbol'
+  coverage: 'all'    // 'all' | 'techada' | 'exterior'
+};
+
 window.state = {
   config: {
     nombre: 'COMPLEJO PADEL 3',
@@ -16,8 +22,9 @@ window.state = {
     canchas: []
   },
   turnos: [],
-  selectedSport: 'todos',
-  selectedLocation: 'todos',
+  filterState,
+  selectedSport: 'all',
+  selectedLocation: 'all',
   selectedDuration: 1, // 1h or 2hs
   selectedCanchaId: null,
   selectedFecha: null,
@@ -25,6 +32,43 @@ window.state = {
   lastBooking: null,
   isOrganizer: false
 };
+
+// Defensive Deterministic Filtering Function
+function filterCourts(courts, state = filterState) {
+  if (!Array.isArray(courts)) return [];
+  const currentSport = (state?.sport || 'all').toLowerCase().trim();
+  const currentCoverage = (state?.coverage || 'all').toLowerCase().trim();
+
+  return courts.filter(court => {
+    if (!court) return false;
+
+    // 1. Validar estado de la cancha
+    if (court.activa === false || court.habilitada === false || court.activa === 'false' || court.habilitada === 'false') {
+      return false;
+    }
+
+    // 2. Filtro de Deporte
+    const courtSport = (court.deporte || '').toLowerCase().trim();
+    const matchSport = currentSport === 'all' || currentSport === 'todos' || courtSport === currentSport;
+
+    // 3. Filtro de Cobertura (soporta boolean techada, string tipo o ubicacion)
+    const isCovered = typeof court.techada === 'boolean'
+      ? court.techada
+      : typeof court.techada === 'string'
+        ? court.techada.toLowerCase().trim() === 'true'
+        : (court.tipo || court.ubicacion || '').toLowerCase().includes('techad') ||
+          (court.tipo || court.ubicacion || '').toLowerCase().includes('interior');
+
+    let matchCoverage = true;
+    if (currentCoverage === 'techada' || currentCoverage === 'interior') {
+      matchCoverage = isCovered;
+    } else if (currentCoverage === 'exterior') {
+      matchCoverage = !isCovered;
+    }
+
+    return matchSport && matchCoverage;
+  });
+}
 
 const DIAS_ADELANTE = 14;
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -154,6 +198,32 @@ function generarHorarios() {
   return horarios;
 }
 
+function isSlotInThePast(dateStr, timeStr, bufferMinutes = 0) {
+  if (!dateStr || !timeStr) return true;
+  const now = new Date();
+  
+  let targetDate;
+  if (typeof dateStr === 'string') {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    targetDate = new Date(year, month - 1, day);
+  } else {
+    targetDate = new Date(dateStr);
+  }
+
+  const todayReset = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetReset = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+  if (targetReset < todayReset) return true;
+  if (targetReset > todayReset) return false;
+
+  const [slotHour, slotMin] = timeStr.split(':').map(Number);
+  const slotHourNormalized = (slotHour === 0 && (slotMin || 0) === 0) ? 24 : slotHour;
+  const slotTotalMinutes = slotHourNormalized * 60 + (slotMin || 0);
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes() + bufferMinutes;
+
+  return slotTotalMinutes <= currentTotalMinutes;
+}
+
 function horariosDisponibles(canchaId, fecha, duracion = 1) {
   const todos = generarHorarios();
   const duracionHoras = Number(duracion) === 2 ? 2 : 1;
@@ -171,9 +241,6 @@ function horariosDisponibles(canchaId, fecha, duracion = 1) {
       }
     });
 
-  const esHoy = fecha === hoyISO();
-  const ahora = horaActualMin();
-
   // Closing hour limit check
   let [hCierre, mCierre] = (window.state.config.horaFin || '24:00').split(':').map(Number);
   if (hCierre === 0 && mCierre === 0) hCierre = 24;
@@ -181,7 +248,7 @@ function horariosDisponibles(canchaId, fecha, duracion = 1) {
 
   return todos.map((h, index) => {
     const [hh, mm] = h.split(':').map(Number);
-    const pasado = esHoy && (hh * 60 + mm) <= ahora;
+    const pasado = isSlotInThePast(fecha, h, 0);
 
     // Check if entire duration (1h or 2h) fits within business hours
     const finSlotMin = (hh + duracionHoras) * 60 + mm;
@@ -190,9 +257,10 @@ function horariosDisponibles(canchaId, fecha, duracion = 1) {
     let estaOcupado = ocupados.has(h) || pasado || excedeCierre;
 
     if (!estaOcupado && duracionHoras === 2) {
-      // Must also check that the next consecutive hour exists and is free
+      // Must also check that the next consecutive hour exists, is not past and is free
       const siguienteHora = `${pad2((hh + 1) % 24)}:${pad2(mm)}`;
-      if (ocupados.has(siguienteHora) || !todos.includes(siguienteHora)) {
+      const siguientePasada = isSlotInThePast(fecha, siguienteHora, 0);
+      if (ocupados.has(siguienteHora) || siguientePasada || !todos.includes(siguienteHora)) {
         estaOcupado = true;
       }
     }
@@ -200,21 +268,16 @@ function horariosDisponibles(canchaId, fecha, duracion = 1) {
     return {
       hora: h,
       duracion: duracionHoras,
-      ocupado: estaOcupado
+      ocupado: estaOcupado,
+      pasado
     };
   });
 }
 
 // Filter canchas
 function getCanchasFiltradas() {
-  let canchas = window.state.config.canchas || [];
-  if (window.state.selectedSport !== 'todos') {
-    canchas = canchas.filter(c => c.deporte === window.state.selectedSport);
-  }
-  if (window.state.selectedLocation !== 'todos') {
-    canchas = canchas.filter(c => c.ubicacion === window.state.selectedLocation);
-  }
-  return canchas;
+  const canchas = window.state.config.canchas || [];
+  return filterCourts(canchas, filterState);
 }
 
 // ================= RENDER FUNCTIONS =================
@@ -255,7 +318,7 @@ function renderCanchas() {
 
   if (canchas.length === 0) {
     cont.innerHTML = `
-      <div class="empty" style="grid-column: 1 / -1;">
+      <div class="empty" style="grid-column: 1 / -1; text-align:center; padding:24px;">
         No hay canchas disponibles que coincidan con los filtros seleccionados.
       </div>
     `;
@@ -272,10 +335,18 @@ function renderCanchas() {
     const card = document.createElement('div');
     card.className = `cancha-card ${isSelected ? 'selected' : ''}`;
 
-    const sportBadgeClass = cancha.deporte === 'padel' ? 'badge-padel' : 'badge-futbol';
-    const sportBadgeLabel = cancha.deporte === 'padel' ? '🎾 Pádel' : `⚽ Fútbol ${cancha.jugadores}`;
-    const locationBadgeClass = cancha.ubicacion === 'interior' ? 'badge-interior' : 'badge-exterior';
-    const locationBadgeLabel = cancha.ubicacion === 'interior' ? '🏠 Interior Techada' : '☀️ Exterior';
+    const isPadel = (cancha.deporte || '').toLowerCase() === 'padel';
+    const isCovered = typeof cancha.techada === 'boolean'
+      ? cancha.techada
+      : typeof cancha.techada === 'string'
+        ? cancha.techada.toLowerCase().trim() === 'true'
+        : (cancha.tipo || cancha.ubicacion || '').toLowerCase().includes('techad') ||
+          (cancha.tipo || cancha.ubicacion || '').toLowerCase().includes('interior');
+
+    const sportBadgeClass = isPadel ? 'badge-padel' : 'badge-futbol';
+    const sportBadgeLabel = isPadel ? '🎾 Pádel' : `⚽ Fútbol ${cancha.jugadores || 5}`;
+    const locationBadgeClass = isCovered ? 'badge-interior' : 'badge-exterior';
+    const locationBadgeLabel = isCovered ? '🏠 Interior Techada' : '☀️ Exterior';
 
     const pitchSvg = getCourtSvgHtml(cancha);
 
@@ -360,16 +431,23 @@ function renderHorarios() {
     titleEl.textContent = `4. Horarios Disponibles (${duracion === 2 ? 'Bloques de 2 Horas Consecutivas' : 'Bloques de 1 Hora'}):`;
   }
 
-  if (slots.length === 0) {
+  const allOccupied = slots.every(s => s.ocupado);
+  if (slots.length === 0 || allOccupied) {
     vacio.style.display = 'block';
-    return;
+    const esHoy = window.state.selectedFecha === hoyISO();
+    if (esHoy) {
+      vacio.textContent = 'No quedan turnos disponibles para el día de hoy. Por favor, selecciona una fecha posterior.';
+    } else {
+      vacio.textContent = 'No hay horarios disponibles para esta cancha en la fecha seleccionada.';
+    }
+  } else {
+    vacio.style.display = 'none';
   }
-  vacio.style.display = 'none';
 
   slots.forEach(s => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `horario-btn ${s.hora === window.state.selectedHora ? 'selected' : ''}`;
+    btn.className = `horario-btn ${s.hora === window.state.selectedHora ? 'selected' : ''} ${s.pasado ? 'slot-past slot-disabled' : ''}`;
 
     const [hStr, mStr] = s.hora.split(':').map(Number);
     const nextH = (hStr + duracion) % 24;
@@ -380,7 +458,9 @@ function renderHorarios() {
       <span class="sub-duration">${slotRangeLabel}</span>
     `;
     btn.disabled = s.ocupado;
-    if (s.ocupado) {
+    if (s.pasado) {
+      btn.title = 'Horario no disponible (hora pasada)';
+    } else if (s.ocupado) {
       btn.title = duracion === 2 ? 'No disponible para 2 horas consecutivas' : 'Horario no disponible';
     }
 
@@ -432,38 +512,49 @@ function renderHorarios() {
 
 function setupFilterButtons() {
   // Sport Filters
-  document.querySelectorAll('[data-filter-sport]').forEach(btn => {
+  const sportButtons = document.querySelectorAll('[data-sport], [data-filter-sport]');
+  sportButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
-      document.querySelectorAll('[data-filter-sport]').forEach(b => {
+      sportButtons.forEach(b => {
         b.classList.remove('active', 'active-padel', 'active-futbol');
       });
-      const sport = btn.getAttribute('data-filter-sport');
+      let sport = btn.getAttribute('data-sport') || btn.getAttribute('data-filter-sport');
+      if (sport === 'todos') sport = 'all';
+
+      filterState.sport = sport;
       window.state.selectedSport = sport;
 
       if (sport === 'padel') {
-        btn.classList.add('active-padel');
+        btn.classList.add('active-padel', 'active');
       } else if (sport === 'futbol') {
-        btn.classList.add('active-futbol');
+        btn.classList.add('active-futbol', 'active');
       } else {
         btn.classList.add('active');
       }
 
       window.state.selectedHora = null;
-      document.getElementById('booking-form').style.display = 'none';
+      const formBox = document.getElementById('booking-form');
+      if (formBox) formBox.style.display = 'none';
       render();
     });
   });
 
-  // Location Filters
-  document.querySelectorAll('[data-filter-location]').forEach(btn => {
+  // Location / Coverage Filters
+  const coverageButtons = document.querySelectorAll('[data-coverage], [data-filter-location]');
+  coverageButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
-      document.querySelectorAll('[data-filter-location]').forEach(b => b.classList.remove('active'));
-      const loc = btn.getAttribute('data-filter-location');
+      coverageButtons.forEach(b => b.classList.remove('active'));
+      let loc = btn.getAttribute('data-coverage') || btn.getAttribute('data-filter-location');
+      if (loc === 'todos') loc = 'all';
+      if (loc === 'interior') loc = 'techada';
+
+      filterState.coverage = loc;
       window.state.selectedLocation = loc;
       btn.classList.add('active');
 
       window.state.selectedHora = null;
-      document.getElementById('booking-form').style.display = 'none';
+      const formBox = document.getElementById('booking-form');
+      if (formBox) formBox.style.display = 'none';
       render();
     });
   });
@@ -477,7 +568,8 @@ function setupFilterButtons() {
       btn.classList.add('active');
 
       window.state.selectedHora = null;
-      document.getElementById('booking-form').style.display = 'none';
+      const formBox = document.getElementById('booking-form');
+      if (formBox) formBox.style.display = 'none';
       render();
     });
   });
@@ -485,23 +577,96 @@ function setupFilterButtons() {
 
 // ================= BOOKING SUBMISSION =================
 
+function validateBookingForm(nombre, telefono) {
+  const cleanNombre = (nombre || '').trim();
+  const cleanTelefono = (telefono || '').trim();
+  const digits = cleanTelefono.replace(/\D/g, '');
+
+  if (!cleanNombre || cleanNombre.length < 4) {
+    return { valid: false, error: 'Por favor ingresá tu nombre y apellido (mínimo 4 caracteres).' };
+  }
+
+  const words = cleanNombre.split(/\s+/).filter(Boolean);
+  if (words.length < 2 && cleanNombre.length < 5) {
+    return { valid: false, error: 'Por favor ingresá tu nombre y apellido completo.' };
+  }
+
+  if (!cleanTelefono || digits.length < 8) {
+    return { valid: false, error: 'Por favor ingresá un número de teléfono o WhatsApp válido (mínimo 8 dígitos).' };
+  }
+
+  return { valid: true, nombreCompleto: cleanNombre, telefono: digits };
+}
+
+function isSlotOccupied(canchaId, fecha, hora, duracion = 1, turnos = window.state.turnos) {
+  if (!canchaId || !fecha || !hora) return true;
+  const duracionHoras = (Number(duracion) === 2 || Number(duracion) === 120) ? 2 : 1;
+  const [slotH, slotM] = hora.split(':').map(Number);
+  
+  const requestedStart = (slotH === 0 ? 24 : slotH) * 60 + (slotM || 0);
+  const requestedEnd = requestedStart + duracionHoras * 60;
+
+  const lista = turnos || window.state.turnos || [];
+  return lista.some(t => {
+    if (t.canchaId !== canchaId || t.fecha !== fecha || t.estado === 'cancelada') return false;
+    const [tH, tM] = t.hora.split(':').map(Number);
+    const tDurHoras = (Number(t.duracion) === 2 || Number(t.duracion) === 120) ? 2 : 1;
+    const tStart = (tH === 0 ? 24 : tH) * 60 + (tM || 0);
+    const tEnd = tStart + tDurHoras * 60;
+
+    return Math.max(requestedStart, tStart) < Math.min(requestedEnd, tEnd);
+  });
+}
+
+function generateWhatsAppBookingUrl(reserva, numeroComplejo = "5492613831173") {
+  if (!reserva) return "";
+  const duracionMin = reserva.duracion ? (reserva.duracion <= 2 ? reserva.duracion * 60 : reserva.duracion) : 60;
+  const nombreCliente = reserva.cliente?.nombreCompleto || reserva.nombre || "Cliente";
+  const telCliente = reserva.cliente?.telefono || reserva.telefono || "";
+  const deporteStr = (reserva.deporte || 'padel').toUpperCase();
+  const tipoStr = (reserva.tipo || (reserva.techada ? 'techada' : 'exterior')).toUpperCase();
+
+  const mensaje = `🎾 *¡NUEVA RESERVA - PADEL 3!* 🎾\n\n` +
+    `👤 *Cliente:* ${nombreCliente}\n` +
+    `📱 *Teléfono:* ${telCliente}\n` +
+    `🏟️ *Cancha:* ${reserva.canchaNombre} (${deporteStr} - ${tipoStr})\n` +
+    `📅 *Fecha:* ${reserva.fecha}\n` +
+    `⏰ *Horario:* ${reserva.hora} hs (${duracionMin} min)\n` +
+    `💵 *Total:* $${Number(reserva.precio).toLocaleString('es-AR')}\n\n` +
+    `_Reserva confirmada desde la web._`;
+
+  const cleanNumber = (numeroComplejo || "5492613831173").replace(/\D/g, '');
+  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(mensaje)}`;
+}
+
 async function reservarTurno() {
-  const nombre = document.getElementById('cliente-nombre').value.trim();
-  const whatsapp = document.getElementById('cliente-whatsapp').value.trim();
-  const equipo = document.getElementById('cliente-equipo').value.trim();
+  const nombreInput = document.getElementById('cliente-nombre');
+  const telefonoInput = document.getElementById('cliente-telefono') || document.getElementById('cliente-whatsapp');
   const errEl = document.getElementById('form-error');
   errEl.textContent = '';
 
-  if (!nombre) {
-    errEl.textContent = 'Por favor ingresá tu nombre y apellido.';
+  const nombre = nombreInput ? nombreInput.value : '';
+  const telefono = telefonoInput ? telefonoInput.value : '';
+
+  const validation = validateBookingForm(nombre, telefono);
+  if (!validation.valid) {
+    errEl.textContent = validation.error;
     return;
   }
+
   if (!window.state.selectedCanchaId) {
     errEl.textContent = 'Por favor seleccioná una cancha.';
     return;
   }
   if (!window.state.selectedFecha || !window.state.selectedHora) {
     errEl.textContent = 'Por favor seleccioná un día y horario disponible.';
+    return;
+  }
+
+  // Prevenir Double-Booking local
+  if (isSlotOccupied(window.state.selectedCanchaId, window.state.selectedFecha, window.state.selectedHora, window.state.selectedDuration, window.state.turnos)) {
+    errEl.textContent = 'El turno seleccionado acaba de ser ocupado. Por favor, selecciona otro horario.';
+    render();
     return;
   }
 
@@ -518,9 +683,12 @@ async function reservarTurno() {
         fecha: window.state.selectedFecha,
         hora: window.state.selectedHora,
         duracion: window.state.selectedDuration || 1,
-        nombre,
-        whatsapp,
-        equipo
+        nombre: validation.nombreCompleto,
+        telefono: validation.telefono,
+        cliente: {
+          nombreCompleto: validation.nombreCompleto,
+          telefono: validation.telefono
+        }
       })
     });
 
@@ -632,32 +800,8 @@ function confirmarPorWhatsapp() {
   if (!last) return;
 
   const cfg = window.state.config;
-  const destino = cfg.whatsapp ? cfg.whatsapp.replace(/\D/g, '') : '';
-  const [hStr, mStr] = last.hora.split(':').map(Number);
-  const dur = Number(last.duracion) || 1;
-  const nextH = (hStr + dur) % 24;
-  const horaFinTxt = last.horaFin || `${pad2(nextH)}:${pad2(mStr)}`;
-
-  const isPadel = last.deporte === 'padel';
-  const sportName = isPadel ? '🎾 PADEL (2 vs 2)' : `⚽ FUTBOL ${last.jugadores}`;
-  const locName = last.ubicacion === 'interior' ? '🏠 Interior / Techada' : '☀️ Exterior';
-  const durName = dur === 2 ? '2 HORAS / DOBLE TURNO' : '1 HORA';
-
-  const mensaje = 
-`*RESERVA DE TURNO - ${cfg.nombre || 'COMPLEJO PADEL 3'}*
-
-*Jugador/Capitán:* ${last.nombre}
-${last.equipo ? `*Equipo/Pareja:* ${last.equipo}\n` : ''}*Deporte:* ${sportName}
-*Cancha:* ${last.canchaNombre} (${locName})
-*Fecha:* ${formatFechaLarga(last.fecha)}
-*Horario:* ${last.hora} a ${horaFinTxt} hs (${durName})
-*TOTAL A PAGAR:* ${formatCurrency(last.precio)} ${dur === 2 ? `(2hs x ${formatCurrency(last.precioUnitario)})` : ''}
-${cfg.direccion ? `*Dirección:* ${cfg.direccion}\n` : ''}${cfg.maps ? `*Ubicación Maps:* ${cfg.maps}\n` : ''}
-Hola! Quiero confirmar la reserva de este turno. Muchas gracias!`;
-
-  const url = destino
-    ? `https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`
-    : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+  const destino = cfg.whatsapp ? cfg.whatsapp.replace(/\D/g, '') : "5492613831173";
+  const url = generateWhatsAppBookingUrl(last, destino);
 
   window.open(url, '_blank');
 
