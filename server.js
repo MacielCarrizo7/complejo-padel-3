@@ -22,12 +22,13 @@ const DEFAULT_STATE = {
     adminEmail: process.env.ADMIN_EMAIL || 'admin@complejopadel3.com',
     adminPassword: process.env.ADMIN_PASSWORD || 'admin1234',
     firebaseConfig: {
-      apiKey: process.env.FIREBASE_API_KEY || 'AIzaSyDemoPadel3KeyComplejo',
+      apiKey: process.env.FIREBASE_API_KEY || 'AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs',
       authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'complejo-padel-3.firebaseapp.com',
       projectId: process.env.FIREBASE_PROJECT_ID || 'complejo-padel-3',
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'complejo-padel-3.appspot.com',
-      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '1234567890',
-      appId: process.env.FIREBASE_APP_ID || '1:1234567890:web:abcdef123456'
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'complejo-padel-3.firebasestorage.app',
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '975322009594',
+      appId: process.env.FIREBASE_APP_ID || '1:975322009594:web:e81ead05c09307e7255e43',
+      measurementId: process.env.FIREBASE_MEASUREMENT_ID || 'G-RY4RW29MRS'
     },
     horaInicio: '14:00',
     horaFin: '24:00',

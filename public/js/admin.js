@@ -129,9 +129,13 @@ let firebaseAuth = null;
 
 function initFirebaseClient() {
   const fbConfig = adminState.config?.firebaseConfig || {
-    apiKey: "AIzaSyDemoPadel3KeyComplejo",
+    apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
     authDomain: "complejo-padel-3.firebaseapp.com",
-    projectId: "complejo-padel-3"
+    projectId: "complejo-padel-3",
+    storageBucket: "complejo-padel-3.firebasestorage.app",
+    messagingSenderId: "975322009594",
+    appId: "1:975322009594:web:e81ead05c09307e7255e43",
+    measurementId: "G-RY4RW29MRS"
   };
 
   try {

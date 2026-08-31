@@ -41,6 +41,27 @@
     }
   </script>
 
+  <!-- Firebase App & Analytics SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
+      authDomain: "complejo-padel-3.firebaseapp.com",
+      projectId: "complejo-padel-3",
+      storageBucket: "complejo-padel-3.firebasestorage.app",
+      messagingSenderId: "975322009594",
+      appId: "1:975322009594:web:e81ead05c09307e7255e43",
+      measurementId: "G-RY4RW29MRS"
+    };
+    if (window.firebase && !firebase.apps.length) {
+      const app = firebase.initializeApp(firebaseConfig);
+      if (firebase.analytics) {
+        firebase.analytics();
+      }
+    }
+  </script>
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 

@@ -5,6 +5,16 @@
     "direccion": "Lavalle, Mendoza · Complejo Deportivo",
     "maps": "https://maps.google.com/?q=Lavalle+Mendoza",
     "whatsapp": "5491112345678",
+    "adminEmail": "admin@complejopadel3.com",
+    "adminPassword": "admin1234",
+    "firebaseConfig": {
+      "apiKey": "AIzaSyDemoPadel3KeyComplejo",
+      "authDomain": "complejo-padel-3.firebaseapp.com",
+      "projectId": "complejo-padel-3",
+      "storageBucket": "complejo-padel-3.appspot.com",
+      "messagingSenderId": "1234567890",
+      "appId": "1:1234567890:web:abcdef123456"
+    },
     "horaInicio": "14:00",
     "horaFin": "24:00",
     "diasActivos": [
@@ -73,17 +83,7 @@
         "jugadores": 5,
         "precio": 26000
       }
-    ],
-    "adminEmail": "admin@complejopadel3.com",
-    "adminPassword": "admin1234",
-    "firebaseConfig": {
-      "apiKey": "AIzaSyDemoPadel3KeyComplejo",
-      "authDomain": "complejo-padel-3.firebaseapp.com",
-      "projectId": "complejo-padel-3",
-      "storageBucket": "complejo-padel-3.appspot.com",
-      "messagingSenderId": "1234567890",
-      "appId": "1:1234567890:web:abcdef123456"
-    }
+    ]
   },
   "servicios": [
     {
