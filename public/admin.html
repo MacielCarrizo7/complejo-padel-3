@@ -90,8 +90,48 @@
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
             <span>Cerrar Sesión</span>
           </button>
+
+          <!-- Mobile Hamburger Button -->
+          <button id="mobile-menu-btn" type="button" class="sm:hidden p-2 rounded-lg bg-[#161F30] border border-slate-700 text-slate-200 hover:text-white" aria-label="Abrir menú">
+            <i data-lucide="menu" id="menu-icon-open" class="w-6 h-6"></i>
+            <i data-lucide="x" id="menu-icon-close" class="w-6 h-6 hidden"></i>
+          </button>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Mobile Slide Down Menu for Admin -->
+    <div id="mobile-menu" class="hidden sm:hidden fixed left-0 right-0 top-20 z-50 bg-[#0B0F19]/98 backdrop-blur-2xl border-b border-slate-800 px-6 py-6 space-y-3 shadow-2xl flex-col">
+      <a href="/" target="_blank" class="flex items-center gap-2 text-sm font-bold text-white hover:text-[#00E676] py-2 border-b border-slate-800/60">
+        <i data-lucide="external-link" class="w-4 h-4 text-[#00E676]"></i>
+        <span>Ver Web Pública</span>
+      </a>
+      <div class="pt-2 space-y-2">
+        <button type="button" class="admin-mobile-tab-btn w-full text-left py-2 px-3 rounded-xl text-sm font-bold text-[#00E676] bg-[#161F30] border border-[#00E676]/30 flex items-center gap-2" data-admin-tab="agenda">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+          <span>Agenda & Finanzas</span>
+        </button>
+        <button type="button" class="admin-mobile-tab-btn w-full text-left py-2 px-3 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-[#161F30] flex items-center gap-2" data-admin-tab="canchas">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          <span>Gestión de Canchas</span>
+        </button>
+        <button type="button" class="admin-mobile-tab-btn w-full text-left py-2 px-3 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-[#161F30] flex items-center gap-2" data-admin-tab="eventos">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+          <span>Eventos & Torneos</span>
+        </button>
+        <button type="button" class="admin-mobile-tab-btn w-full text-left py-2 px-3 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-[#161F30] flex items-center gap-2" data-admin-tab="servicios">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>Servicios</span>
+        </button>
+        <button type="button" class="admin-mobile-tab-btn w-full text-left py-2 px-3 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-[#161F30] flex items-center gap-2" data-admin-tab="config">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          <span>Configuración & Firebase</span>
+        </button>
+        <button type="button" class="admin-mobile-tab-btn w-full text-left py-2 px-3 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-[#161F30] flex items-center gap-2" data-admin-tab="historias">
+          <i data-lucide="instagram" class="w-4 h-4 text-[#E1306C]"></i>
+          <span>Historias Instagram (1080x1920)</span>
+        </button>
       </div>
     </div>
   </header>

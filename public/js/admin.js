@@ -1276,6 +1276,67 @@ async function saveGeneralConfig() {
   }
 }
 
+// Mobile Menu Handler for Admin
+function setupMobileMenu() {
+  const mobileBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const iconOpen = document.getElementById('menu-icon-open');
+  const iconClose = document.getElementById('menu-icon-close');
+
+  if (mobileBtn && mobileMenu) {
+    mobileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = mobileMenu.classList.contains('hidden');
+      mobileMenu.classList.toggle('hidden');
+      mobileMenu.classList.toggle('flex');
+      if (iconOpen && iconClose) {
+        if (willOpen) {
+          iconOpen.classList.add('hidden');
+          iconClose.classList.remove('hidden');
+        } else {
+          iconOpen.classList.remove('hidden');
+          iconClose.classList.add('hidden');
+        }
+      }
+    });
+
+    // Wire up admin mobile tab buttons to switch tabs
+    mobileMenu.querySelectorAll('.admin-mobile-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.adminTab;
+        const desktopTabBtn = document.querySelector(`.admin-tab-btn[data-admin-tab="${targetTab}"]`);
+        if (desktopTabBtn) {
+          desktopTabBtn.click();
+        }
+      });
+    });
+
+    // Cerrar automáticamente al hacer clic en cualquier enlace del menú
+    mobileMenu.querySelectorAll('a, button').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+        mobileMenu.classList.remove('flex');
+        if (iconOpen && iconClose) {
+          iconOpen.classList.remove('hidden');
+          iconClose.classList.add('hidden');
+        }
+      });
+    });
+
+    // Cerrar si se toca fuera del menú
+    document.addEventListener('click', (e) => {
+      if (!mobileMenu.contains(e.target) && !mobileBtn.contains(e.target)) {
+        mobileMenu.classList.add('hidden');
+        mobileMenu.classList.remove('flex');
+        if (iconOpen && iconClose) {
+          iconOpen.classList.remove('hidden');
+          iconClose.classList.add('hidden');
+        }
+      }
+    });
+  }
+}
+
 // ================= INITIALIZATION =================
 
 async function initAdmin() {
@@ -1283,6 +1344,7 @@ async function initAdmin() {
   initFirebaseClient();
 
   setupTabNavigation();
+  setupMobileMenu();
 
   // Auth listeners
   document.getElementById('form-admin-login')?.addEventListener('submit', loginAdmin);
