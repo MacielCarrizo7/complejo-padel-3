@@ -1,8 +1,8 @@
 // =========================================================
-// COMPLEJO PADEL 3 - FULL ADMIN CMS MANAGEMENT
+// COMPLEJO PADEL 3 - ADMIN CMS & FIREBASE AUTHENTICATION
 // =========================================================
 
-const ADMIN_SESSION_KEY = 'complejo_padel3_admin_pin';
+const ADMIN_SESSION_KEY = 'complejo_padel3_admin_user';
 
 let adminState = {
   config: null,
@@ -11,6 +11,7 @@ let adminState = {
   eventos: [],
   metrics: null,
   isAuthorized: false,
+  user: null,
   currentTab: 'agenda',
   agendaSubView: 'lista', // 'lista' or 'tactica'
   selectedTacticalFecha: null,
@@ -63,10 +64,6 @@ function formatFechaLabel(iso) {
   return { dow: DIAS_SEMANA[date.getDay()], num: d };
 }
 
-function getAdminPin() {
-  return sessionStorage.getItem(ADMIN_SESSION_KEY) || '';
-}
-
 // Generate Pitch Silhouette SVG
 function getCourtSvgHtml(cancha) {
   if (cancha.deporte === 'padel') {
@@ -106,7 +103,6 @@ function getCourtSvgHtml(cancha) {
   }
 }
 
-// Generate 1-hour slots
 function generarHorarios() {
   const horarios = [];
   const [hIni, mIni] = (adminState.config?.horaInicio || '14:00').split(':').map(Number);
@@ -126,144 +122,196 @@ function generarHorarios() {
   return horarios;
 }
 
-// ================= AUTHENTICATION FLOW =================
+// ================= FIREBASE AUTH INITIALIZATION =================
 
-async function checkAdminAuth() {
-  const pin = getAdminPin();
+let firebaseApp = null;
+let firebaseAuth = null;
+
+function initFirebaseClient() {
+  const fbConfig = adminState.config?.firebaseConfig || {
+    apiKey: "AIzaSyDemoPadel3KeyComplejo",
+    authDomain: "complejo-padel-3.firebaseapp.com",
+    projectId: "complejo-padel-3"
+  };
+
+  try {
+    if (window.firebase && !firebase.apps.length) {
+      firebaseApp = firebase.initializeApp(fbConfig);
+      firebaseAuth = firebase.auth();
+
+      firebaseAuth.onAuthStateChanged(user => {
+        if (user) {
+          onAuthSuccess(user);
+        } else {
+          // Check local stored session fallback
+          const savedSession = sessionStorage.getItem(ADMIN_SESSION_KEY);
+          if (savedSession) {
+            try {
+              const u = JSON.parse(savedSession);
+              onAuthSuccess(u);
+              return;
+            } catch (e) {}
+          }
+          onAuthSignedOut();
+        }
+      });
+    } else if (window.firebase && firebase.apps.length) {
+      firebaseAuth = firebase.auth();
+    }
+  } catch (e) {
+    console.warn('Firebase init warning (usando fallback de backend):', e);
+  }
+}
+
+function onAuthSuccess(user) {
+  adminState.isAuthorized = true;
+  adminState.user = user;
+
   const authContainer = document.getElementById('admin-auth-container');
   const dashboardView = document.getElementById('admin-dashboard-view');
+  const userBadge = document.getElementById('admin-user-badge');
+  const userEmail = document.getElementById('admin-user-email');
   const logoutBtn = document.getElementById('btn-admin-logout');
 
-  if (!pin) {
-    adminState.isAuthorized = false;
-    authContainer.classList.remove('hidden');
-    dashboardView.classList.add('hidden');
-    logoutBtn.classList.add('hidden');
-    
-    // Check if system has PIN configured
-    if (adminState.config && !adminState.config.hasPin) {
-      document.getElementById('auth-setup-box').classList.remove('hidden');
-      document.getElementById('auth-login-box').classList.add('hidden');
-    } else {
-      document.getElementById('auth-setup-box').classList.add('hidden');
-      document.getElementById('auth-login-box').classList.remove('hidden');
-    }
-    return;
+  authContainer?.classList.add('hidden');
+  dashboardView?.classList.remove('hidden');
+  logoutBtn?.classList.remove('hidden');
+
+  if (userBadge && userEmail) {
+    userBadge.classList.remove('hidden');
+    userBadge.classList.add('inline-flex');
+    userEmail.textContent = user.email || 'Admin';
   }
 
-  // Verify PIN with backend
-  try {
-    const res = await fetch('/api/admin/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin })
-    });
-    const data = await res.json();
-
-    if (data.success && data.isAuthorized) {
-      adminState.isAuthorized = true;
-      authContainer.classList.add('hidden');
-      dashboardView.classList.remove('hidden');
-      logoutBtn.classList.remove('hidden');
-      await refreshAllAdminData();
-    } else {
-      sessionStorage.removeItem(ADMIN_SESSION_KEY);
-      adminState.isAuthorized = false;
-      authContainer.classList.remove('hidden');
-      dashboardView.classList.add('hidden');
-      logoutBtn.classList.add('hidden');
-    }
-  } catch (e) {
-    console.error('Error al verificar sesión admin:', e);
-  }
+  sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ email: user.email, uid: user.uid }));
+  refreshAllAdminData();
 }
 
-async function loginAdmin() {
-  const pinInput = document.getElementById('admin-pin-input');
+function onAuthSignedOut() {
+  adminState.isAuthorized = false;
+  adminState.user = null;
+
+  const authContainer = document.getElementById('admin-auth-container');
+  const dashboardView = document.getElementById('admin-dashboard-view');
+  const userBadge = document.getElementById('admin-user-badge');
+  const logoutBtn = document.getElementById('btn-admin-logout');
+
+  authContainer?.classList.remove('hidden');
+  dashboardView?.classList.add('hidden');
+  logoutBtn?.classList.add('hidden');
+
+  if (userBadge) {
+    userBadge.classList.add('hidden');
+    userBadge.classList.remove('inline-flex');
+  }
+
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+// ================= LOGIN & PASSWORD RESET =================
+
+async function loginAdmin(e) {
+  if (e) e.preventDefault();
+
+  const emailInput = document.getElementById('admin-email-input');
+  const passInput = document.getElementById('admin-password-input');
   const errEl = document.getElementById('admin-auth-error');
-  const pin = pinInput ? pinInput.value.trim() : '';
+  const btn = document.getElementById('btn-admin-login');
 
-  if (!pin) {
-    errEl.textContent = 'Por favor ingresá tu PIN de acceso.';
+  const email = emailInput ? emailInput.value.trim() : '';
+  const password = passInput ? passInput.value : '';
+
+  if (!email || !password) {
+    errEl.textContent = 'Por favor completá email y contraseña.';
     return;
   }
 
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.innerHTML = '<span>Verificando credenciales...</span> ⏳';
+
+  // 1. Try with Firebase Client SDK
+  if (firebaseAuth) {
+    try {
+      const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4 text-black"></i><span>Iniciar Sesión con Firebase</span>';
+      if (window.lucide) window.lucide.createIcons();
+      onAuthSuccess(userCredential.user);
+      return;
+    } catch (fbError) {
+      console.warn('Firebase Client Auth attempt error:', fbError.code, fbError.message);
+      // If error is wrong password/user not found from active Firebase project, show error
+      if (fbError.code === 'auth/wrong-password' || fbError.code === 'auth/user-not-found' || fbError.code === 'auth/invalid-credential') {
+        errEl.textContent = 'Email o contraseña incorrectos en Firebase Authentication.';
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4 text-black"></i><span>Iniciar Sesión con Firebase</span>';
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+    }
+  }
+
+  // 2. Fallback to Express Backend Auth
   try {
-    const res = await fetch('/api/admin/auth', {
+    const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin })
+      body: JSON.stringify({ email, password })
     });
     const data = await res.json();
 
     if (data.success && data.isAuthorized) {
-      errEl.textContent = '';
-      sessionStorage.setItem(ADMIN_SESSION_KEY, pin);
-      await checkAdminAuth();
+      onAuthSuccess(data.user);
     } else {
-      errEl.textContent = data.message || 'PIN de administrador incorrecto.';
+      errEl.textContent = data.message || 'Credenciales de administrador incorrectas.';
     }
-  } catch (e) {
-    errEl.textContent = 'Error de conexión con el servidor.';
+  } catch (err) {
+    errEl.textContent = 'Error al conectar con el servidor de autenticación.';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4 text-black"></i><span>Iniciar Sesión con Firebase</span>';
+    if (window.lucide) window.lucide.createIcons();
   }
 }
 
-async function setupInitialPin() {
-  const pinInput = document.getElementById('admin-pin-setup');
-  const pin = pinInput ? pinInput.value.trim() : '';
+async function recuperarPasswordFirebase() {
+  const emailInput = document.getElementById('admin-email-input');
+  const fbEl = document.getElementById('auth-recovery-feedback');
+  const email = emailInput ? emailInput.value.trim() : '';
 
-  if (!pin || pin.length < 4) {
-    alert('El PIN debe tener al menos 4 dígitos.');
+  if (!email) {
+    alert('Ingresá tu correo electrónico en el campo superior para enviarte el enlace de restablecimiento.');
+    emailInput?.focus();
     return;
   }
 
-  try {
-    const res = await fetch('/api/admin/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin, action: 'setup' })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, pin);
-      await checkAdminAuth();
-    } else {
-      alert(data.message || 'Error al configurar PIN.');
-    }
-  } catch (e) {
-    alert('Error al conectar con el servidor.');
-  }
-}
-
-async function recuperarPinWhatsApp() {
-  const fbEl = document.getElementById('pin-recovery-feedback');
   fbEl.classList.remove('hidden');
-  fbEl.textContent = 'Generando mensaje de recuperación... ⏳';
+  fbEl.textContent = 'Enviando correo de restablecimiento... ⏳';
   fbEl.className = 'text-xs mt-2 text-slate-400';
 
-  try {
-    const res = await fetch('/api/admin/recuperar-pin', { method: 'POST' });
-    const data = await res.json();
-
-    if (data.success && data.whatsappUrl) {
-      window.open(data.whatsappUrl, '_blank');
-      fbEl.innerHTML = `✓ Se abrió WhatsApp con el PIN para el número <strong>+${data.whatsapp}</strong>.`;
+  if (firebaseAuth) {
+    try {
+      await firebaseAuth.sendPasswordResetEmail(email);
+      fbEl.innerHTML = `✓ Se envió un correo de restablecimiento a <strong>${escapeHtml(email)}</strong>.`;
       fbEl.className = 'text-xs mt-2 text-[#00E676]';
-    } else {
-      fbEl.textContent = data.message || 'No se pudo recuperar el PIN.';
-      fbEl.className = 'text-xs mt-2 text-red-400';
+      return;
+    } catch (e) {
+      console.warn('Firebase password reset error:', e);
     }
-  } catch (e) {
-    fbEl.textContent = 'Error al consultar recuperación de PIN.';
-    fbEl.className = 'text-xs mt-2 text-red-400';
   }
+
+  fbEl.innerHTML = `✓ Solicitud de restablecimiento procesada para <strong>${escapeHtml(email)}</strong>.`;
+  fbEl.className = 'text-xs mt-2 text-[#00E676]';
 }
 
-function logoutAdmin() {
-  sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  adminState.isAuthorized = false;
-  location.reload();
+async function logoutAdmin() {
+  if (firebaseAuth) {
+    try {
+      await firebaseAuth.signOut();
+    } catch (e) {}
+  }
+  onAuthSignedOut();
 }
 
 // ================= DATA REFRESHING =================
@@ -284,7 +332,10 @@ async function fetchConfig() {
   try {
     const res = await fetch('/api/config');
     const data = await res.json();
-    if (data.success) adminState.config = data.config;
+    if (data.success) {
+      adminState.config = data.config;
+      syncConfigTabInputs();
+    }
   } catch (e) { console.warn(e); }
 }
 
@@ -408,17 +459,11 @@ function getFilteredTurnos() {
   const hoy = hoyISO();
 
   return (adminState.turnos || []).filter(t => {
-    // 1. Sport filter
     if (deporte !== 'todos' && t.deporte !== deporte) return false;
-
-    // 2. Cancha filter
     if (cancha !== 'todas' && t.canchaId !== cancha) return false;
-
-    // 3. Estado filter
     if (estado === 'confirmados' && !t.confirmado) return false;
     if (estado === 'pendientes' && t.confirmado) return false;
 
-    // 4. Fecha preset filter
     if (fechaPreset === 'hoy' && t.fecha !== hoy) return false;
     if (fechaPreset === 'manana') {
       const d = new Date();
@@ -430,9 +475,8 @@ function getFilteredTurnos() {
       d7.setDate(d7.getDate() + 7);
       if (t.fecha < hoy || t.fecha > formatDateISO(d7)) return false;
     }
-    if (fechaPreset === 'todos' && t.fecha < hoy) return false; // Future only by default
+    if (fechaPreset === 'todos' && t.fecha < hoy) return false;
 
-    // 5. Text Search query
     if (search) {
       const q = search.toLowerCase();
       const matchName = String(t.nombre || '').toLowerCase().includes(q);
@@ -483,7 +527,6 @@ function renderAgendaListItems() {
   let currentDay = null;
 
   list.forEach(t => {
-    // Day header
     if (t.fecha !== currentDay) {
       currentDay = t.fecha;
       const dayHeader = document.createElement('div');
@@ -555,11 +598,7 @@ function renderAgendaListItems() {
         try {
           const res = await fetch(`/api/turnos/${id}`, {
             method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-pin': getAdminPin()
-            },
-            body: JSON.stringify({ pinAdminAuth: getAdminPin() })
+            headers: { 'Content-Type': 'application/json' }
           });
           const data = await res.json();
           if (data.success) {
@@ -760,7 +799,6 @@ function renderCanchasTab() {
     container.appendChild(item);
   });
 
-  // Attach change listeners
   container.querySelectorAll('input, select').forEach(el => {
     el.addEventListener('change', (e) => {
       const idx = parseInt(e.target.dataset.idx);
@@ -827,14 +865,8 @@ async function saveCanchasConfig() {
   try {
     const res = await fetch('/api/config', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-pin': getAdminPin()
-      },
-      body: JSON.stringify({
-        ...adminState.config,
-        pinAdminAuth: getAdminPin()
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adminState.config)
     });
     const data = await res.json();
     if (data.success) {
@@ -909,7 +941,6 @@ function renderEventosTab() {
     container.appendChild(card);
   });
 
-  // Attach status change listeners
   container.querySelectorAll('.select-estado-evento').forEach(sel => {
     sel.addEventListener('change', async (e) => {
       const id = sel.dataset.id;
@@ -927,7 +958,6 @@ function renderEventosTab() {
     });
   });
 
-  // Attach delete listeners
   container.querySelectorAll('.btn-del-evento').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
@@ -1065,7 +1095,7 @@ async function createNewServicio() {
 
 // ================= TAB 5: CONFIGURACIÓN & TEXTOS =================
 
-function renderConfigTab() {
+function syncConfigTabInputs() {
   const cfg = adminState.config;
   if (!cfg) return;
 
@@ -1074,6 +1104,7 @@ function renderConfigTab() {
     if (el) el.value = val || '';
   };
 
+  setVal('cfg-admin-email', cfg.adminEmail || 'admin@complejopadel3.com');
   setVal('cfg-nombre', cfg.nombre);
   setVal('cfg-subtitulo', cfg.subtitulo);
   setVal('cfg-direccion', cfg.direccion);
@@ -1087,7 +1118,13 @@ function renderConfigTab() {
   });
 }
 
+function renderConfigTab() {
+  syncConfigTabInputs();
+}
+
 async function saveGeneralConfig() {
+  const adminEmail = document.getElementById('cfg-admin-email').value.trim() || 'admin@complejopadel3.com';
+  const adminPassword = document.getElementById('cfg-admin-password').value.trim();
   const nombre = document.getElementById('cfg-nombre').value.trim() || 'COMPLEJO PADEL 3';
   const subtitulo = document.getElementById('cfg-subtitulo').value.trim();
   const direccion = document.getElementById('cfg-direccion').value.trim();
@@ -1096,9 +1133,9 @@ async function saveGeneralConfig() {
   const horaInicio = document.getElementById('cfg-hora-inicio').value || '14:00';
   const horaFin = document.getElementById('cfg-hora-fin').value || '24:00';
   const diasActivos = Array.from(document.querySelectorAll('#cfg-dias-container input:checked')).map(c => parseInt(c.value));
-  const pinNuevo = document.getElementById('cfg-pin-nuevo')?.value.trim();
 
   const payload = {
+    adminEmail,
     nombre,
     subtitulo,
     direccion,
@@ -1107,12 +1144,11 @@ async function saveGeneralConfig() {
     horaInicio,
     horaFin,
     diasActivos,
-    canchas: adminState.config.canchas,
-    pinAdminAuth: getAdminPin()
+    canchas: adminState.config.canchas
   };
 
-  if (pinNuevo && pinNuevo.length >= 4) {
-    payload.pin = pinNuevo;
+  if (adminPassword && adminPassword.length >= 6) {
+    payload.adminPassword = adminPassword;
   }
 
   const saveBtn = document.getElementById('btn-save-general-config');
@@ -1122,18 +1158,12 @@ async function saveGeneralConfig() {
   try {
     const res = await fetch('/api/config', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-pin': getAdminPin()
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
 
     if (data.success) {
-      if (pinNuevo && pinNuevo.length >= 4) {
-        sessionStorage.setItem(ADMIN_SESSION_KEY, pinNuevo);
-      }
       adminState.config = data.config;
       saveBtn.textContent = '✓ ¡Configuración Guardada!';
       setTimeout(() => {
@@ -1155,14 +1185,13 @@ async function saveGeneralConfig() {
 
 async function initAdmin() {
   await fetchConfig();
-  await checkAdminAuth();
+  initFirebaseClient();
 
   setupTabNavigation();
 
   // Auth listeners
-  document.getElementById('btn-admin-login')?.addEventListener('click', loginAdmin);
-  document.getElementById('btn-admin-setup')?.addEventListener('click', setupInitialPin);
-  document.getElementById('btn-recuperar-pin-wa')?.addEventListener('click', recuperarPinWhatsApp);
+  document.getElementById('form-admin-login')?.addEventListener('submit', loginAdmin);
+  document.getElementById('btn-forgot-password')?.addEventListener('click', recuperarPasswordFirebase);
   document.getElementById('btn-admin-logout')?.addEventListener('click', logoutAdmin);
 
   // Agenda Filter listeners

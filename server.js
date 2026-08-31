@@ -19,10 +19,19 @@ const DEFAULT_STATE = {
     direccion: 'Lavalle, Mendoza · Complejo Deportivo',
     maps: 'https://maps.google.com/?q=Lavalle+Mendoza',
     whatsapp: '5491112345678',
+    adminEmail: process.env.ADMIN_EMAIL || 'admin@complejopadel3.com',
+    adminPassword: process.env.ADMIN_PASSWORD || 'admin1234',
+    firebaseConfig: {
+      apiKey: process.env.FIREBASE_API_KEY || 'AIzaSyDemoPadel3KeyComplejo',
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'complejo-padel-3.firebaseapp.com',
+      projectId: process.env.FIREBASE_PROJECT_ID || 'complejo-padel-3',
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'complejo-padel-3.appspot.com',
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '1234567890',
+      appId: process.env.FIREBASE_APP_ID || '1:1234567890:web:abcdef123456'
+    },
     horaInicio: '14:00',
     horaFin: '24:00',
     diasActivos: [1, 2, 3, 4, 5, 6, 0], // Lunes a Domingo
-    pin: '1234',
     monedaSimbolo: '$',
     canchas: [
       {
@@ -136,9 +145,9 @@ const DEFAULT_STATE = {
       id: 'ev_1',
       titulo: 'Gran Torneo Apertura Pádel 2026',
       categoria: '4ta a 7ma Caballeros y Damas',
-      fecha: '2026-09-12 al 14 de Septiembre',
+      fecha: '12 al 14 de Septiembre',
       horario: 'Desde las 18:00 hs',
-      estado: 'Inscripciones Abiertas', // 'Inscripciones Abiertas', 'Últimos Cupos', 'Cupos Agotados', 'Finalizado'
+      estado: 'Inscripciones Abiertas',
       descripcion: 'Torneo de fin de semana con fase de grupos y llaves de eliminación directa. Premios en efectivo, indumentaria oficial y trofeos para campeones y subcampeones.',
       premio: '$ 250.000 en Premios + Trofeos',
       imagen: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
@@ -161,7 +170,7 @@ const DEFAULT_STATE = {
     {
       id: 'ev_3',
       titulo: 'Torneo Relámpago Fútbol 7 Nocturno',
-      categoria: 'Libre Masculino (Equipos de 7 a 10 jug.)',
+      categoria: 'Libre Masculino (Equipos 7 a 10 jug.)',
       fecha: 'Viernes 25 de Septiembre',
       horario: 'Desde las 20:00 hs',
       estado: 'Inscripciones Abiertas',
@@ -185,9 +194,11 @@ function loadDatabase() {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const data = JSON.parse(raw);
     
-    // Ensure all required properties exist
     if (!data.config) data.config = DEFAULT_STATE.config;
     if (!data.config.canchas) data.config.canchas = DEFAULT_STATE.config.canchas;
+    if (!data.config.adminEmail) data.config.adminEmail = DEFAULT_STATE.config.adminEmail;
+    if (!data.config.adminPassword) data.config.adminPassword = DEFAULT_STATE.config.adminPassword;
+    if (!data.config.firebaseConfig) data.config.firebaseConfig = DEFAULT_STATE.config.firebaseConfig;
     if (!Array.isArray(data.turnos)) data.turnos = [];
     if (!Array.isArray(data.eventos)) data.eventos = DEFAULT_STATE.eventos;
     if (!Array.isArray(data.servicios)) data.servicios = DEFAULT_STATE.servicios;
@@ -213,15 +224,12 @@ function saveDatabase(data) {
   }
 }
 
-// In-memory caching with persistent file sync
 let db = loadDatabase();
 
-// Helper functions
 function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
-// Format currency
 function formatCurrency(amount, symbol = '$') {
   return `${symbol} ${Number(amount || 0).toLocaleString('es-AR')}`;
 }
@@ -236,28 +244,18 @@ app.get('/admin', (req, res) => {
 // 1. GET /api/config
 app.get('/api/config', (req, res) => {
   const publicConfig = { ...db.config };
-  const hasPin = Boolean(publicConfig.pin && publicConfig.pin.length >= 4);
   res.json({
     success: true,
     config: {
       ...publicConfig,
-      hasPin,
-      pin: undefined // Omit for security
+      adminPassword: undefined // Never leak raw password
     }
   });
 });
 
 // 2. PUT /api/config (Update configuration & courts with prices)
 app.put('/api/config', (req, res) => {
-  const { nombre, subtitulo, direccion, maps, whatsapp, horaInicio, horaFin, diasActivos, pin, canchas, pinAdminAuth } = req.body;
-  
-  // If PIN exists, require validation
-  if (db.config.pin && db.config.pin !== pinAdminAuth) {
-    const authHeader = req.headers['x-admin-pin'];
-    if (authHeader !== db.config.pin) {
-      return res.status(401).json({ success: false, message: 'PIN de administrador incorrecto.' });
-    }
-  }
+  const { nombre, subtitulo, direccion, maps, whatsapp, horaInicio, horaFin, diasActivos, adminEmail, adminPassword, canchas } = req.body;
 
   if (nombre) db.config.nombre = String(nombre).trim();
   if (subtitulo !== undefined) db.config.subtitulo = String(subtitulo).trim();
@@ -266,8 +264,11 @@ app.put('/api/config', (req, res) => {
   if (whatsapp !== undefined) db.config.whatsapp = String(whatsapp).trim();
   if (horaInicio) db.config.horaInicio = horaInicio;
   if (horaFin) db.config.horaFin = horaFin;
+  if (adminEmail) db.config.adminEmail = String(adminEmail).trim();
+  if (adminPassword && String(adminPassword).trim().length >= 6) {
+    db.config.adminPassword = String(adminPassword).trim();
+  }
   if (Array.isArray(diasActivos)) db.config.diasActivos = diasActivos.map(Number);
-  if (pin && pin.length >= 4) db.config.pin = String(pin).trim();
 
   if (Array.isArray(canchas)) {
     db.config.canchas = canchas.map((c, i) => ({
@@ -288,69 +289,44 @@ app.put('/api/config', (req, res) => {
     message: 'Configuración guardada exitosamente.',
     config: {
       ...db.config,
-      hasPin: Boolean(db.config.pin),
-      pin: undefined
+      adminPassword: undefined
     }
   });
 });
 
-// 3. POST /api/admin/auth (Verify or set admin PIN)
-app.post('/api/admin/auth', (req, res) => {
-  const { pin, action } = req.body;
+// 3. POST /api/admin/login (Verify Admin Email & Password)
+app.post('/api/admin/login', (req, res) => {
+  const { email, password, firebaseUid } = req.body;
 
-  // Initial setup: activate PIN
-  if (action === 'setup') {
-    if (!pin || String(pin).trim().length < 4) {
-      return res.status(400).json({ success: false, message: 'El PIN debe tener al menos 4 dígitos.' });
-    }
-    db.config.pin = String(pin).trim();
-    saveDatabase(db);
-    return res.json({ success: true, message: 'PIN activado correctamente.', isAuthorized: true });
-  }
-
-  // Regular login verification
-  if (!db.config.pin) {
-    return res.json({ success: true, message: 'No hay PIN configurado.', isAuthorized: true });
-  }
-
-  if (db.config.pin === String(pin).trim()) {
-    return res.json({ success: true, message: 'PIN correcto.', isAuthorized: true });
-  } else {
-    return res.status(401).json({ success: false, message: 'PIN incorrecto.', isAuthorized: false });
-  }
-});
-
-// 3b. POST /api/admin/recuperar-pin (Recover admin PIN via configured WhatsApp)
-app.post('/api/admin/recuperar-pin', (req, res) => {
-  if (!db.config.pin) {
-    return res.status(400).json({
-      success: false,
-      message: 'Todavía no se ha configurado ningún PIN de administrador. Podés definir uno nuevo.'
+  // If verified by Firebase on client with valid UID
+  if (firebaseUid && email) {
+    return res.json({
+      success: true,
+      message: 'Autenticación con Firebase exitosa.',
+      isAuthorized: true,
+      user: { email, uid: firebaseUid }
     });
   }
 
-  const phone = db.config.whatsapp ? String(db.config.whatsapp).replace(/\D/g, '') : '';
-  if (!phone) {
-    return res.status(400).json({
-      success: false,
-      message: 'No hay un número de WhatsApp de contacto registrado en la configuración para enviar el PIN.'
+  const registeredEmail = (db.config.adminEmail || 'admin@complejopadel3.com').toLowerCase();
+  const registeredPassword = db.config.adminPassword || 'admin1234';
+
+  if (email && String(email).trim().toLowerCase() === registeredEmail && String(password) === registeredPassword) {
+    return res.json({
+      success: true,
+      message: 'Inicio de sesión de administrador exitoso.',
+      isAuthorized: true,
+      user: {
+        email: registeredEmail,
+        uid: 'admin_local_session'
+      }
     });
   }
 
-  const mensaje = 
-`*RECUPERACIÓN DE CLAVE - ${db.config.nombre || 'COMPLEJO PADEL 3'}*
-
-Hola! Solicitaste la recuperación del PIN de Administrador.
-🔐 Tu PIN actual de acceso es: *${db.config.pin}*
-
-Podés ingresar al panel de control en /admin y cambiarlo en cualquier momento si lo deseás.`;
-
-  res.json({
-    success: true,
-    whatsapp: phone,
-    pin: db.config.pin,
-    mensaje,
-    whatsappUrl: `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`
+  res.status(401).json({
+    success: false,
+    message: 'Email o contraseña incorrectos. Verificá tus credenciales de Firebase.',
+    isAuthorized: false
   });
 });
 
@@ -395,7 +371,6 @@ app.get('/api/turnos', (req, res) => {
     list = list.filter(t => t.deporte === deporte);
   }
 
-  // Sort chronologically
   list.sort((a, b) => {
     if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
     return a.hora.localeCompare(b.hora);
@@ -404,7 +379,7 @@ app.get('/api/turnos', (req, res) => {
   res.json({ success: true, turnos: list });
 });
 
-// 6. POST /api/turnos (Create booking with 1h or 2h duration, price computation & collision check)
+// 6. POST /api/turnos
 app.post('/api/turnos', (req, res) => {
   const { canchaId, fecha, hora, nombre, whatsapp, equipo, duracion } = req.body;
 
@@ -423,7 +398,6 @@ app.post('/api/turnos', (req, res) => {
   const duracionHoras = Number(duracion) === 2 ? 2 : 1;
   const horasRequeridas = getHorasCubiertas(hora, duracionHoras);
 
-  // Check business hours closing limit
   const [hIniReq, mIniReq] = hora.split(':').map(Number);
   const finReqMin = (hIniReq + duracionHoras) * 60 + (mIniReq || 0);
   let [hCierre, mCierre] = (db.config.horaFin || '24:00').split(':').map(Number);
@@ -437,7 +411,6 @@ app.post('/api/turnos', (req, res) => {
     });
   }
 
-  // Collect all occupied hours for this court on this date
   const turnosExistentes = (db.turnos || []).filter(t => t.canchaId === canchaId && t.fecha === fecha);
   const horasOcupadas = new Set();
 
@@ -446,7 +419,6 @@ app.post('/api/turnos', (req, res) => {
     cubiertas.forEach(h => horasOcupadas.add(h));
   });
 
-  // Check if any of the required slots are occupied
   const hayConflicto = horasRequeridas.some(h => horasOcupadas.has(h));
   if (hayConflicto) {
     return res.status(409).json({
@@ -499,16 +471,6 @@ app.post('/api/turnos', (req, res) => {
 // 7. DELETE /api/turnos/:id (Cancel booking)
 app.delete('/api/turnos/:id', (req, res) => {
   const { id } = req.params;
-  const { pinAdminAuth } = req.body || {};
-
-  // If PIN is active, require verification
-  if (db.config.pin && db.config.pin !== pinAdminAuth) {
-    const authHeader = req.headers['x-admin-pin'];
-    if (authHeader !== db.config.pin) {
-      return res.status(401).json({ success: false, message: 'No autorizado para cancelar turnos.' });
-    }
-  }
-
   const index = (db.turnos || []).findIndex(t => t.id === id);
   if (index === -1) {
     return res.status(404).json({ success: false, message: 'Turno no encontrado.' });
@@ -538,7 +500,7 @@ app.patch('/api/turnos/:id/confirmar', (req, res) => {
   res.json({ success: true, message: 'Turno marcado como confirmado.', turno });
 });
 
-// 9. GET /api/metrics (Financial and occupancy dashboard stats)
+// 9. GET /api/metrics
 app.get('/api/metrics', (req, res) => {
   const hoyISO = new Date().toISOString().split('T')[0];
   const turnosHoy = (db.turnos || []).filter(t => t.fecha === hoyISO);
@@ -574,8 +536,6 @@ app.get('/api/metrics', (req, res) => {
     }
   });
 });
-
-// ================= EVENTOS & TORNEOS API =================
 
 // 10. GET /api/eventos
 app.get('/api/eventos', (req, res) => {
@@ -668,8 +628,6 @@ app.delete('/api/eventos/:id', (req, res) => {
     evento: eliminado
   });
 });
-
-// ================= SERVICIOS API =================
 
 // 14. GET /api/servicios
 app.get('/api/servicios', (req, res) => {

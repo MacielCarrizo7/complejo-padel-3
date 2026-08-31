@@ -17,6 +17,7 @@ async function runTests() {
   assert.strictEqual(rAdmin.status, 200, '/admin debe responder 200');
   const adminHtml = await rAdmin.text();
   assert(adminHtml.includes('Panel de Administración CMS'), 'admin.html debe ser servido en /admin');
+  assert(adminHtml.includes('firebase-auth-compat.js'), 'admin.html debe incluir Firebase Auth SDK');
 
   const rLogo = await fetch(`${baseUrl}/assets/logo.png`);
   assert.strictEqual(rLogo.status, 200, 'logo.png debe responder 200');
@@ -78,7 +79,7 @@ async function runTests() {
   assert.strictEqual(dReservaPadel2h.turno.precio, 48000, 'El precio debe ser $48.000 (2 x $24.000)');
   console.log(`✓ Turno doble creado: ${dReservaPadel2h.turno.nombre} por ${dReservaPadel2h.turno.precioFormateado}`);
 
-  // 6. Validar colisión (intento de reserva en horario cubierto por el turno doble)
+  // 6. Validar colisión
   console.log('\n6. Validando prevención de colisión en slot cubierto...');
   const rColision = await fetch(`${baseUrl}/api/turnos`, {
     method: 'POST',
@@ -86,7 +87,7 @@ async function runTests() {
     body: JSON.stringify({
       canchaId: 'c1',
       fecha: testFecha,
-      hora: '19:00', // Coincide con la 2da hora del turno de las 18:00
+      hora: '19:00',
       duracion: 1,
       nombre: 'Jugador Intento Duplicado'
     })
@@ -94,27 +95,27 @@ async function runTests() {
   assert.strictEqual(rColision.status, 409, 'Debe devolver código 409 Conflict');
   console.log('✓ Prevención de colisión validada correctamente (HTTP 409 Conflict)');
 
-  // 7. Auth y Cancelación de Turno
-  console.log('\n7. Validando autenticación admin y cancelación de turno...');
-  const rAuth = await fetch(`${baseUrl}/api/admin/auth`, {
+  // 7. Auth Firebase Email y Contraseña & Cancelación de Turno
+  console.log('\n7. Validando inicio de sesión con Email y Contraseña (Firebase)...');
+  const rAuth = await fetch(`${baseUrl}/api/admin/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin: '1234' })
+    body: JSON.stringify({
+      email: 'admin@complejopadel3.com',
+      password: 'admin1234'
+    })
   });
   const dAuth = await rAuth.json();
-  assert(dAuth.success && dAuth.isAuthorized, 'Login admin con PIN 1234 debe ser exitoso');
+  assert(dAuth.success && dAuth.isAuthorized, 'Login con email y contraseña debe ser exitoso');
+  console.log(`✓ Autenticación de admin exitosa para: ${dAuth.user.email}`);
 
   const rDelete = await fetch(`${baseUrl}/api/turnos/${dReservaPadel2h.turno.id}`, {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-admin-pin': '1234'
-    },
-    body: JSON.stringify({ pinAdminAuth: '1234' })
+    headers: { 'Content-Type': 'application/json' }
   });
   const dDelete = await rDelete.json();
   assert(dDelete.success, 'Cancelación de turno debe ser exitosa');
-  console.log('✓ Cancelación de turno con PIN validada correctamente');
+  console.log('✓ Cancelación y liberación de cancha validada correctamente');
 
   // 8. Métricas Financieras
   console.log('\n8. Validando métricas financieras en tiempo real...');

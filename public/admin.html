@@ -44,6 +44,10 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Firebase App & Auth SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
   <!-- Custom CSS Styles -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -68,13 +72,20 @@
           </div>
         </div>
 
-        <!-- Header Actions -->
+        <!-- Header Actions & Active User Profile -->
         <div class="flex items-center gap-3">
+          
+          <div id="admin-user-badge" class="hidden items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#161F30] border border-slate-700 text-xs text-slate-300 font-semibold">
+            <span class="w-2 h-2 rounded-full bg-[#00E676] shadow-[0_0_8px_#00E676]"></span>
+            <span id="admin-user-email">admin@complejopadel3.com</span>
+          </div>
+
           <a href="/" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#161F30] hover:bg-[#1E293B] text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-all">
             <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-            <span>Ver Web Pública</span>
+            <span>Ver Web</span>
           </a>
-          <button id="btn-admin-logout" class="hidden px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold transition-all flex items-center gap-1.5">
+
+          <button id="btn-admin-logout" class="hidden px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold transition-all items-center gap-1.5">
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
             <span>Cerrar Sesión</span>
           </button>
@@ -86,59 +97,52 @@
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-    <!-- ================= AUTH CONTAINER (LOGIN & SETUP) ================= -->
+    <!-- ================= AUTH CONTAINER (FIREBASE EMAIL & PASSWORD) ================= -->
     <div id="admin-auth-container" class="max-w-md mx-auto my-12">
       
       <!-- Card Login -->
       <div id="auth-login-box" class="glass-card p-8 text-center space-y-6">
         <div class="w-16 h-16 rounded-2xl bg-[#0B0F19] border border-[#00E676]/30 flex items-center justify-center mx-auto text-[#00E676] shadow-[0_0_20px_rgba(0,230,118,0.2)]">
-          <i data-lucide="lock" class="w-8 h-8"></i>
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
         </div>
         <div>
           <h2 class="text-2xl font-sports font-bold text-white uppercase">Acceso Administrador</h2>
-          <p class="text-slate-400 text-xs mt-1">Ingresá el PIN para gestionar turnos, canchas, eventos y servicios.</p>
+          <p class="text-slate-400 text-xs mt-1">Iniciá sesión con tu cuenta de <strong>Firebase Authentication</strong>.</p>
         </div>
         
-        <div class="space-y-3 text-left">
-          <label for="admin-pin-input" class="block text-xs font-bold text-slate-300 uppercase">PIN de Seguridad</label>
-          <input id="admin-pin-input" type="password" maxlength="12" placeholder="••••" class="w-full px-4 py-3 text-center text-2xl tracking-[8px] rounded-xl bg-[#1E293B] border border-slate-700 text-white focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all">
+        <form id="form-admin-login" class="space-y-4 text-left">
+          <div>
+            <label for="admin-email-input" class="block text-xs font-bold text-slate-300 uppercase mb-1">Correo Electrónico</label>
+            <div class="relative">
+              <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input id="admin-email-input" type="email" placeholder="admin@complejopadel3.com" value="admin@complejopadel3.com" required class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676] transition-all">
+            </div>
+          </div>
+
+          <div>
+            <label for="admin-password-input" class="block text-xs font-bold text-slate-300 uppercase mb-1">Contraseña</label>
+            <div class="relative">
+              <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input id="admin-password-input" type="password" placeholder="••••••••" required class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676] transition-all">
+            </div>
+          </div>
+
           <p id="admin-auth-error" class="text-red-400 text-xs font-semibold min-h-[18px] text-center"></p>
-        </div>
 
-        <button id="btn-admin-login" class="btn-neon-pill w-full justify-center py-3.5">
-          <i data-lucide="key" class="w-4 h-4 text-black"></i>
-          <span>Ingresar al Panel</span>
-        </button>
-
-        <!-- PIN Recovery via WhatsApp -->
-        <div class="pt-4 border-t border-slate-800">
-          <button id="btn-recuperar-pin-wa" type="button" class="text-xs text-[#00E5FF] hover:underline flex items-center justify-center gap-1.5 mx-auto font-medium">
-            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-            <span>¿Olvidaste tu PIN? Enviar a mi WhatsApp</span>
+          <button id="btn-admin-login" type="submit" class="btn-neon-pill w-full justify-center py-3.5 text-sm font-bold">
+            <i data-lucide="log-in" class="w-4 h-4 text-black"></i>
+            <span>Iniciar Sesión con Firebase</span>
           </button>
-          <div id="pin-recovery-feedback" class="text-xs mt-2 hidden"></div>
-        </div>
-      </div>
+        </form>
 
-      <!-- Card Initial Setup -->
-      <div id="auth-setup-box" class="glass-card p-8 text-center space-y-6 hidden">
-        <div class="w-16 h-16 rounded-2xl bg-[#0B0F19] border border-[#00E676]/30 flex items-center justify-center mx-auto text-[#00E676]">
-          <i data-lucide="shield-alert" class="w-8 h-8"></i>
+        <!-- Password Recovery via Email -->
+        <div class="pt-4 border-t border-slate-800">
+          <button id="btn-forgot-password" type="button" class="text-xs text-[#00E5FF] hover:underline flex items-center justify-center gap-1.5 mx-auto font-medium">
+            <i data-lucide="key" class="w-3.5 h-3.5"></i>
+            <span>¿Olvidaste tu contraseña? Restablecer por Email</span>
+          </button>
+          <div id="auth-recovery-feedback" class="text-xs mt-2 hidden"></div>
         </div>
-        <div>
-          <h2 class="text-2xl font-sports font-bold text-white uppercase">Configuración de Seguridad</h2>
-          <p class="text-slate-400 text-xs mt-1">Definí un PIN de al menos 4 dígitos para proteger el panel de administración.</p>
-        </div>
-        
-        <div class="space-y-3 text-left">
-          <label for="admin-pin-setup" class="block text-xs font-bold text-slate-300 uppercase">Nuevo PIN de Administrador</label>
-          <input id="admin-pin-setup" type="password" maxlength="12" placeholder="Ej: 1234" class="w-full px-4 py-3 text-center text-2xl tracking-[8px] rounded-xl bg-[#1E293B] border border-slate-700 text-white focus:outline-none focus:border-[#00E676] transition-all">
-        </div>
-
-        <button id="btn-admin-setup" class="btn-neon-pill w-full justify-center py-3.5">
-          <i data-lucide="check" class="w-4 h-4 text-black"></i>
-          <span>Activar Panel Administrador</span>
-        </button>
       </div>
 
     </div>
@@ -166,7 +170,7 @@
         </button>
         <button class="admin-tab-btn px-5 py-2.5 rounded-xl font-sports font-bold text-sm uppercase tracking-wide text-slate-400 hover:text-white transition-all flex items-center gap-2" data-admin-tab="config">
           <i data-lucide="settings" class="w-4 h-4"></i>
-          <span>Configuración & Textos</span>
+          <span>Configuración & Firebase</span>
         </button>
       </div>
 
@@ -254,7 +258,6 @@
           <!-- Filters & Search Bar -->
           <div class="glass-card p-6 border border-slate-800 space-y-4">
             
-            <!-- Quick Search by Client Name or Phone -->
             <div>
               <label for="admin-search-query" class="block text-xs font-bold text-slate-400 uppercase mb-1">
                 Buscador Rápido (Nombre, WhatsApp o Equipo):
@@ -282,7 +285,7 @@
                   <option value="hoy">Hoy</option>
                   <option value="manana">Mañana</option>
                   <option value="semana">Próximos 7 días</option>
-                  <option value="todos_historicos">Todo el historial (incluye pasados)</option>
+                  <option value="todos_historicos">Todo el historial</option>
                 </select>
               </div>
 
@@ -400,13 +403,32 @@
         </div>
       </section>
 
-      <!-- ================= TAB 5: CONFIGURACIÓN & TEXTOS ================= -->
+      <!-- ================= TAB 5: CONFIGURACIÓN & FIREBASE ================= -->
       <section id="tab-content-config" class="admin-tab-content hidden space-y-6">
         <div class="glass-card p-6 sm:p-8 border border-slate-800 space-y-6">
           
           <div class="pb-6 border-b border-slate-800">
-            <h2 class="text-2xl font-sports font-bold text-white uppercase">Configuración General & Textos</h2>
-            <p class="text-slate-400 text-xs mt-1">Actualizá los datos institucionales, teléfonos, ubicación y horarios de atención.</p>
+            <h2 class="text-2xl font-sports font-bold text-white uppercase">Configuración General & Autenticación</h2>
+            <p class="text-slate-400 text-xs mt-1">Actualizá los datos institucionales, teléfonos, ubicación y credenciales de acceso.</p>
+          </div>
+
+          <!-- Firebase Credentials Config -->
+          <div class="p-6 rounded-2xl bg-[#0B0F19] border border-slate-800 space-y-4">
+            <div class="flex items-center gap-2 text-[#00E676]">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+              <h3 class="font-sports text-lg font-bold text-white uppercase">Autenticación de Administrador (Firebase)</h3>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="cfg-admin-email" class="block text-xs font-bold text-slate-300 uppercase mb-1">Email de Administrador</label>
+                <input id="cfg-admin-email" type="email" placeholder="admin@complejopadel3.com" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+              </div>
+              <div>
+                <label for="cfg-admin-password" class="block text-xs font-bold text-slate-300 uppercase mb-1">Cambiar Contraseña (opcional)</label>
+                <input id="cfg-admin-password" type="password" placeholder="Nueva contraseña (mínimo 6 caracteres)" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+              </div>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -431,25 +453,20 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label for="cfg-whatsapp" class="block text-xs font-bold text-slate-300 uppercase mb-1">WhatsApp Oficial (con código de país, ej: 54911...)</label>
               <input id="cfg-whatsapp" type="text" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
             </div>
-            <div>
-              <label for="cfg-pin-nuevo" class="block text-xs font-bold text-slate-300 uppercase mb-1">Cambiar PIN de Acceso Admin (opcional)</label>
-              <input id="cfg-pin-nuevo" type="password" placeholder="Dejar en blanco si no se desea cambiar" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label for="cfg-hora-inicio" class="block text-xs font-bold text-slate-300 uppercase mb-1">Horario de Apertura</label>
-              <input id="cfg-hora-inicio" type="time" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
-            </div>
-            <div>
-              <label for="cfg-hora-fin" class="block text-xs font-bold text-slate-300 uppercase mb-1">Horario de Cierre</label>
-              <input id="cfg-hora-fin" type="time" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label for="cfg-hora-inicio" class="block text-xs font-bold text-slate-300 uppercase mb-1">Apertura</label>
+                <input id="cfg-hora-inicio" type="time" class="w-full px-3 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+              </div>
+              <div>
+                <label for="cfg-hora-fin" class="block text-xs font-bold text-slate-300 uppercase mb-1">Cierre</label>
+                <input id="cfg-hora-fin" type="time" class="w-full px-3 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+              </div>
             </div>
           </div>
 
