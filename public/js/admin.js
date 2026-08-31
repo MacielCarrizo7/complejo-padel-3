@@ -432,6 +432,9 @@ function renderActiveTabContent() {
     case 'config':
       renderConfigTab();
       break;
+    case 'historias':
+      renderHistoriasTab();
+      break;
   }
 
   if (window.lucide) window.lucide.createIcons();
@@ -1265,6 +1268,689 @@ async function initAdmin() {
 
   // Config actions
   document.getElementById('btn-save-general-config')?.addEventListener('click', saveGeneralConfig);
+
+  // Story Generator Quick Button (Agenda toolbar)
+  document.getElementById('btn-open-story-generator')?.addEventListener('click', () => {
+    const historiasTabBtn = document.querySelector('[data-admin-tab="historias"]');
+    if (historiasTabBtn) {
+      historiasTabBtn.click();
+    }
+  });
+
+  // Story Generator Mode Buttons
+  const btnModeGeneral = document.getElementById('btn-story-mode-general');
+  const btnModeCancha = document.getElementById('btn-story-mode-cancha');
+  const boxCanchaSelect = document.getElementById('story-cancha-selector-box');
+
+  btnModeGeneral?.addEventListener('click', () => {
+    storyState.mode = 'general';
+    btnModeGeneral.className = 'story-mode-btn active px-3 py-2.5 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center gap-1 bg-[#00E676] text-black border-[#00E676]';
+    btnModeCancha.className = 'story-mode-btn px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white transition-all text-center flex flex-col items-center gap-1';
+    boxCanchaSelect?.classList.add('hidden');
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  btnModeCancha?.addEventListener('click', () => {
+    storyState.mode = 'cancha';
+    btnModeCancha.className = 'story-mode-btn active px-3 py-2.5 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center gap-1 bg-[#00E676] text-black border-[#00E676]';
+    btnModeGeneral.className = 'story-mode-btn px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white transition-all text-center flex flex-col items-center gap-1';
+    boxCanchaSelect?.classList.remove('hidden');
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  // Story Date Quick Buttons
+  const btnDateToday = document.getElementById('btn-story-date-today');
+  const btnDateTomorrow = document.getElementById('btn-story-date-tomorrow');
+  const btnDateAfter = document.getElementById('btn-story-date-after');
+  const inputStoryDate = document.getElementById('story-fecha-select');
+
+  function updateStoryDateButtonsActive(activeBtn) {
+    [btnDateToday, btnDateTomorrow, btnDateAfter].forEach(b => {
+      if (b) b.className = 'px-3 py-1.5 rounded-lg bg-[#1E293B] hover:bg-[#2A3B53] text-slate-300 border border-slate-700 text-xs font-bold transition-all';
+    });
+    if (activeBtn) {
+      activeBtn.className = 'px-3 py-1.5 rounded-lg bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40 text-xs font-bold transition-all';
+    }
+  }
+
+  btnDateToday?.addEventListener('click', () => {
+    storyState.fecha = hoyISO();
+    if (inputStoryDate) inputStoryDate.value = storyState.fecha;
+    updateStoryDateButtonsActive(btnDateToday);
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  btnDateTomorrow?.addEventListener('click', () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    storyState.fecha = formatDateISO(d);
+    if (inputStoryDate) inputStoryDate.value = storyState.fecha;
+    updateStoryDateButtonsActive(btnDateTomorrow);
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  btnDateAfter?.addEventListener('click', () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    storyState.fecha = formatDateISO(d);
+    if (inputStoryDate) inputStoryDate.value = storyState.fecha;
+    updateStoryDateButtonsActive(btnDateAfter);
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  inputStoryDate?.addEventListener('change', (e) => {
+    storyState.fecha = e.target.value;
+    updateStoryDateButtonsActive(null);
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  // Story Court Select Listener
+  document.getElementById('story-cancha-select')?.addEventListener('change', (e) => {
+    storyState.canchaId = e.target.value;
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  // Action Buttons
+  document.getElementById('btn-generate-story-canvas')?.addEventListener('click', () => {
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  document.getElementById('btn-download-story-png')?.addEventListener('click', downloadStoryPNG);
+  document.getElementById('btn-download-story-png-quick')?.addEventListener('click', downloadStoryPNG);
+  document.getElementById('btn-copy-story-clipboard')?.addEventListener('click', copyStoryToClipboard);
+  document.getElementById('canvas-story')?.addEventListener('click', downloadStoryPNG);
+}
+
+// =========================================================
+// TAB 6: GENERADOR DE HISTORIAS INSTAGRAM (1080 x 1920 PX)
+// =========================================================
+
+let storyState = {
+  mode: 'general', // 'general' | 'cancha'
+  fecha: hoyISO(),
+  canchaId: null,
+  logoImage: null
+};
+
+// Helper: Rounded Rectangle for Canvas
+function drawRoundedRect(ctx, x, y, width, height, radius, fill = true, stroke = false) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
+function preloadStoryLogo() {
+  if (storyState.logoImage && storyState.logoImage.complete && storyState.logoImage.naturalWidth > 0) {
+    return Promise.resolve(storyState.logoImage);
+  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = 'assets/logo.png';
+    img.onload = () => {
+      storyState.logoImage = img;
+      resolve(img);
+    };
+    img.onerror = () => {
+      resolve(null);
+    };
+  });
+}
+
+function getTurnosLibresParaCancha(canchaId, fecha) {
+  const slots = generarHorarios();
+  const ocupados = new Set();
+
+  (adminState.turnos || []).forEach(t => {
+    if (t.canchaId === canchaId && t.fecha === fecha) {
+      const dur = Number(t.duracion) || 1;
+      const [hStr, mStr] = t.hora.split(':').map(Number);
+      for (let i = 0; i < dur; i++) {
+        const hh = (hStr + i) % 24;
+        ocupados.add(`${pad2(hh)}:${pad2(mStr || 0)}`);
+      }
+    }
+  });
+
+  return slots.filter(h => !ocupados.has(h));
+}
+
+function renderHistoriasTab() {
+  const selectCancha = document.getElementById('story-cancha-select');
+  if (selectCancha) {
+    const canchas = adminState.config?.canchas || [];
+    let html = '';
+    canchas.forEach(c => {
+      const emoji = c.deporte === 'padel' ? '🎾' : '⚽';
+      html += `<option value="${c.id}" ${c.id === storyState.canchaId ? 'selected' : ''}>${emoji} ${escapeHtml(c.nombre)} (${c.ubicacion})</option>`;
+    });
+    selectCancha.innerHTML = html;
+    if (!storyState.canchaId && canchas.length > 0) {
+      storyState.canchaId = canchas[0].id;
+    }
+  }
+
+  const fechaInput = document.getElementById('story-fecha-select');
+  if (fechaInput) {
+    fechaInput.value = storyState.fecha;
+  }
+
+  syncStorySummary();
+  renderStoryCanvas();
+}
+
+function syncStorySummary() {
+  const summaryText = document.getElementById('story-summary-text');
+  const summaryDetails = document.getElementById('story-summary-details');
+  if (!summaryText || !summaryDetails) return;
+
+  const canchas = adminState.config?.canchas || [];
+  let totalLibres = 0;
+  const details = [];
+
+  if (storyState.mode === 'general') {
+    canchas.forEach(c => {
+      const libres = getTurnosLibresParaCancha(c.id, storyState.fecha);
+      totalLibres += libres.length;
+      details.push(`• ${c.nombre}: ${libres.length} libres`);
+    });
+    summaryText.textContent = `${totalLibres} turnos libres en total para ${formatFechaLarga(storyState.fecha)}`;
+    summaryDetails.textContent = details.join(' | ');
+  } else {
+    const cancha = canchas.find(c => c.id === storyState.canchaId) || canchas[0];
+    if (cancha) {
+      const libres = getTurnosLibresParaCancha(cancha.id, storyState.fecha);
+      summaryText.textContent = `${libres.length} turnos libres para ${cancha.nombre}`;
+      summaryDetails.textContent = libres.length > 0 ? `Horarios disponibles: ${libres.join(', ')}` : 'Cancha completa sin turnos libres para esta fecha.';
+    }
+  }
+}
+
+async function renderStoryCanvas() {
+  const canvas = document.getElementById('canvas-story');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Preload Logo
+  await preloadStoryLogo();
+
+  const width = 1080;
+  const height = 1920;
+  canvas.width = width;
+  canvas.height = height;
+
+  // 1. BASE BACKGROUND: Clean White with subtle athletic geometry
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, width, height);
+
+  // Subtle athletic watermark diagonal lines
+  ctx.save();
+  ctx.strokeStyle = '#F1F5F9';
+  ctx.lineWidth = 2;
+  for (let i = -1080; i < 3000; i += 60) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i + 1920, 1920);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 2. HEADER: Top curved blue banner (#0072CE)
+  ctx.save();
+  const gradBlue = ctx.createLinearGradient(0, 0, width, 300);
+  gradBlue.addColorStop(0, '#0072CE');
+  gradBlue.addColorStop(0.6, '#0060B2');
+  gradBlue.addColorStop(1, '#004B8C');
+  ctx.fillStyle = gradBlue;
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(width, 0);
+  ctx.lineTo(width, 250);
+  ctx.bezierCurveTo(740, 310, 340, 200, 0, 275);
+  ctx.closePath();
+  ctx.fill();
+
+  // Lime Green (#62B400) border accent line under the curve
+  ctx.strokeStyle = '#62B400';
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(0, 281);
+  ctx.bezierCurveTo(340, 206, 740, 316, width, 256);
+  ctx.stroke();
+
+  // Orange (#FF6A00) secondary subtle accent line
+  ctx.strokeStyle = '#FF6A00';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 290);
+  ctx.bezierCurveTo(340, 215, 740, 325, width, 265);
+  ctx.stroke();
+
+  // Header Texts
+  ctx.textAlign = 'center';
+
+  // Sub-badge top
+  ctx.font = 'bold 24px "Outfit", "Inter", sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.fillText('COMPLEJO PADEL 3 · LAVALLE', width / 2, 70);
+
+  // Stylized extra-bold italic "TURNOS DISPONIBLES"
+  ctx.font = 'italic 900 68px "Oswald", "Bebas Neue", "Arial Black", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 4;
+  ctx.fillText('TURNOS DISPONIBLES', width / 2, 155);
+  ctx.shadowColor = 'transparent';
+
+  // Sub headline
+  ctx.font = 'bold 24px "Outfit", "Inter", sans-serif';
+  ctx.fillStyle = '#A3E635';
+  ctx.fillText('⚡ RESERVÁ TU CANCHA HOY Y JUGÁ CON AMIGOS 🎾', width / 2, 205);
+  ctx.restore();
+
+  // 3. LATERAL CURVED ACCENTS (Verde Lima #62B400 y Naranja #FF6A00)
+  ctx.save();
+  // Upper right green flourish
+  ctx.fillStyle = '#62B400';
+  ctx.beginPath();
+  ctx.moveTo(width, 420);
+  ctx.bezierCurveTo(980, 470, 980, 580, width, 630);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mid left orange flourish
+  ctx.fillStyle = '#FF6A00';
+  ctx.beginPath();
+  ctx.moveTo(0, 840);
+  ctx.bezierCurveTo(90, 890, 90, 1000, 0, 1050);
+  ctx.closePath();
+  ctx.fill();
+
+  // Lower right blue flourish
+  ctx.fillStyle = '#0072CE';
+  ctx.beginPath();
+  ctx.moveTo(width, 1260);
+  ctx.bezierCurveTo(1010, 1310, 1010, 1400, width, 1450);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // 4. DATE RIBBON
+  const fechaLargaTexto = formatFechaLarga(storyState.fecha).toUpperCase();
+  ctx.save();
+  const datePillWidth = 720;
+  const datePillHeight = 64;
+  const datePillX = (width - datePillWidth) / 2;
+  const datePillY = 315;
+
+  ctx.fillStyle = '#0B0F19';
+  drawRoundedRect(ctx, datePillX, datePillY, datePillWidth, datePillHeight, 32, true, false);
+  ctx.strokeStyle = '#62B400';
+  ctx.lineWidth = 3;
+  drawRoundedRect(ctx, datePillX, datePillY, datePillWidth, datePillHeight, 32, false, true);
+
+  ctx.font = 'bold 28px "Oswald", "Bebas Neue", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.fillText(`📅 FECHA: ${fechaLargaTexto}`, width / 2, datePillY + 42);
+  ctx.restore();
+
+  // 5. CONTENT BLOCKS
+  if (storyState.mode === 'general') {
+    renderCanvasGeneralMode(ctx, width, height);
+  } else {
+    renderCanvasIndividualMode(ctx, width, height);
+  }
+
+  // 6. FOOTER (Pie de página con logo oficial)
+  renderCanvasFooter(ctx, width, height);
+}
+
+function renderCanvasGeneralMode(ctx, width, height) {
+  const canchas = adminState.config?.canchas || [];
+  const courtThemes = [
+    { name: 'Azul Indoor', primary: '#0072CE', bgTint: '#F0F7FF', badgeText: 'INDOOR TECHADA' },
+    { name: 'Verde Indoor', primary: '#62B400', bgTint: '#F4FBF0', badgeText: 'INDOOR PANORÁMICA' },
+    { name: 'Naranja Outdoor', primary: '#FF6A00', bgTint: '#FFF8F2', badgeText: 'OUTDOOR AIRE LIBRE' },
+    { name: 'Cian Fútbol', primary: '#00838F', bgTint: '#F0FDFA', badgeText: 'FÚTBOL SINTÉTICO' }
+  ];
+
+  const displayCanchas = canchas.slice(0, 3);
+  const cardX = 60;
+  const cardWidth = width - 120; // 960px
+  let currentY = 405;
+  const cardSpacing = 24;
+  const availableHeight = 1240;
+  const cardHeight = Math.min(380, Math.floor((availableHeight - (displayCanchas.length - 1) * cardSpacing) / displayCanchas.length));
+
+  displayCanchas.forEach((cancha, idx) => {
+    const theme = courtThemes[idx % courtThemes.length];
+    const libres = getTurnosLibresParaCancha(cancha.id, storyState.fecha);
+
+    // Draw Card Container
+    ctx.save();
+    ctx.fillStyle = theme.bgTint;
+    drawRoundedRect(ctx, cardX, currentY, cardWidth, cardHeight, 24, true, false);
+
+    ctx.strokeStyle = theme.primary;
+    ctx.lineWidth = 3.5;
+    drawRoundedRect(ctx, cardX, currentY, cardWidth, cardHeight, 24, false, true);
+
+    // Top Header Inside Card
+    const sportIcon = cancha.deporte === 'padel' ? '🎾' : '⚽';
+    ctx.font = 'bold 34px "Oswald", "Bebas Neue", sans-serif';
+    ctx.fillStyle = '#0B0F19';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${sportIcon} ${cancha.nombre.toUpperCase()}`, cardX + 30, currentY + 48);
+
+    // Court Tag Badge
+    const tagText = cancha.ubicacion === 'interior' ? 'INDOOR TECHADA' : 'OUTDOOR';
+    ctx.font = 'bold 18px "Outfit", "Inter", sans-serif';
+    const tagWidth = ctx.measureText(tagText).width + 24;
+    const tagX = cardX + cardWidth - tagWidth - 30;
+    const tagY = currentY + 22;
+
+    ctx.fillStyle = theme.primary;
+    drawRoundedRect(ctx, tagX, tagY, tagWidth, 34, 17, true, false);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.fillText(tagText, tagX + tagWidth / 2, tagY + 24);
+
+    // Dotted Dividing Line
+    ctx.strokeStyle = theme.primary;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(cardX + 25, currentY + 74);
+    ctx.lineTo(cardX + cardWidth - 25, currentY + 74);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset dash
+
+    // Time Slots Pills
+    const slotContainerY = currentY + 95;
+    const slotHeight = 56;
+    const slotGapX = 14;
+    const slotGapY = 12;
+    const cols = 5;
+    const slotWidth = Math.floor((cardWidth - 50 - (cols - 1) * slotGapX) / cols);
+
+    if (libres.length === 0) {
+      // No free slots
+      ctx.fillStyle = '#FEE2E2';
+      drawRoundedRect(ctx, cardX + 30, slotContainerY + 20, cardWidth - 60, 64, 18, true, false);
+      ctx.strokeStyle = '#EF4444';
+      ctx.lineWidth = 2;
+      drawRoundedRect(ctx, cardX + 30, slotContainerY + 20, cardWidth - 60, 64, 18, false, true);
+
+      ctx.font = 'bold 24px "Oswald", "Bebas Neue", sans-serif';
+      ctx.fillStyle = '#DC2626';
+      ctx.textAlign = 'center';
+      ctx.fillText('🔴 SIN TURNOS LIBRES DISPONIBLES (COMPLETO)', cardX + cardWidth / 2, slotContainerY + 60);
+    } else {
+      // Draw pills
+      const maxSlotsToShow = Math.min(libres.length, 10);
+      for (let sIdx = 0; sIdx < maxSlotsToShow; sIdx++) {
+        const row = Math.floor(sIdx / cols);
+        const col = sIdx % cols;
+        const pillX = cardX + 25 + col * (slotWidth + slotGapX);
+        const pillY = slotContainerY + row * (slotHeight + slotGapY);
+
+        if (pillY + slotHeight > currentY + cardHeight - 15) break;
+
+        // Slot Button Pill
+        ctx.fillStyle = theme.primary;
+        drawRoundedRect(ctx, pillX, pillY, slotWidth, slotHeight, 16, true, false);
+
+        ctx.font = 'bold 24px "Oswald", "Bebas Neue", "Arial Black", sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${libres[sIdx]}hs`, pillX + slotWidth / 2, pillY + 37);
+      }
+
+      if (libres.length > 10) {
+        ctx.font = 'bold 18px "Outfit", sans-serif';
+        ctx.fillStyle = theme.primary;
+        ctx.textAlign = 'right';
+        ctx.fillText(`+ ${libres.length - 10} horarios más disponibles`, cardX + cardWidth - 30, currentY + cardHeight - 14);
+      }
+    }
+
+    ctx.restore();
+    currentY += cardHeight + cardSpacing;
+  });
+}
+
+function renderCanvasIndividualMode(ctx, width, height) {
+  const canchas = adminState.config?.canchas || [];
+  const cancha = canchas.find(c => c.id === storyState.canchaId) || canchas[0];
+  if (!cancha) return;
+
+  const libres = getTurnosLibresParaCancha(cancha.id, storyState.fecha);
+  const isPadel = cancha.deporte === 'padel';
+  const themeColor = isPadel ? (cancha.ubicacion === 'interior' ? '#0072CE' : '#FF6A00') : '#62B400';
+  const bgTint = isPadel ? '#F0F7FF' : '#F4FBF0';
+
+  const cardX = 60;
+  const cardY = 410;
+  const cardWidth = width - 120; // 960px
+  const cardHeight = 1220;
+
+  ctx.save();
+  // Hero Card Container
+  ctx.fillStyle = bgTint;
+  drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 32, true, false);
+
+  ctx.strokeStyle = themeColor;
+  ctx.lineWidth = 4;
+  drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 32, false, true);
+
+  // Large Court Title
+  const sportEmoji = isPadel ? '🎾' : '⚽';
+  ctx.font = 'bold 50px "Oswald", "Bebas Neue", sans-serif';
+  ctx.fillStyle = '#0B0F19';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${sportEmoji} ${cancha.nombre.toUpperCase()}`, width / 2, cardY + 75);
+
+  // Surface & Features Badges
+  const badges = [
+    cancha.ubicacion === 'interior' ? '🏠 INDOOR TECHADA' : '☀️ OUTDOOR',
+    cancha.superficie || 'CÉSPED SINTÉTICO',
+    `${cancha.jugadores || 4} JUGADORES`,
+    `$ ${Number(cancha.precio || 20000).toLocaleString('es-AR')} / HORA`
+  ];
+
+  let badgeY = cardY + 115;
+  const badgeHeight = 42;
+  ctx.font = 'bold 19px "Outfit", "Inter", sans-serif';
+
+  // Center badges
+  let totalBadgesWidth = badges.reduce((acc, b) => acc + ctx.measureText(b).width + 30, 0) + (badges.length - 1) * 12;
+  let startX = (width - totalBadgesWidth) / 2;
+
+  badges.forEach(badgeText => {
+    const bw = ctx.measureText(badgeText).width + 30;
+    ctx.fillStyle = themeColor;
+    drawRoundedRect(ctx, startX, badgeY, bw, badgeHeight, 21, true, false);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.fillText(badgeText, startX + bw / 2, badgeY + 28);
+    startX += bw + 12;
+  });
+
+  // Dotted Dividing Line
+  ctx.strokeStyle = themeColor;
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([10, 10]);
+  ctx.beginPath();
+  ctx.moveTo(cardX + 40, cardY + 190);
+  ctx.lineTo(cardX + cardWidth - 40, cardY + 190);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Title for Slots
+  ctx.font = 'bold 30px "Oswald", "Bebas Neue", sans-serif';
+  ctx.fillStyle = '#0B0F19';
+  ctx.textAlign = 'center';
+  ctx.fillText('HORARIOS DISPONIBLES PARA ESTA FECHA:', width / 2, cardY + 245);
+
+  // Large Slots Grid (3 columns)
+  const slotGridY = cardY + 275;
+  const cols = 3;
+  const slotWidth = 260;
+  const slotHeight = 72;
+  const gapX = 35;
+  const gapY = 22;
+  const gridStartX = (width - (cols * slotWidth + (cols - 1) * gapX)) / 2;
+
+  if (libres.length === 0) {
+    ctx.fillStyle = '#FEE2E2';
+    drawRoundedRect(ctx, cardX + 50, slotGridY + 80, cardWidth - 100, 120, 24, true, false);
+    ctx.strokeStyle = '#EF4444';
+    ctx.lineWidth = 3;
+    drawRoundedRect(ctx, cardX + 50, slotGridY + 80, cardWidth - 100, 120, 24, false, true);
+
+    ctx.font = 'bold 34px "Oswald", "Bebas Neue", sans-serif';
+    ctx.fillStyle = '#DC2626';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔴 CANCHA COMPLETA · SIN TURNOS LIBRES', width / 2, slotGridY + 155);
+  } else {
+    libres.forEach((slot, sIdx) => {
+      const row = Math.floor(sIdx / cols);
+      const col = sIdx % cols;
+      const px = gridStartX + col * (slotWidth + gapX);
+      const py = slotGridY + row * (slotHeight + gapY);
+
+      if (py + slotHeight > cardY + cardHeight - 20) return;
+
+      // Slot Button Pill
+      ctx.fillStyle = themeColor;
+      drawRoundedRect(ctx, px, py, slotWidth, slotHeight, 22, true, false);
+
+      ctx.font = 'bold 34px "Oswald", "Bebas Neue", "Arial Black", sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${slot} hs`, px + slotWidth / 2, py + 48);
+    });
+  }
+
+  ctx.restore();
+}
+
+function renderCanvasFooter(ctx, width, height) {
+  ctx.save();
+  // Dark bottom container with sleek curve
+  const gradFoot = ctx.createLinearGradient(0, 1660, width, height);
+  gradFoot.addColorStop(0, '#0B0F19');
+  gradFoot.addColorStop(1, '#070A10');
+  ctx.fillStyle = gradFoot;
+
+  ctx.beginPath();
+  ctx.moveTo(0, 1690);
+  ctx.bezierCurveTo(340, 1650, 740, 1720, width, 1670);
+  ctx.lineTo(width, height);
+  ctx.lineTo(0, height);
+  ctx.closePath();
+  ctx.fill();
+
+  // Lime green top border curve
+  ctx.strokeStyle = '#62B400';
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.moveTo(0, 1690);
+  ctx.bezierCurveTo(340, 1650, 740, 1720, width, 1670);
+  ctx.stroke();
+
+  // Footer Left Content
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 40px "Oswald", "Bebas Neue", sans-serif';
+  ctx.fillStyle = '#00E676';
+  ctx.fillText('📅 RESERVÁ TU TURNO', 70, 1765);
+
+  ctx.font = 'bold 28px "Outfit", "Inter", sans-serif';
+  ctx.fillStyle = '#FFFFFF';
+  const phone = adminState.config?.whatsapp || '+54 9 11 1234-5678';
+  ctx.fillText(`📲 WhatsApp: ${phone}`, 70, 1815);
+
+  ctx.font = '500 22px "Outfit", "Inter", sans-serif';
+  ctx.fillStyle = '#94A3B8';
+  ctx.fillText('📍 Complejo Padel 3 · Lavalle, Mendoza', 70, 1855);
+
+  // Official Logo Drawing (Right corner)
+  const logoSize = 150;
+  const logoX = 860;
+  const logoY = 1715;
+
+  ctx.fillStyle = '#161F30';
+  drawRoundedRect(ctx, logoX - 10, logoY - 10, logoSize + 20, logoSize + 20, 28, true, false);
+  ctx.strokeStyle = '#62B400';
+  ctx.lineWidth = 3;
+  drawRoundedRect(ctx, logoX - 10, logoY - 10, logoSize + 20, logoSize + 20, 28, false, true);
+
+  if (storyState.logoImage && storyState.logoImage.complete && storyState.logoImage.naturalWidth > 0) {
+    ctx.drawImage(storyState.logoImage, logoX, logoY, logoSize, logoSize);
+  } else {
+    ctx.font = 'bold 28px "Oswald", sans-serif';
+    ctx.fillStyle = '#00E676';
+    ctx.textAlign = 'center';
+    ctx.fillText('PADEL 3', logoX + logoSize / 2, logoY + logoSize / 2 + 10);
+  }
+
+  ctx.restore();
+}
+
+function downloadStoryPNG() {
+  const canvas = document.getElementById('canvas-story');
+  if (!canvas) return;
+
+  const dataUrl = canvas.toDataURL('image/png', 1.0);
+  const link = document.createElement('a');
+  link.download = `historia-padel3-${storyState.fecha}-${storyState.mode}.png`;
+  link.href = dataUrl;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function copyStoryToClipboard() {
+  const canvas = document.getElementById('canvas-story');
+  if (!canvas) return;
+
+  if (navigator.clipboard && window.ClipboardItem) {
+    try {
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        alert('✓ ¡Imagen de la historia copiada al portapapeles! Ya podés pegarla en WhatsApp Web o Instagram.');
+      }, 'image/png');
+    } catch (e) {
+      downloadStoryPNG();
+    }
+  } else {
+    downloadStoryPNG();
+  }
 }
 
 window.addEventListener('DOMContentLoaded', initAdmin);

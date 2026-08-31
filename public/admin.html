@@ -173,6 +173,10 @@
           <i data-lucide="settings" class="w-4 h-4"></i>
           <span>Configuración & Firebase</span>
         </button>
+        <button class="admin-tab-btn px-5 py-2.5 rounded-xl font-sports font-bold text-sm uppercase tracking-wide text-slate-400 hover:text-white transition-all flex items-center gap-2" data-admin-tab="historias">
+          <i data-lucide="instagram" class="w-4 h-4 text-[#E1306C]"></i>
+          <span>Historias Instagram (1080x1920)</span>
+        </button>
       </div>
 
       <!-- ================= TAB 1: AGENDA & FINANZAS ================= -->
@@ -240,8 +244,12 @@
             </button>
           </div>
 
-          <!-- Export Actions -->
-          <div class="flex items-center gap-2">
+          <!-- Export & Story Actions -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="btn-open-story-generator" class="px-4 py-2 rounded-lg bg-gradient-to-r from-[#FF6A00] via-[#E1306C] to-[#833AB4] hover:opacity-90 text-white text-xs font-bold shadow-[0_0_15px_rgba(225,48,108,0.35)] flex items-center gap-1.5 transition-all">
+              <i data-lucide="instagram" class="w-3.5 h-3.5"></i>
+              <span>Generar Historia Instagram</span>
+            </button>
             <button id="btn-export-csv" class="px-4 py-2 rounded-lg bg-[#1E293B] hover:bg-[#28384E] text-slate-200 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-all">
               <i data-lucide="download" class="w-3.5 h-3.5 text-[#00E676]"></i>
               <span>Exportar Excel / CSV</span>
@@ -503,6 +511,122 @@
               <i data-lucide="save" class="w-4 h-4 text-black"></i>
               <span>Guardar Configuración General</span>
             </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= TAB 6: GENERADOR DE HISTORIAS INSTAGRAM (1080x1920) ================= -->
+      <section id="tab-content-historias" class="admin-tab-content hidden space-y-6">
+        <div class="glass-card p-6 sm:p-8 border border-slate-800 space-y-6">
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#FF6A00] via-[#E1306C] to-[#833AB4] flex items-center justify-center text-white shadow-[0_0_12px_rgba(225,48,108,0.4)]">
+                  <i data-lucide="instagram" class="w-4 h-4"></i>
+                </div>
+                <h2 class="text-2xl font-sports font-bold text-white uppercase">Generador de Historias Instagram</h2>
+                <span class="text-xs bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40 px-2.5 py-0.5 rounded-full font-mono font-bold">1080 x 1920 px (9:16)</span>
+              </div>
+              <p class="text-slate-400 text-xs mt-1">Generá y descargá imágenes en alta definición con la identidad visual oficial de Complejo Padel 3 para publicar tus turnos libres en Instagram Stories y WhatsApp.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left Controls Column (5 cols) -->
+            <div class="lg:col-span-5 space-y-5 bg-[#0B0F19] p-6 rounded-2xl border border-slate-800">
+              
+              <!-- Selector de Modo -->
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-2">🎨 Modo de Generación</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button type="button" id="btn-story-mode-general" class="story-mode-btn active px-3 py-2.5 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center gap-1 bg-[#00E676] text-black border-[#00E676]">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    <span>Historia General (Todas)</span>
+                  </button>
+                  <button type="button" id="btn-story-mode-cancha" class="story-mode-btn px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white transition-all text-center flex flex-col items-center gap-1">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    <span>Por Cancha Individual</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Selector de Fecha -->
+              <div>
+                <label for="story-fecha-select" class="block text-xs font-bold text-slate-300 uppercase mb-1">📅 Fecha de Turnos</label>
+                <div class="flex items-center gap-2 mb-2">
+                  <button type="button" id="btn-story-date-today" class="px-3 py-1.5 rounded-lg bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40 text-xs font-bold transition-all">Hoy</button>
+                  <button type="button" id="btn-story-date-tomorrow" class="px-3 py-1.5 rounded-lg bg-[#1E293B] hover:bg-[#2A3B53] text-slate-300 border border-slate-700 text-xs font-bold transition-all">Mañana</button>
+                  <button type="button" id="btn-story-date-after" class="px-3 py-1.5 rounded-lg bg-[#1E293B] hover:bg-[#2A3B53] text-slate-300 border border-slate-700 text-xs font-bold transition-all">Pasado Mañana</button>
+                </div>
+                <input id="story-fecha-select" type="date" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+              </div>
+
+              <!-- Selector de Cancha (visible en modo individual) -->
+              <div id="story-cancha-selector-box" class="hidden">
+                <label for="story-cancha-select" class="block text-xs font-bold text-slate-300 uppercase mb-1">🏟️ Cancha Específica</label>
+                <select id="story-cancha-select" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+                  <!-- Dynamic courts populated by admin.js -->
+                </select>
+              </div>
+
+              <!-- Resumen de turnos libres encontrados -->
+              <div id="story-free-summary" class="p-4 rounded-xl bg-[#161F30] border border-slate-800 text-xs space-y-1.5">
+                <div class="font-bold text-[#00E676] flex items-center gap-1.5">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                  <span id="story-summary-text">Calculando turnos disponibles...</span>
+                </div>
+                <div id="story-summary-details" class="text-slate-400 text-[11px]"></div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="space-y-2.5 pt-2">
+                <button type="button" id="btn-generate-story-canvas" class="btn-neon-pill w-full justify-center py-3 text-sm">
+                  <i data-lucide="refresh-cw" class="w-4 h-4 text-black"></i>
+                  <span>Generar / Actualizar Gráfica</span>
+                </button>
+
+                <button type="button" id="btn-download-story-png" class="w-full py-3 px-4 rounded-full bg-gradient-to-r from-[#FF6A00] via-[#E1306C] to-[#833AB4] hover:opacity-90 text-white font-bold text-sm shadow-[0_0_20px_rgba(225,48,108,0.4)] flex items-center justify-center gap-2 transition-all">
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                  <span>Descargar Imagen PNG (1080x1920)</span>
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Right Preview Column (7 cols) -->
+            <div class="lg:col-span-7 flex flex-col items-center justify-center p-6 bg-[#0B0F19] rounded-2xl border border-slate-800">
+              
+              <div class="flex items-center justify-between w-full max-w-[360px] mb-3 text-xs text-slate-400">
+                <span class="font-semibold flex items-center gap-1.5">
+                  <i data-lucide="smartphone" class="w-4 h-4 text-[#00E5FF]"></i>
+                  Vista Previa en Vivo
+                </span>
+                <span class="bg-[#1E293B] px-2.5 py-0.5 rounded text-[10px] text-slate-300 font-mono">1080 x 1920 px (9:16)</span>
+              </div>
+
+              <!-- The Canvas Element -->
+              <div class="relative group max-w-[360px] w-full">
+                <canvas id="canvas-story" width="1080" height="1920" class="w-full aspect-[9/16] rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] border-2 border-slate-700 bg-white object-contain cursor-pointer transition-transform duration-300 group-hover:scale-[1.01]"></canvas>
+              </div>
+
+              <div class="flex items-center gap-3 mt-4">
+                <button type="button" id="btn-download-story-png-quick" class="px-5 py-2 rounded-full bg-[#161F30] hover:bg-[#1E293B] border border-slate-700 text-xs font-bold text-slate-200 hover:text-white flex items-center gap-1.5 transition-all">
+                  <i data-lucide="download" class="w-3.5 h-3.5 text-[#00E676]"></i>
+                  <span>Descargar PNG</span>
+                </button>
+                <button type="button" id="btn-copy-story-clipboard" class="px-5 py-2 rounded-full bg-[#161F30] hover:bg-[#1E293B] border border-slate-700 text-xs font-bold text-slate-200 hover:text-white flex items-center gap-1.5 transition-all">
+                  <i data-lucide="copy" class="w-3.5 h-3.5 text-[#00E5FF]"></i>
+                  <span>Copiar Imagen</span>
+                </button>
+              </div>
+
+              <p class="text-[11px] text-slate-500 mt-2 text-center">La imagen descargada posee la resolución nativa de 1080 x 1920 px para subir directamente a las historias de Instagram o estados de WhatsApp.</p>
+
+            </div>
+
           </div>
 
         </div>
