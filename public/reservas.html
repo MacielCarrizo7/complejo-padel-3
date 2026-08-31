@@ -112,14 +112,16 @@
         </div>
 
         <!-- Mobile Menu Toggle Button -->
+        <!-- Mobile Menu Toggle Button -->
         <div class="flex md:hidden items-center gap-3">
           <a href="/" class="px-3 py-1.5 rounded-full bg-[#161F30] border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1">
             <i data-lucide="home" class="w-3.5 h-3.5 text-[#00E676]"></i>
             <span>Inicio</span>
           </a>
-          <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg bg-[#161F30] border border-slate-700 text-slate-200 hover:text-white" aria-label="Abrir menú">
-            <i data-lucide="menu" id="menu-icon-open" class="w-6 h-6"></i>
-            <i data-lucide="x" id="menu-icon-close" class="w-6 h-6 hidden"></i>
+          <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="p-2 text-white md:hidden focus:outline-none z-50 rounded-lg bg-[#161F30] border border-slate-700 hover:text-[#00E676] transition-colors" aria-label="Abrir menú">
+            <svg class="w-7 h-7 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
           </button>
         </div>
 
@@ -127,7 +129,7 @@
     </div>
 
     <!-- Mobile Slide Down Menu -->
-    <div id="mobile-menu" class="hidden md:hidden fixed left-0 right-0 top-20 z-50 bg-[#0B0F19]/98 backdrop-blur-2xl border-b border-slate-800 px-6 py-6 space-y-4 shadow-2xl flex-col">
+    <div id="mobile-menu" class="hidden md:hidden fixed top-20 left-0 w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 p-6 flex flex-col space-y-4 shadow-2xl z-50">
       <a href="/" class="mobile-nav-link block text-base font-semibold text-white hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Inicio</a>
       <a href="/#canchas" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Canchas & Precios</a>
       <a href="/#servicios" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Servicios del Complejo</a>
@@ -142,6 +144,25 @@
       </div>
     </div>
   </header>
+
+  <script>
+    window.toggleMobileMenu = function() {
+      const menu = document.getElementById('mobile-menu');
+      if (menu) {
+        menu.classList.toggle('hidden');
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const mobileLinks = document.querySelectorAll('#mobile-menu a, #mobile-menu button');
+      mobileLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          const menu = document.getElementById('mobile-menu');
+          if (menu) menu.classList.add('hidden');
+        });
+      });
+    });
+  </script>
 
   <!-- ================= MAIN CONTENT: RESERVAS ================= -->
   <main class="flex-grow">

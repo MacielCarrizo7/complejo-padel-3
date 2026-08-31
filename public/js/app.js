@@ -2,6 +2,13 @@
 // COMPLEJO PADEL 3 - CLIENT LOGIC & DYNAMIC BOOKING SYSTEM
 // =========================================================
 
+window.toggleMobileMenu = function() {
+  const menu = document.getElementById('mobile-menu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+};
+
 window.state = {
   config: {
     nombre: 'COMPLEJO PADEL 3',

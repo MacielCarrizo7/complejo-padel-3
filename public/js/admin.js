@@ -2,6 +2,13 @@
 // COMPLEJO PADEL 3 - ADMIN CMS & FIREBASE AUTHENTICATION
 // =========================================================
 
+window.toggleMobileMenu = function() {
+  const menu = document.getElementById('mobile-menu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+};
+
 const ADMIN_SESSION_KEY = 'complejo_padel3_admin_user';
 
 let adminState = {
