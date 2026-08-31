@@ -128,7 +128,7 @@ let firebaseApp = null;
 let firebaseAuth = null;
 
 function initFirebaseClient() {
-  const fbConfig = adminState.config?.firebaseConfig || {
+  const fbConfig = {
     apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
     authDomain: "complejo-padel-3.firebaseapp.com",
     projectId: "complejo-padel-3",
@@ -163,7 +163,7 @@ function initFirebaseClient() {
       firebaseAuth = firebase.auth();
     }
   } catch (e) {
-    console.warn('Firebase init warning (usando fallback de backend):', e);
+    console.warn('Firebase init warning:', e);
   }
 }
 
@@ -232,9 +232,9 @@ async function loginAdmin(e) {
 
   errEl.textContent = '';
   btn.disabled = true;
-  btn.innerHTML = '<span>Verificando credenciales...</span> ⏳';
+  btn.innerHTML = '<span>Verificando credenciales con Firebase...</span> ⏳';
 
-  // 1. Try with Firebase Client SDK
+  // Standard Firebase Authentication
   if (firebaseAuth) {
     try {
       const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
@@ -244,19 +244,29 @@ async function loginAdmin(e) {
       onAuthSuccess(userCredential.user);
       return;
     } catch (fbError) {
-      console.warn('Firebase Client Auth attempt error:', fbError.code, fbError.message);
-      // If error is wrong password/user not found from active Firebase project, show error
+      console.error('Firebase Auth Error:', fbError.code, fbError.message);
+      let errorMsg = 'Error al iniciar sesión con Firebase.';
       if (fbError.code === 'auth/wrong-password' || fbError.code === 'auth/user-not-found' || fbError.code === 'auth/invalid-credential') {
-        errEl.textContent = 'Email o contraseña incorrectos en Firebase Authentication.';
-        btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4 text-black"></i><span>Iniciar Sesión con Firebase</span>';
-        if (window.lucide) window.lucide.createIcons();
-        return;
+        errorMsg = 'Email o contraseña incorrectos en Firebase Authentication.';
+      } else if (fbError.code === 'auth/invalid-email') {
+        errorMsg = 'El formato del correo electrónico no es válido.';
+      } else if (fbError.code === 'auth/user-disabled') {
+        errorMsg = 'La cuenta de usuario de Firebase se encuentra deshabilitada.';
+      } else if (fbError.code === 'auth/api-key-not-valid') {
+        errorMsg = 'Error de API Key de Firebase. Verificá la configuración del proyecto.';
+      } else if (fbError.message) {
+        errorMsg = fbError.message;
       }
+
+      errEl.textContent = errorMsg;
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4 text-black"></i><span>Iniciar Sesión con Firebase</span>';
+      if (window.lucide) window.lucide.createIcons();
+      return;
     }
   }
 
-  // 2. Fallback to Express Backend Auth
+  // Fallback to Express Backend Auth if Firebase SDK is unavailable
   try {
     const res = await fetch('/api/admin/login', {
       method: 'POST',
