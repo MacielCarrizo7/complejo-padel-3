@@ -423,6 +423,22 @@ h1, h2, h3, h4, .font-sports {
   animation: pulseGlow 3s infinite ease-in-out;
 }
 
+/* Hero Section Cinematic Background */
+.hero-section-bg {
+  position: relative;
+  background-image: linear-gradient(90deg, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.75) 45%, rgba(11, 15, 25, 0.25) 100%), url('../images/hero-padel.jpg');
+  background-size: cover;
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+
+@media (max-width: 768px) {
+  .hero-section-bg {
+    background-image: linear-gradient(180deg, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.85) 50%, rgba(11, 15, 25, 0.95) 100%), url('../images/hero-padel.jpg');
+    background-position: center center;
+  }
+}
+
 /* Print Styles for CMS Export */
 @media print {
   body {
@@ -441,3 +457,4 @@ h1, h2, h3, h4, .font-sports {
     box-shadow: none !important;
   }
 }
+
