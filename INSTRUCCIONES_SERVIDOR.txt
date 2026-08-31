@@ -1,0 +1,142 @@
+================================================================================
+GUIA COMPLETA DE DESPLIEGUE EN INTERNET / SERVIDOR - COMPLEJO PADEL 3
+================================================================================
+
+Este sistema fue desarrollado con un Backend moderno en Node.js (Express), lo que
+significa que podes subirlo a cualquier servidor web en la nube en pocos minutos.
+
+A continuacion tenes las 3 mejores opciones para ponerlo online en internet:
+
+--------------------------------------------------------------------------------
+OPCION 1: DESPLIEGUE GRATUITO Y AUTOMATICO EN RENDER.COM (RECOMENDADO)
+--------------------------------------------------------------------------------
+Es la opcion mas facil y rapida. No requiere configurar servidores Linux.
+
+PASO A PASO:
+1. Crea una cuenta gratuita en https://render.com (podes iniciar sesion con GitHub o tu email).
+2. Subi esta carpeta del proyecto a un repositorio de GitHub (o GitLab):
+   - Podes usar GitHub Desktop o la consola:
+     git init
+     git add .
+     git commit -m "Complejo Padel 3 inicial"
+     git branch -M main
+     git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+     git push -u origin main
+
+3. En el panel de Render, hace clic en "New +" y selecciona "Web Service".
+4. Conecta tu repositorio de GitHub.
+5. Completa los siguientes campos:
+   - Name: complejo-padel-3 (o el nombre que quieras)
+   - Runtime: Node
+   - Build Command: npm install
+   - Start Command: npm start
+   - Plan: Free (Gratuito)
+
+6. Hace clic en "Create Web Service".
+7. Render instalara las dependencias y en 1 minuto te dara un enlace publico con HTTPS:
+   👉 Ejemplo: https://complejo-padel-3.onrender.com
+
+¡Listo! Ya cualquier persona puede entrar desde su celular o computadora y reservar.
+
+--------------------------------------------------------------------------------
+OPCION 2: DESPLIEGUE EN UN SERVIDOR VPS PROPIO (UBUNTU / LINUX)
+(DigitalOcean, AWS, Linode, Hostinger, Vultr, Google Cloud)
+--------------------------------------------------------------------------------
+Ideal si tenes un servidor dedicado o VPS y queres tu propio dominio (ej: www.complejopadel3.com).
+
+PASO A PASO EN LA CONSOLA SSH DEL SERVIDOR:
+
+1. Actualizar el sistema e instalar Node.js:
+   sudo apt update && sudo apt upgrade -y
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   sudo apt install -y nodejs git nginx
+
+2. Verificar instalacion:
+   node -v
+   npm -v
+
+3. Subir o clonar los archivos del proyecto a /var/www/complejo:
+   sudo mkdir -p /var/www/complejo
+   cd /var/www/complejo
+   # Copiar los archivos o clonar desde GitHub:
+   git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git .
+
+4. Instalar las dependencias de la aplicacion:
+   npm install
+
+5. Instalar PM2 para mantener la aplicacion siempre encendida 24/7:
+   sudo npm install -g pm2
+   pm2 start server.js --name "complejo-padel"
+   pm2 save
+   pm2 startup
+
+6. Configurar Nginx para que redirija el trafico web a la aplicacion:
+   sudo nano /etc/nginx/sites-available/complejo
+
+   Pegar la siguiente configuracion (reemplazar tudominio.com por tu dominio o IP):
+
+   server {
+       listen 80;
+       server_name tudominio.com www.tudominio.com;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       }
+   }
+
+7. Activar el sitio y reiniciar Nginx:
+   sudo ln -s /etc/nginx/sites-available/complejo /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+
+8. Instalar Certificado SSL Gratuito (HTTPS con candado verde):
+   sudo apt install -y certbot python3-certbot-nginx
+   sudo certbot --nginx -d tudominio.com -d www.tudominio.com
+
+¡Listo! Tu aplicacion estara funcionando en https://tudominio.com con maxima velocidad.
+
+--------------------------------------------------------------------------------
+OPCION 3: DESPLIEGUE EN CPANEL (HOSTING COMPARTIDO CON NODE.JS)
+--------------------------------------------------------------------------------
+Si tenes un hosting tradicional con cPanel (Hostinger, DonWeb, Neolo, etc.):
+
+1. Entra a tu cPanel y busca la seccion "Setup Node.js App".
+2. Hace clic en "Create Application".
+3. Configura:
+   - Node.js Version: 18.x o 20.x
+   - Application Mode: Production
+   - Application Root: /complejo (o la carpeta donde subas los archivos)
+   - Application URL: tudominio.com
+   - Application Startup File: server.js
+4. Subi los archivos del proyecto (podes usar el Administrador de Archivos de cPanel o FTP).
+5. Hace clic en "Run NPM Install" dentro del modulo de Node.js de cPanel.
+6. Hace clic en "Start / Restart Application".
+
+--------------------------------------------------------------------------------
+COMO REALIZAR BACKUPS DE LA BASE DE DATOS Y TURNOS
+--------------------------------------------------------------------------------
+Toda la informacion de las canchas, precios, turnos y configuracion se guarda
+automaticamente en el archivo:
+📁 data/database.json
+
+Para hacer una copia de seguridad o respaldar tus datos, solo tenes que descargar
+o copiar ese archivo `data/database.json`.
+
+--------------------------------------------------------------------------------
+MODO DE PRUEBA LOCAL (EN TU COMPUTADORA)
+--------------------------------------------------------------------------------
+Para probarlo en tu propia maquina antes de subirlo:
+1. Abrir terminal en la carpeta del proyecto.
+2. Ejecutar: npm start
+3. Abrir en el navegador: http://localhost:3000
+
+================================================================================
+FIN DE LA GUIA
+================================================================================

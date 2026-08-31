@@ -1,0 +1,268 @@
+{
+  "config": {
+    "nombre": "COMPLEJO PADEL 3",
+    "subtitulo": "Canchas de Pádel & Fútbol · Techadas y Exterior · Buffet y Estacionamiento",
+    "direccion": "Lavalle, Mendoza · Complejo Deportivo",
+    "maps": "https://maps.google.com/?q=Lavalle+Mendoza",
+    "whatsapp": "5491112345678",
+    "horaInicio": "14:00",
+    "horaFin": "24:00",
+    "diasActivos": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      0
+    ],
+    "pin": "1234",
+    "monedaSimbolo": "$",
+    "canchas": [
+      {
+        "id": "c1",
+        "deporte": "padel",
+        "nombre": "Pista 1 - Cristal Pro",
+        "ubicacion": "interior",
+        "superficie": "Césped Sintético Azul WPT",
+        "jugadores": 4,
+        "precio": 24000
+      },
+      {
+        "id": "c2",
+        "deporte": "padel",
+        "nombre": "Pista 2 - Panorámica",
+        "ubicacion": "interior",
+        "superficie": "Vidrio Panorámico LED",
+        "jugadores": 4,
+        "precio": 24000
+      },
+      {
+        "id": "c3",
+        "deporte": "padel",
+        "nombre": "Pista 3 - Sunset Open",
+        "ubicacion": "exterior",
+        "superficie": "Césped Texturado Fibrilado",
+        "jugadores": 4,
+        "precio": 20000
+      },
+      {
+        "id": "c4",
+        "deporte": "futbol",
+        "nombre": "Cancha 1 - Monumental F5",
+        "ubicacion": "interior",
+        "superficie": "Sintético Forbex 50mm Techada",
+        "jugadores": 5,
+        "precio": 28000
+      },
+      {
+        "id": "c5",
+        "deporte": "futbol",
+        "nombre": "Cancha 2 - Wembley F7",
+        "ubicacion": "exterior",
+        "superficie": "Césped Sintético Pro Iluminación LED",
+        "jugadores": 7,
+        "precio": 36000
+      },
+      {
+        "id": "c6",
+        "deporte": "futbol",
+        "nombre": "Cancha 3 - San Siro F5",
+        "ubicacion": "exterior",
+        "superficie": "Césped Sintético Premium",
+        "jugadores": 5,
+        "precio": 26000
+      }
+    ]
+  },
+  "servicios": [
+    {
+      "id": "srv_1",
+      "titulo": "Canchas de Pádel",
+      "descripcion": "Pistas panorámicas con césped sintético oficial WPT, cristal templado y luces LED de última generación.",
+      "icono": "Trophy",
+      "tags": [
+        "4 canchas",
+        "Césped WPT",
+        "Interior y Exterior"
+      ],
+      "activo": true
+    },
+    {
+      "id": "srv_2",
+      "titulo": "Cancha de Fútbol 5 y 7",
+      "descripcion": "Canchas de fútbol con césped sintético de alta calidad y amortiguación, ideal para partidos y torneos.",
+      "icono": "Flame",
+      "tags": [
+        "Fútbol 5 y 7",
+        "Césped Sintético",
+        "Iluminación Pro"
+      ],
+      "activo": true
+    },
+    {
+      "id": "srv_3",
+      "titulo": "Snack Bar & Tercer Tiempo",
+      "descripcion": "Disfrutá de un buen momento con amigos en nuestro buffet equipado. Comidas, bebidas frías, picadas y TV.",
+      "icono": "Utensils",
+      "tags": [
+        "Bebidas frías",
+        "Comidas rápidas",
+        "Pantallas HD"
+      ],
+      "activo": true
+    },
+    {
+      "id": "srv_4",
+      "titulo": "Vestuarios & Duchas",
+      "descripcion": "Instalaciones sanitarias completas con agua caliente, lockers seguros y máxima higiene constante.",
+      "icono": "ShieldCheck",
+      "tags": [
+        "Duchas con agua caliente",
+        "Lockers",
+        "Higienización"
+      ],
+      "activo": true
+    },
+    {
+      "id": "srv_5",
+      "titulo": "Estacionamiento Privado",
+      "descripcion": "Predio con estacionamiento monitoreado para tu vehículo dentro del complejo.",
+      "icono": "Car",
+      "tags": [
+        "Seguridad 24hs",
+        "Acceso directo",
+        "Gratuito"
+      ],
+      "activo": true
+    },
+    {
+      "id": "srv_6",
+      "titulo": "Alquiler de Paletas y Pelotas",
+      "descripcion": "Equipamiento de primeras marcas (Bullpadel, Head, Nox) para que juegues siempre con lo mejor.",
+      "icono": "Sparkles",
+      "tags": [
+        "Paletas Pro",
+        "Tubos presurizados",
+        "Grip nuevo"
+      ],
+      "activo": true
+    }
+  ],
+  "eventos": [
+    {
+      "id": "ev_1",
+      "titulo": "Gran Torneo Apertura Pádel 2026",
+      "categoria": "4ta a 7ma Caballeros y Damas",
+      "fecha": "12 al 14 de Septiembre",
+      "horario": "Desde las 18:00 hs",
+      "estado": "Inscripciones Abiertas",
+      "descripcion": "Torneo de fin de semana con fase de grupos y llaves de eliminación directa. Premios en efectivo, indumentaria oficial y trofeos para campeones y subcampeones.",
+      "premio": "$ 250.000 en Premios + Trofeos",
+      "imagen": "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80",
+      "whatsappContacto": "5491112345678",
+      "activo": true
+    },
+    {
+      "id": "ev_2",
+      "titulo": "Clínica Intensiva de Smash & Bandeja",
+      "categoria": "Nivel Inicial e Intermedio",
+      "fecha": "Sábado 19 de Septiembre",
+      "horario": "10:00 a 13:00 hs",
+      "estado": "Últimos Cupos",
+      "descripcion": "Entrenamiento técnico y táctico con profesores federados. Corrección de golpes de ataque, posicionamiento en pista y videoanálisis.",
+      "premio": "Incluye hidratación y kit de entrenamiento",
+      "imagen": "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=800&q=80",
+      "whatsappContacto": "5491112345678",
+      "activo": true
+    },
+    {
+      "id": "ev_3",
+      "titulo": "Torneo Relámpago Fútbol 7 Nocturno",
+      "categoria": "Libre Masculino (Equipos 7 a 10 jug.)",
+      "fecha": "Viernes 25 de Septiembre",
+      "horario": "Desde las 20:00 hs",
+      "estado": "Inscripciones Abiertas",
+      "descripcion": "Copa nocturna bajo iluminación LED. Mínimo 3 partidos garantizados por equipo, asado para el campeón y consumición incluida en el buffet.",
+      "premio": "Copa Campeón + Asado completo para 10 personas",
+      "imagen": "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
+      "whatsappContacto": "5491112345678",
+      "activo": true
+    }
+  ],
+  "turnos": [
+    {
+      "id": "turno_c1_20260831_1800_1787941892413",
+      "canchaId": "c1",
+      "canchaNombre": "Pista 1 - Cristal Pro",
+      "deporte": "padel",
+      "ubicacion": "interior",
+      "superficie": "Césped Sintético Azul WPT",
+      "jugadores": 4,
+      "fecha": "2026-08-31",
+      "hora": "18:00",
+      "horaFin": "20:00",
+      "duracion": 2,
+      "horasCubiertas": [
+        "18:00",
+        "19:00"
+      ],
+      "nombre": "Juan Lebron",
+      "whatsapp": "1144778899",
+      "equipo": "Los Lobos",
+      "precioUnitario": 24000,
+      "precio": 48000,
+      "precioFormateado": "$ 48.000",
+      "confirmado": true,
+      "ts": 1787941892425
+    },
+    {
+      "id": "turno_c5_20260901_2000_1787941937549",
+      "canchaId": "c5",
+      "canchaNombre": "Cancha 2 - Wembley F7",
+      "deporte": "futbol",
+      "ubicacion": "exterior",
+      "superficie": "Césped Sintético Pro Iluminación LED",
+      "jugadores": 7,
+      "fecha": "2026-09-01",
+      "hora": "20:00",
+      "horaFin": "21:00",
+      "duracion": 1,
+      "horasCubiertas": [
+        "20:00"
+      ],
+      "nombre": "Lionel Scaloni",
+      "whatsapp": "1199887766",
+      "equipo": "La Scaloneta FC",
+      "precioUnitario": 36000,
+      "precio": 36000,
+      "precioFormateado": "$ 36.000",
+      "confirmado": false,
+      "ts": 1787941937549
+    },
+    {
+      "id": "turno_c2_20260901_2100_1787941958627",
+      "canchaId": "c2",
+      "canchaNombre": "Pista 2 - Panorámica",
+      "deporte": "padel",
+      "ubicacion": "interior",
+      "superficie": "Vidrio Panorámico LED",
+      "jugadores": 4,
+      "fecha": "2026-09-01",
+      "hora": "21:00",
+      "horaFin": "22:00",
+      "duracion": 1,
+      "horasCubiertas": [
+        "21:00"
+      ],
+      "nombre": "Agustín Tapia",
+      "whatsapp": "1155667788",
+      "equipo": "Golden Smash",
+      "precioUnitario": 24000,
+      "precio": 24000,
+      "precioFormateado": "$ 24.000",
+      "confirmado": true,
+      "ts": 1787941958627
+    }
+  ]
+}

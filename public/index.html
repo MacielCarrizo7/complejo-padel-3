@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMPLEJO PADEL 3 · Canchas de Pádel & Fútbol en Lavalle</title>
+  <meta name="description" content="Complejo deportivo de primer nivel en Lavalle. Canchas de pádel panorámicas WPT y fútbol con césped sintético e iluminación LED. Reservá tu turno online en segundos.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandDark: '#0B0F19',
+            brandDarker: '#070A10',
+            brandCard: '#161F30',
+            brandCardHover: '#1C273D',
+            brandSurface: '#1E293B',
+            brandNeon: '#00E676',
+            brandNeonHover: '#00C853',
+            brandCyan: '#00E5FF',
+            brandGold: '#FFD600',
+            brandTurf: '#10B981'
+          },
+          fontFamily: {
+            sports: ['Oswald', 'Bebas Neue', 'sans-serif'],
+            bebas: ['Bebas Neue', 'cursive'],
+            body: ['Outfit', 'Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#0B0F19] text-white font-body selection:bg-[#00E676] selection:text-black antialiased relative">
+
+  <!-- Glow Meshes in Background -->
+  <div class="hero-glow-mesh"></div>
+  <div class="hero-glow-blue"></div>
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="sticky top-0 z-50 navbar-blur w-full">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        
+        <!-- Logo + Brand -->
+        <a href="#inicio" class="flex items-center gap-3 group">
+          <div class="w-12 h-12 rounded-xl bg-[#161F30] border border-[rgba(0,230,118,0.3)] flex items-center justify-center p-1.5 shadow-[0_0_15px_rgba(0,230,118,0.2)] group-hover:shadow-[0_0_25px_rgba(0,230,118,0.4)] transition-all">
+            <img src="assets/logo.png" alt="Complejo Padel 3 Logo" class="w-full h-full object-contain">
+          </div>
+          <div class="flex flex-col">
+            <span class="font-sports text-2xl font-bold tracking-wider leading-none text-white flex items-center gap-1.5">
+              PADEL <span class="text-[#00E676]">3</span>
+            </span>
+            <span class="text-[10px] tracking-widest uppercase font-semibold text-slate-400">Complejo Deportivo</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-8">
+          <a href="#inicio" class="text-sm font-semibold text-white hover:text-[#00E676] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#00E676] after:shadow-[0_0_8px_#00E676]">Inicio</a>
+          <a href="#canchas" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Canchas</a>
+          <a href="#servicios" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Servicios</a>
+          <a href="#eventos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors flex items-center gap-1.5">
+            Eventos & Torneos
+            <span class="bg-[#00E676]/10 text-[#00E676] text-[10px] px-1.5 py-0.5 rounded-full font-bold border border-[#00E676]/30">Nuevo</span>
+          </a>
+          <a href="#porque-elegirnos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Nosotros</a>
+          <a href="#ubicacion" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Contacto</a>
+        </nav>
+
+        <!-- Right Action CTA -->
+        <div class="hidden md:flex items-center gap-4">
+          <a href="#reservar" class="btn-neon-pill">
+            <i data-lucide="calendar" class="w-4 h-4 text-black"></i>
+            <span>Reservar Turno</span>
+          </a>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <div class="flex md:hidden items-center gap-3">
+          <a href="#reservar" class="btn-neon-pill text-xs py-2 px-3">
+            <span>Reservar</span>
+          </a>
+          <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg bg-[#161F30] border border-slate-700 text-slate-200 hover:text-white" aria-label="Abrir menú">
+            <i data-lucide="menu" id="menu-icon-open" class="w-6 h-6"></i>
+            <i data-lucide="x" id="menu-icon-close" class="w-6 h-6 hidden"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Slide Down Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-[#0D1322] border-b border-slate-800 px-6 py-6 space-y-4">
+      <a href="#inicio" class="mobile-nav-link block text-base font-semibold text-white hover:text-[#00E676]">Inicio</a>
+      <a href="#canchas" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Canchas & Precios</a>
+      <a href="#servicios" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Servicios del Complejo</a>
+      <a href="#eventos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Eventos y Torneos</a>
+      <a href="#porque-elegirnos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">¿Por qué elegirnos?</a>
+      <a href="#ubicacion" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Ubicación & Contacto</a>
+      <div class="pt-4 border-t border-slate-800">
+        <a href="#reservar" class="btn-neon-pill w-full justify-center">
+          <i data-lucide="calendar" class="w-4 h-4 text-black"></i>
+          <span>Reservar Turno Online</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO PRINCIPAL ================= -->
+  <section id="inicio" class="relative pt-12 pb-20 md:pt-20 md:pb-32 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left Content -->
+        <div class="lg:col-span-7 space-y-6 text-left">
+          
+          <!-- Pill Tag -->
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#161F30] border border-[rgba(0,230,118,0.3)] shadow-[0_0_15px_rgba(0,230,118,0.15)]">
+            <span class="w-2 h-2 rounded-full bg-[#00E676] animate-ping"></span>
+            <span class="font-sports text-xs uppercase tracking-widest text-[#00E676] font-bold">COMPLEJO PADEL 3 · LAVALLE</span>
+          </div>
+
+          <!-- Main Athletic Heading -->
+          <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-sports font-bold leading-[0.95] tracking-tight uppercase">
+            VIVÍ EL PÁDEL <br>
+            <span class="text-[#00E676] glow-text-neon">COMO NUNCA</span>
+          </h1>
+
+          <!-- Subtitle -->
+          <p class="text-slate-300 text-lg sm:text-xl font-normal max-w-xl leading-relaxed" id="hero-subtitle">
+            Canchas de primer nivel, un ambiente único y todo lo que necesitás para disfrutar del deporte. Turnos online en vivo y sin demoras.
+          </p>
+
+          <!-- CTA Button -->
+          <div class="pt-2 flex flex-wrap items-center gap-4">
+            <a href="#reservar" class="btn-neon-pill text-base px-8 py-4 shadow-[0_0_30px_rgba(0,230,118,0.5)]">
+              <i data-lucide="calendar" class="w-5 h-5 text-black"></i>
+              <span>Reservar mi turno</span>
+              <i data-lucide="arrow-right" class="w-5 h-5 text-black ml-1"></i>
+            </a>
+            <a href="#canchas" class="inline-flex items-center gap-2 px-6 py-4 rounded-full bg-[#161F30] hover:bg-[#1E293B] border border-slate-700 text-slate-200 hover:text-white font-semibold text-sm transition-all">
+              <i data-lucide="eye" class="w-4 h-4 text-[#00E676]"></i>
+              <span>Ver Instalaciones</span>
+            </a>
+          </div>
+
+          <!-- 3 Hero Feature Badges with Lucide Icons -->
+          <div class="grid grid-cols-3 gap-3 pt-6 border-t border-slate-800/80 max-w-lg">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-[#161F30] border border-[#00E676]/30 flex items-center justify-center text-[#00E676]">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-300 leading-tight">Canchas de calidad</span>
+            </div>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-[#161F30] border border-[#00E676]/30 flex items-center justify-center text-[#00E676]">
+                <i data-lucide="sun-medium" class="w-5 h-5"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-300 leading-tight">Iluminación LED</span>
+            </div>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-[#161F30] border border-[#00E676]/30 flex items-center justify-center text-[#00E676]">
+                <i data-lucide="utensils" class="w-5 h-5"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-300 leading-tight">Buffet y descanso</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Hero Image with High Impact Presentation -->
+        <div class="lg:col-span-5 relative">
+          <div class="relative rounded-3xl overflow-hidden border border-[rgba(0,230,118,0.25)] shadow-[0_20px_50px_rgba(0,0,0,0.8)] group">
+            <img src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=1200&q=85" alt="Cancha de Pádel Iluminada" class="w-full h-[460px] object-cover object-center group-hover:scale-105 transition-transform duration-700">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0B0F19] via-[#0B0F19]/40 to-transparent"></div>
+            
+            <!-- Inset Badge with Logo -->
+            <div class="absolute bottom-6 left-6 right-6 p-4 rounded-2xl bg-[#0B0F19]/80 backdrop-blur-md border border-slate-700/60 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-[#161F30] p-1 border border-[#00E676]/40 flex items-center justify-center">
+                  <img src="assets/logo.png" alt="Logo" class="w-full h-full object-contain">
+                </div>
+                <div>
+                  <div class="font-sports text-lg font-bold text-white tracking-wide">COMPLEJO PADEL 3</div>
+                  <div class="text-xs text-[#00E676] font-medium flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#00E676] inline-block"></span>
+                    Turnos disponibles para hoy
+                  </div>
+                </div>
+              </div>
+              <a href="#reservar" class="p-2.5 rounded-full bg-[#00E676] text-black hover:scale-110 transition-transform">
+                <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= NUESTRAS INSTALACIONES ================= -->
+  <section id="canchas" class="py-20 bg-[#070A10]/60 border-y border-slate-800/80 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div>
+          <span class="text-[#00E676] font-sports font-bold text-sm tracking-widest uppercase">NUESTRAS INSTALACIONES</span>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-sports font-bold text-white mt-1 uppercase">
+            TODO LO QUE NECESITÁS <br class="hidden sm:inline">EN UN SOLO LUGAR
+          </h2>
+        </div>
+        <p class="text-slate-400 text-sm sm:text-base max-w-md">
+          En Complejo Padel 3 contamos con instalaciones modernas y equipadas para que vivas la mejor experiencia en cada partida.
+        </p>
+      </div>
+
+      <!-- Feature Cards Grid (3 Columns) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Card 1: Canchas de Pádel -->
+        <div class="glass-card group p-6 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="relative h-48 rounded-xl overflow-hidden mb-4">
+              <img src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80" alt="Canchas de Pádel" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute top-3 left-3">
+                <span class="badge-neon">🎾 Oficial WPT</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 text-[#00E676]">
+              <i data-lucide="layout-grid" class="w-5 h-5"></i>
+              <h3 class="text-2xl font-sports font-bold text-white">Canchas de Pádel</h3>
+            </div>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              Pistas panorámicas con césped sintético oficial WPT, cristal templado de alta resistencia y luces LED proyectadas sin sombras.
+            </p>
+          </div>
+          <div class="pt-6 mt-6 border-t border-slate-800 flex items-center justify-between">
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">4 canchas</span>
+              <span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">Césped WPT</span>
+            </div>
+            <a href="#reservar" class="w-9 h-9 rounded-full bg-[#1E293B] group-hover:bg-[#00E676] text-slate-300 group-hover:text-black flex items-center justify-center transition-all">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 2: Cancha de Fútbol 5 y 7 -->
+        <div class="glass-card group p-6 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="relative h-48 rounded-xl overflow-hidden mb-4">
+              <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80" alt="Canchas de Fútbol" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute top-3 left-3">
+                <span class="badge-location-interior">⚽ Fútbol 5 & 7</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 text-[#10B981]">
+              <i data-lucide="shield" class="w-5 h-5"></i>
+              <h3 class="text-2xl font-sports font-bold text-white">Canchas de Fútbol</h3>
+            </div>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              Canchas de fútbol con césped sintético de alta densidad 50mm y amortiguación premium, ideal para partidos con amigos y torneos.
+            </p>
+          </div>
+          <div class="pt-6 mt-6 border-t border-slate-800 flex items-center justify-between">
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">Fútbol 5 y 7</span>
+              <span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">Césped Sintético</span>
+            </div>
+            <a href="#reservar" class="w-9 h-9 rounded-full bg-[#1E293B] group-hover:bg-[#00E676] text-slate-300 group-hover:text-black flex items-center justify-center transition-all">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 3: Snack Bar & Buffet -->
+        <div class="glass-card group p-6 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="relative h-48 rounded-xl overflow-hidden mb-4">
+              <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80" alt="Snack Bar Buffet" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute top-3 left-3">
+                <span class="badge-location-exterior">🍔 Tercer Tiempo</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 text-[#FFD600]">
+              <i data-lucide="utensils" class="w-5 h-5"></i>
+              <h3 class="text-2xl font-sports font-bold text-white">Snack Bar</h3>
+            </div>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              Disfrutá del mejor tercer tiempo con amigos en nuestro buffet. Variedad en bebidas frías, comidas rápidas, picadas y pantallas HD.
+            </p>
+          </div>
+          <div class="pt-6 mt-6 border-t border-slate-800 flex items-center justify-between">
+            <div class="flex flex-wrap gap-2">
+              <span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">Bebidas</span>
+              <span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">Comidas</span>
+            </div>
+            <a href="#servicios" class="w-9 h-9 rounded-full bg-[#1E293B] group-hover:bg-[#00E676] text-slate-300 group-hover:text-black flex items-center justify-center transition-all">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOTOR DE RESERVAS (CLIENT BOOKING) ================= -->
+  <section id="reservar" class="py-20 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="glass-card p-6 sm:p-10 border border-[rgba(0,230,118,0.25)] shadow-[0_0_50px_rgba(0,0,0,0.6)]">
+        
+        <!-- Header del Motor -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-8 border-b border-slate-800">
+          <div>
+            <span class="badge-neon mb-2">Pádel & Fútbol</span>
+            <h2 class="text-3xl sm:text-4xl font-sports font-bold text-white uppercase">
+              Reservá tu Turno en Vivo
+            </h2>
+            <p class="text-slate-400 text-sm mt-1">
+              Seleccioná deporte, cancha, fecha y horario. Confirmación instantánea por WhatsApp.
+            </p>
+          </div>
+          
+          <!-- Live Status Indicator -->
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0B0F19] border border-slate-700">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse"></span>
+            <span class="text-xs font-semibold text-slate-300">Disponibilidad en tiempo real</span>
+          </div>
+        </div>
+
+        <!-- Sport & Location Filter Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+          
+          <!-- Sport Filter -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filtrar por Deporte:</label>
+            <div class="flex flex-wrap gap-2">
+              <button class="filter-btn-modern active" data-filter-sport="todos">
+                <span>🏆 Todos</span>
+              </button>
+              <button class="filter-btn-modern" data-filter-sport="padel">
+                <span>🎾 Pádel</span>
+              </button>
+              <button class="filter-btn-modern" data-filter-sport="futbol">
+                <span>⚽ Fútbol</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Location Filter -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filtrar por Ubicación:</label>
+            <div class="flex flex-wrap gap-2">
+              <button class="filter-btn-modern active" data-filter-location="todos">
+                <span>📍 Todas</span>
+              </button>
+              <button class="filter-btn-modern" data-filter-location="interior">
+                <span>🏠 Interior Techada</span>
+              </button>
+              <button class="filter-btn-modern" data-filter-location="exterior">
+                <span>☀️ Exterior</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- PASO 1: Canchas Selector Grid -->
+        <div class="my-8">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">1</span>
+            <h3 class="text-lg font-sports font-bold text-white uppercase tracking-wide">Seleccioná la Cancha:</h3>
+          </div>
+          <div id="canchas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+        </div>
+
+        <!-- PASO 2: Date Selector (Horizontal Scroll) -->
+        <div class="my-8">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">2</span>
+            <h3 class="text-lg font-sports font-bold text-white uppercase tracking-wide">Seleccioná el Día:</h3>
+          </div>
+          <div id="fechas-row" class="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+        </div>
+
+        <!-- PASO 3: Duration Selector (1h vs 2h) -->
+        <div class="my-8">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">3</span>
+            <h3 class="text-lg font-sports font-bold text-white uppercase tracking-wide">Duración del Turno:</h3>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button type="button" class="filter-btn-modern active" data-duration="1">
+              <span>⏱️ 1 Hora de Turno</span>
+            </button>
+            <button type="button" class="filter-btn-modern" data-duration="2" id="btn-duration-2h">
+              <span>⏱️ 2 Horas (Doble Turno · Recomendado Pádel 🎾)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PASO 4: Time Slot Selector -->
+        <div class="my-8">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">4</span>
+              <h3 id="horarios-section-title" class="text-lg font-sports font-bold text-white uppercase tracking-wide">
+                Horarios Disponibles:
+              </h3>
+            </div>
+          </div>
+          <div id="horarios-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+          <div id="sin-horarios" class="hidden p-6 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-slate-400">
+            No hay horarios disponibles en esta cancha para la fecha y duración seleccionadas. Probá con otro día u otra cancha.
+          </div>
+        </div>
+
+        <!-- Formulario de Confirmación / Reserva -->
+        <div id="booking-form" class="hidden mt-8 pt-8 border-t border-slate-800">
+          
+          <!-- Summary Box -->
+          <div class="p-6 rounded-2xl bg-[#0B0F19] border border-[rgba(0,230,118,0.3)] shadow-[0_0_20px_rgba(0,230,118,0.1)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+            <div>
+              <div id="selected-slot-label" class="font-sports text-xl text-white font-bold tracking-wide">
+                Pista 1 - Cristal · Sábado 29 de agosto · 19:00 hs
+              </div>
+              <div id="selected-slot-tags" class="flex flex-wrap gap-2 mt-2">
+                <!-- Badges -->
+              </div>
+            </div>
+            <div class="text-left md:text-right">
+              <div class="text-xs text-slate-400 font-semibold uppercase">Total a Pagar:</div>
+              <div id="selected-slot-price-val" class="font-bebas text-3xl text-[#00E676]">
+                $ 24.000
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Fields -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="cliente-nombre" class="block text-xs font-bold text-slate-300 uppercase mb-1">
+                Nombre y Apellido del Jugador / Capitán *
+              </label>
+              <input id="cliente-nombre" type="text" placeholder="Ej: Lucas Martínez" class="w-full px-4 py-3 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all" required>
+            </div>
+            <div>
+              <label for="cliente-whatsapp" class="block text-xs font-bold text-slate-300 uppercase mb-1">
+                WhatsApp de Contacto (opcional)
+              </label>
+              <input id="cliente-whatsapp" type="tel" placeholder="Ej: 261 456-7890" class="w-full px-4 py-3 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all">
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label for="cliente-equipo" class="block text-xs font-bold text-slate-300 uppercase mb-1">
+              Nombre de Pareja o Equipo (opcional)
+            </label>
+            <input id="cliente-equipo" type="text" placeholder="Ej: Los Smashers / Galácticos FC" class="w-full px-4 py-3 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all">
+          </div>
+
+          <p id="form-error" class="text-red-400 text-sm font-semibold mb-4 min-h-[20px]"></p>
+
+          <button id="btn-reservar" class="btn-neon-pill w-full justify-center text-lg py-4 shadow-[0_0_30px_rgba(0,230,118,0.4)]">
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-black"></i>
+            <span>Confirmar Reserva de Turno</span>
+          </button>
+        </div>
+
+        <!-- Panel de Confirmación Exitoso -->
+        <div id="confirm-panel" class="hidden mt-8 p-8 rounded-2xl bg-[#0B0F19] border-2 border-[#00E676] text-center space-y-6">
+          <div id="confirm-icon-box" class="w-20 h-20 rounded-full bg-[#161F30] border-2 border-[#00E676] flex items-center justify-center text-4xl mx-auto shadow-[0_0_30px_rgba(0,230,118,0.3)]">
+            🎾
+          </div>
+          <div>
+            <h3 class="text-3xl font-sports font-bold text-white uppercase">¡Turno Reservado con Éxito!</h3>
+            <p class="text-slate-400 text-sm mt-1">Tu lugar ha sido registrado en el sistema del complejo.</p>
+          </div>
+
+          <div id="confirm-card-content" class="max-w-lg mx-auto bg-[#161F30] p-6 rounded-xl border border-slate-700 text-left space-y-3">
+            <!-- Dynamic summary content -->
+          </div>
+
+          <div class="max-w-lg mx-auto space-y-3">
+            <button id="btn-confirmar-whatsapp" class="w-full py-4 px-6 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-base flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(37,211,102,0.4)]">
+              <i data-lucide="message-circle" class="w-5 h-5"></i>
+              <span>Confirmar Asistencia por WhatsApp</span>
+            </button>
+            <button id="btn-reservar-otro" class="w-full py-3 px-6 rounded-full bg-[#1E293B] hover:bg-[#28384E] text-slate-300 hover:text-white font-semibold text-sm transition-all">
+              Reservar Otro Turno
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SERVICIOS COMPLETOS ================= -->
+  <section id="servicios" class="py-20 bg-[#070A10]/60 border-y border-slate-800/80 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-[#00E676] font-sports font-bold text-sm tracking-widest uppercase">INSTALACIONES & COMODIDADES</span>
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
+          Servicios Pensados para Vos
+        </h2>
+        <p class="text-slate-400 text-base">
+          Todo lo necesario para que juegues cómodo, seguro y disfrutes antes, durante y después de cada partido.
+        </p>
+      </div>
+
+      <!-- Dynamic Services Grid -->
+      <div id="servicios-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Rendered dynamically by app.js from /api/servicios -->
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= NUEVA SECCIÓN: EVENTOS Y TORNEOS ================= -->
+  <section id="eventos" class="py-20 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00E676]/10 border border-[#00E676]/30 text-[#00E676] text-xs font-bold uppercase mb-2">
+            <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
+            <span>Comunidad & Competición</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
+            Eventos, Torneos & Clínicas
+          </h2>
+        </div>
+        <p class="text-slate-400 text-sm sm:text-base max-w-md">
+          Participá de nuestros campeonatos de fin de semana, clínicas de perfeccionamiento y torneos relámpago con grandes premios.
+        </p>
+      </div>
+
+      <!-- Tournaments & Events Cards Grid -->
+      <div id="eventos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Rendered dynamically by app.js from /api/eventos -->
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= ¿POR QUÉ ELEGIRNOS? ================= -->
+  <section id="porque-elegirnos" class="py-20 bg-[#070A10]/60 border-y border-slate-800/80 relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left Image with Handwritten Badge -->
+        <div class="lg:col-span-6 relative">
+          <div class="relative rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
+            <img src="https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1000&q=80" alt="Paleta y Pelotas de Pádel" class="w-full h-[400px] object-cover">
+            <div class="absolute inset-0 bg-gradient-to-tr from-[#0B0F19]/90 via-transparent to-transparent"></div>
+            
+            <div class="absolute bottom-8 left-8">
+              <span class="font-bebas text-4xl sm:text-5xl text-[#00E676] drop-shadow-[0_0_12px_rgba(0,230,118,0.6)]">
+                Más que un deporte
+              </span>
+              <p class="text-slate-300 text-xs uppercase tracking-wider font-semibold">Pasión, amistad y tercer tiempo</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Content & Benefits List -->
+        <div class="lg:col-span-6 space-y-6">
+          <div>
+            <span class="text-[#00E676] font-sports font-bold text-sm tracking-widest uppercase">¿POR QUÉ ELEGIRNOS?</span>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-sports font-bold text-white mt-1 uppercase">
+              EL COMPLEJO DE REFERENCIA <br class="hidden sm:inline">EN LAVALLE
+            </h2>
+          </div>
+
+          <div class="space-y-4 pt-2">
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-[#00E676]/20 border border-[#00E676] flex items-center justify-center text-[#00E676] shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white">Iluminación LED proyectada</h4>
+                <p class="text-slate-400 text-sm">Visibilidad óptima en toda la pista para jugar de noche sin encandilamiento.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-[#00E676]/20 border border-[#00E676] flex items-center justify-center text-[#00E676] shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white">Césped sintético de densidad profesional</h4>
+                <p class="text-slate-400 text-sm">Excelente bote de pelota y máxima amortiguación para cuidar tus articulaciones.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-[#00E676]/20 border border-[#00E676] flex items-center justify-center text-[#00E676] shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white">Vestuarios con duchas de agua caliente</h4>
+                <p class="text-slate-400 text-sm">Espacios amplios, lockers individuales y máxima higiene permanente.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-[#00E676]/20 border border-[#00E676] flex items-center justify-center text-[#00E676] shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white">Buffet equipado para el tercer tiempo</h4>
+                <p class="text-slate-400 text-sm">Bebidas heladas, picadas, comidas y el mejor ambiente post-partido.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-[#00E676]/20 border border-[#00E676] flex items-center justify-center text-[#00E676] shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white">Ambiente cómodo, seguro y familiar</h4>
+                <p class="text-slate-400 text-sm">Predio monitoreado con estacionamiento interno para tu tranquilidad.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CÓMO RESERVAR (4 PASOS) ================= -->
+  <section class="py-20 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      
+      <span class="text-[#00E676] font-sports font-bold text-sm tracking-widest uppercase">¿CÓMO RESERVAR?</span>
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-sports font-bold text-white mt-1 uppercase mb-16">
+        ES MUY FÁCIL
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+        
+        <!-- Step 1 -->
+        <div class="glass-card p-6 flex flex-col items-center text-center relative group">
+          <div class="w-14 h-14 rounded-2xl bg-[#161F30] border border-[#00E676]/30 flex items-center justify-center text-[#00E676] mb-4 group-hover:scale-110 group-hover:border-[#00E676] transition-all shadow-[0_0_15px_rgba(0,230,118,0.15)]">
+            <i data-lucide="calendar" class="w-7 h-7"></i>
+          </div>
+          <div class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center mb-3">1</div>
+          <h3 class="text-lg font-sports font-bold text-white uppercase mb-1">Elegí el día y la hora</h3>
+          <p class="text-slate-400 text-xs leading-relaxed">Seleccioná entre los próximos 14 días y consultá los turnos disponibles.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="glass-card p-6 flex flex-col items-center text-center relative group">
+          <div class="w-14 h-14 rounded-2xl bg-[#161F30] border border-[#00E676]/30 flex items-center justify-center text-[#00E676] mb-4 group-hover:scale-110 group-hover:border-[#00E676] transition-all shadow-[0_0_15px_rgba(0,230,118,0.15)]">
+            <i data-lucide="layout-grid" class="w-7 h-7"></i>
+          </div>
+          <div class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center mb-3">2</div>
+          <h3 class="text-lg font-sports font-bold text-white uppercase mb-1">Seleccioná la cancha</h3>
+          <p class="text-slate-400 text-xs leading-relaxed">Elegí entre pádel o fútbol, interior techada o exterior, y 1h o 2hs de duración.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="glass-card p-6 flex flex-col items-center text-center relative group">
+          <div class="w-14 h-14 rounded-2xl bg-[#161F30] border border-[#00E676]/30 flex items-center justify-center text-[#00E676] mb-4 group-hover:scale-110 group-hover:border-[#00E676] transition-all shadow-[0_0_15px_rgba(0,230,118,0.15)]">
+            <i data-lucide="credit-card" class="w-7 h-7"></i>
+          </div>
+          <div class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center mb-3">3</div>
+          <h3 class="text-lg font-sports font-bold text-white uppercase mb-1">Completá tus datos</h3>
+          <p class="text-slate-400 text-xs leading-relaxed">Ingresá tu nombre y equipo para asegurar el lugar en el sistema.</p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="glass-card p-6 flex flex-col items-center text-center relative group">
+          <div class="w-14 h-14 rounded-2xl bg-[#161F30] border border-[#00E676]/30 flex items-center justify-center text-[#00E676] mb-4 group-hover:scale-110 group-hover:border-[#00E676] transition-all shadow-[0_0_15px_rgba(0,230,118,0.15)]">
+            <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+          </div>
+          <div class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center mb-3">4</div>
+          <h3 class="text-lg font-sports font-bold text-white uppercase mb-1">¡Listo! Turno confirmado</h3>
+          <p class="text-slate-400 text-xs leading-relaxed">Enviá la confirmación directa por WhatsApp y vení a jugar.</p>
+        </div>
+
+      </div>
+
+      <div class="mt-12">
+        <a href="#reservar" class="btn-neon-pill text-base px-8 py-4">
+          <i data-lucide="calendar" class="w-5 h-5 text-black"></i>
+          <span>Reservar Turno Ahora</span>
+          <i data-lucide="arrow-right" class="w-5 h-5 text-black ml-1"></i>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= UBICACIÓN & CONTACT BAR ================= -->
+  <section id="ubicacion" class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="glass-card p-6 sm:p-8 border border-[rgba(0,230,118,0.3)] bg-gradient-to-r from-[#161F30] via-[#0B0F19] to-[#161F30] flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_30px_rgba(0,230,118,0.15)]">
+        
+        <!-- Left: Brand statement -->
+        <div class="flex items-center gap-4 text-left">
+          <div class="w-14 h-14 rounded-2xl bg-[#0B0F19] p-2 border border-[#00E676]/40 shrink-0">
+            <img src="assets/logo.png" alt="Logo" class="w-full h-full object-contain">
+          </div>
+          <div>
+            <div class="font-sports text-2xl font-bold text-white tracking-wide">PADEL <span class="text-[#00E676]">3</span></div>
+            <div class="text-xs text-slate-400 font-semibold tracking-wider uppercase">TU PARTIDO, NUESTRO COMPROMISO</div>
+          </div>
+        </div>
+
+        <!-- Center: Address -->
+        <div class="flex items-center gap-2 text-center md:text-left">
+          <i data-lucide="map-pin" class="w-6 h-6 text-[#00E676] shrink-0"></i>
+          <div>
+            <div class="text-xs text-slate-400 uppercase font-bold tracking-wider">TE ESPERAMOS EN</div>
+            <div id="footer-direccion" class="text-base font-bold text-white">Lavalle, Mendoza · Complejo Deportivo</div>
+          </div>
+        </div>
+
+        <!-- Right: Maps Link CTA -->
+        <div>
+          <a id="btn-google-maps" href="https://maps.google.com/?q=Lavalle+Mendoza" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#1E293B] hover:bg-[#00E676] text-white hover:text-black font-bold text-sm border border-slate-700 hover:border-[#00E676] transition-all shadow-md">
+            <i data-lucide="map" class="w-4 h-4"></i>
+            <span>Ver en Google Maps</span>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-[#070A10] border-t border-slate-800/80 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-800/80">
+        
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <img src="assets/logo.png" alt="Complejo Padel 3" class="w-10 h-10 object-contain">
+          <span class="font-sports text-xl font-bold text-white tracking-wider">
+            PADEL <span class="text-[#00E676]">3</span>
+          </span>
+        </div>
+
+        <!-- Links -->
+        <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-400 font-medium">
+          <a href="#inicio" class="hover:text-[#00E676] transition-colors">Inicio</a>
+          <a href="#canchas" class="hover:text-[#00E676] transition-colors">Canchas</a>
+          <a href="#servicios" class="hover:text-[#00E676] transition-colors">Servicios</a>
+          <a href="#eventos" class="hover:text-[#00E676] transition-colors">Eventos & Torneos</a>
+          <a href="#porque-elegirnos" class="hover:text-[#00E676] transition-colors">¿Por qué elegirnos?</a>
+          <a href="#ubicacion" class="hover:text-[#00E676] transition-colors">Contacto</a>
+        </div>
+
+        <!-- Social Icons -->
+        <div class="flex items-center gap-3">
+          <a id="footer-wa-link" href="https://wa.me/5491112345678" target="_blank" class="w-9 h-9 rounded-full bg-[#161F30] hover:bg-[#00E676] text-slate-300 hover:text-black flex items-center justify-center transition-all">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+          </a>
+          <a href="https://instagram.com" target="_blank" class="w-9 h-9 rounded-full bg-[#161F30] hover:bg-[#00E676] text-slate-300 hover:text-black flex items-center justify-center transition-all">
+            <i data-lucide="instagram" class="w-4 h-4"></i>
+          </a>
+          <a href="https://facebook.com" target="_blank" class="w-9 h-9 rounded-full bg-[#161F30] hover:bg-[#00E676] text-slate-300 hover:text-black flex items-center justify-center transition-all">
+            <i data-lucide="facebook" class="w-4 h-4"></i>
+          </a>
+        </div>
+
+      </div>
+
+      <div class="pt-8 text-center text-xs text-slate-500">
+        © 2026 Complejo Padel 3. Todos los derechos reservados. Sistema de Reservas en Vivo.
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script>
+    // Initialize Lucide Icons
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      // Mobile Menu Toggle
+      const mobileBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const iconOpen = document.getElementById('menu-icon-open');
+      const iconClose = document.getElementById('menu-icon-close');
+
+      if (mobileBtn && mobileMenu) {
+        mobileBtn.addEventListener('click', () => {
+          const isOpen = !mobileMenu.classList.contains('hidden');
+          if (isOpen) {
+            mobileMenu.classList.add('hidden');
+            iconOpen.classList.remove('hidden');
+            iconClose.classList.add('hidden');
+          } else {
+            mobileMenu.classList.remove('hidden');
+            iconOpen.classList.add('hidden');
+            iconClose.classList.remove('hidden');
+          }
+        });
+
+        // Close on nav link click
+        document.querySelectorAll('.mobile-nav-link').forEach(link => {
+          link.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+            iconOpen.classList.remove('hidden');
+            iconClose.classList.add('hidden');
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

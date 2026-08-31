@@ -1,0 +1,443 @@
+/* =========================================================
+   COMPLEJO PADEL 3 - MODERN DARK SPORTS DESIGN SYSTEM
+   Tailwind CSS & DaisyUI Compatible · Neon Lime Glow
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg-main: #0B0F19;
+  --bg-darker: #070A10;
+  --bg-card: #161F30;
+  --bg-card-hover: #1C273D;
+  --bg-surface: #1E293B;
+  
+  --padel-neon: #00E676;
+  --padel-neon-hover: #00C853;
+  --padel-neon-glow: rgba(0, 230, 118, 0.35);
+  --padel-neon-subtle: rgba(0, 230, 118, 0.12);
+  
+  --cyan-neon: #00E5FF;
+  --turf-green: #10B981;
+  --futbol-orange: #FF6D00;
+  --gold: #FFD600;
+  --red-alert: #FF3D71;
+  
+  --text-main: #FFFFFF;
+  --text-muted: #94A3B8;
+  --text-subtle: #64748B;
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(0, 230, 118, 0.3);
+  
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+  
+  --font-sports: 'Oswald', 'Bebas Neue', sans-serif;
+  --font-body: 'Outfit', 'Inter', -apple-system, sans-serif;
+  --font-title-alt: 'Bebas Neue', cursive;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Athletic Headings */
+h1, h2, h3, h4, .font-sports {
+  font-family: var(--font-sports);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.font-bebas {
+  font-family: var(--font-title-alt);
+  letter-spacing: 1px;
+}
+
+/* Neon Glow Accents */
+.text-neon {
+  color: var(--padel-neon);
+}
+
+.bg-neon {
+  background-color: var(--padel-neon);
+}
+
+.glow-neon {
+  box-shadow: 0 0 20px var(--padel-neon-glow);
+}
+
+.glow-text-neon {
+  text-shadow: 0 0 16px rgba(0, 230, 118, 0.4);
+}
+
+.border-neon {
+  border-color: var(--padel-neon);
+}
+
+/* Sticky Navbar */
+.navbar-blur {
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Brand Button: Neon Pill */
+.btn-neon-pill {
+  background: var(--padel-neon);
+  color: #070A10;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.925rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 20px var(--padel-neon-glow);
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-neon-pill:hover {
+  background: #00FF88;
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0, 230, 118, 0.6);
+  color: #000;
+}
+
+.btn-neon-pill:active {
+  transform: translateY(0);
+}
+
+/* Dark Glass Cards */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 230, 118, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Badge Styles */
+.badge-neon {
+  background: var(--padel-neon-subtle);
+  color: var(--padel-neon);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-transform: uppercase;
+}
+
+.badge-location-interior {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--cyan-neon);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-location-exterior {
+  background: rgba(255, 214, 0, 0.12);
+  color: var(--gold);
+  border: 1px solid rgba(255, 214, 0, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Pitch Silhouette SVG Container */
+.pitch-container {
+  width: 100%;
+  height: 95px;
+  background: linear-gradient(180deg, #091A2E 0%, #061120 100%);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 210, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.pitch-container.pitch-futbol {
+  background: linear-gradient(180deg, #062817 0%, #03140B 100%);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.pitch-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pitch-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Filter Buttons (Pádel, Fútbol, Exterior, Interior, 1h vs 2h) */
+.filter-btn-modern {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.filter-btn-modern:hover {
+  color: #FFF;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(30, 41, 59, 1);
+}
+
+.filter-btn-modern.active {
+  background: var(--padel-neon);
+  color: #070A10;
+  border-color: var(--padel-neon);
+  font-weight: 800;
+  box-shadow: 0 0 16px var(--padel-neon-glow);
+}
+
+.filter-btn-modern.active-padel {
+  background: var(--cyan-neon);
+  color: #070A10;
+  border-color: var(--cyan-neon);
+  font-weight: 800;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+}
+
+.filter-btn-modern.active-futbol {
+  background: var(--turf-green);
+  color: #070A10;
+  border-color: var(--turf-green);
+  font-weight: 800;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+}
+
+/* Date Pill Selector */
+.fecha-pill-modern {
+  flex: 0 0 auto;
+  min-width: 68px;
+  padding: 10px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  text-align: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fecha-pill-modern:hover {
+  border-color: rgba(0, 230, 118, 0.4);
+  color: #FFF;
+}
+
+.fecha-pill-modern.active {
+  background: var(--bg-card-hover);
+  border: 2px solid var(--padel-neon);
+  color: #FFF;
+  box-shadow: 0 0 18px var(--padel-neon-glow);
+  transform: translateY(-2px);
+}
+
+.fecha-pill-modern .dow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fecha-pill-modern.active .dow {
+  color: var(--padel-neon);
+}
+
+.fecha-pill-modern .num {
+  font-family: var(--font-sports);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #FFF;
+}
+
+/* Time Slot Buttons */
+.slot-btn-modern {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 8px;
+  color: #FFF;
+  font-family: var(--font-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-btn-modern:hover:not(:disabled) {
+  border-color: var(--padel-neon);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+.slot-btn-modern.selected {
+  background: var(--padel-neon);
+  color: #070A10;
+  border-color: var(--padel-neon);
+  box-shadow: 0 0 18px var(--padel-neon-glow);
+}
+
+.slot-btn-modern.selected .sub-label {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.slot-btn-modern:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: rgba(15, 23, 42, 0.5);
+  border-color: transparent;
+  text-decoration: line-through;
+}
+
+.slot-btn-modern .sub-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--padel-neon);
+}
+
+/* Subtle background glowing mesh */
+.hero-glow-mesh {
+  position: absolute;
+  top: -150px;
+  right: -150px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0, 230, 118, 0.15) 0%, rgba(11, 15, 25, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-glow-blue {
+  position: absolute;
+  bottom: 0;
+  left: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, rgba(11, 15, 25, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 230, 118, 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+
+/* Print Styles for CMS Export */
+@media print {
+  body {
+    background: #FFF !important;
+    color: #000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .glass-card {
+    border: 1px solid #CCC !important;
+    background: #FFF !important;
+    box-shadow: none !important;
+  }
+}

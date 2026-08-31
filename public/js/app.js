@@ -1,0 +1,865 @@
+// =========================================================
+// COMPLEJO PADEL 3 - CLIENT LOGIC & DYNAMIC BOOKING SYSTEM
+// =========================================================
+
+window.state = {
+  config: {
+    nombre: 'COMPLEJO PADEL 3',
+    subtitulo: 'Canchas de Pádel & Fútbol · Techadas y Exterior · Buffet y Estacionamiento',
+    direccion: 'Lavalle, Mendoza · Complejo Deportivo',
+    maps: 'https://maps.google.com/?q=Lavalle+Mendoza',
+    whatsapp: '5491112345678',
+    horaInicio: '14:00',
+    horaFin: '24:00',
+    diasActivos: [1, 2, 3, 4, 5, 6, 0],
+    monedaSimbolo: '$',
+    canchas: []
+  },
+  servicios: [],
+  eventos: [],
+  turnos: [],
+  selectedSport: 'todos',
+  selectedLocation: 'todos',
+  selectedDuration: 1, // 1h or 2hs
+  selectedCanchaId: null,
+  selectedFecha: null,
+  selectedHora: null,
+  lastBooking: null
+};
+
+const DIAS_ADELANTE = 14;
+const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+// Utilities
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function formatDateISO(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function hoyISO() {
+  return formatDateISO(new Date());
+}
+
+function horaActualMin() {
+  const n = new Date();
+  return n.getHours() * 60 + n.getMinutes();
+}
+
+function formatCurrency(amount) {
+  const symbol = window.state.config.monedaSimbolo || '$';
+  return `${symbol} ${Number(amount || 0).toLocaleString('es-AR')}`;
+}
+
+function formatFechaLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return { dow: DIAS_SEMANA[date.getDay()], num: d };
+}
+
+function formatFechaLarga(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return `${DIAS_SEMANA[date.getDay()]} ${d} de ${MESES[m - 1]}`;
+}
+
+// Generate Pitch Silhouette SVG
+function getCourtSvgHtml(cancha) {
+  if (cancha.deporte === 'padel') {
+    return `
+      <div class="pitch-container pitch-padel">
+        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="188" height="78" fill="none" stroke="rgba(0, 210, 255, 0.7)" stroke-width="2" />
+          <rect x="8" y="8" width="184" height="74" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
+          <line x1="38" y1="8" x2="38" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
+          <line x1="162" y1="8" x2="162" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
+          <line x1="38" y1="45" x2="162" y2="45" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
+          <line x1="100" y1="4" x2="100" y2="86" stroke="#00E676" stroke-width="2.5" stroke-dasharray="3,2" />
+          <circle cx="100" cy="5" r="2.5" fill="#00E676" />
+          <circle cx="100" cy="85" r="2.5" fill="#00E676" />
+        </svg>
+        <div class="pitch-indicator">
+          <span>🎾 Pádel (4 jug. · 2 vs 2)</span>
+        </div>
+      </div>
+    `;
+  } else {
+    return `
+      <div class="pitch-container pitch-futbol">
+        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="5" width="190" height="80" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <line x1="100" y1="5" x2="100" y2="85" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <circle cx="100" cy="45" r="16" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <circle cx="100" cy="45" r="1.5" fill="#FFF" />
+          <rect x="5" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+          <rect x="169" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+        </svg>
+        <div class="pitch-indicator">
+          <span>⚽ Fútbol ${cancha.jugadores || 5} (${cancha.jugadores || 5} vs ${cancha.jugadores || 5})</span>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Generate active dates for next 14 days
+function generarProximasFechas() {
+  const resultado = [];
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const activos = window.state.config.diasActivos || [];
+  for (let i = 0; i < DIAS_ADELANTE; i++) {
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() + i);
+    if (activos.includes(d.getDay())) {
+      resultado.push(formatDateISO(d));
+    }
+  }
+  return resultado;
+}
+
+// Generate 1-hour time slots based on opening and closing hours
+function generarHorarios() {
+  const horarios = [];
+  const [hIni, mIni] = (window.state.config.horaInicio || '14:00').split(':').map(Number);
+  let [hFin, mFin] = (window.state.config.horaFin || '24:00').split(':').map(Number);
+  if (hFin === 0 && mFin === 0) hFin = 24;
+
+  let inicio = hIni * 60 + (mIni || 0);
+  const fin = hFin * 60 + (mFin || 0);
+  const dur = 60; // 1h
+
+  while (inicio + dur <= fin) {
+    const hh = Math.floor(inicio / 60) % 24;
+    const mm = inicio % 60;
+    horarios.push(`${pad2(hh)}:${pad2(mm)}`);
+    inicio += dur;
+  }
+  return horarios;
+}
+
+function horariosDisponibles(canchaId, fecha, duracion = 1) {
+  const todos = generarHorarios();
+  const duracionHoras = Number(duracion) === 2 ? 2 : 1;
+
+  // Build a set of all occupied individual 1-hour slots
+  const ocupados = new Set();
+  (window.state.turnos || [])
+    .filter(t => t.canchaId === canchaId && t.fecha === fecha)
+    .forEach(t => {
+      const dur = Number(t.duracion) || 1;
+      const [hStr, mStr] = t.hora.split(':').map(Number);
+      for (let i = 0; i < dur; i++) {
+        const hh = (hStr + i) % 24;
+        ocupados.add(`${pad2(hh)}:${pad2(mStr || 0)}`);
+      }
+    });
+
+  const esHoy = fecha === hoyISO();
+  const ahora = horaActualMin();
+
+  // Closing hour limit check
+  let [hCierre, mCierre] = (window.state.config.horaFin || '24:00').split(':').map(Number);
+  if (hCierre === 0 && mCierre === 0) hCierre = 24;
+  const cierreMin = hCierre * 60 + (mCierre || 0);
+
+  return todos.map((h) => {
+    const [hh, mm] = h.split(':').map(Number);
+    const pasado = esHoy && (hh * 60 + mm) <= ahora;
+
+    const finSlotMin = (hh + duracionHoras) * 60 + mm;
+    const excedeCierre = finSlotMin > cierreMin;
+
+    let estaOcupado = ocupados.has(h) || pasado || excedeCierre;
+
+    if (!estaOcupado && duracionHoras === 2) {
+      const siguienteHora = `${pad2((hh + 1) % 24)}:${pad2(mm)}`;
+      if (ocupados.has(siguienteHora) || !todos.includes(siguienteHora)) {
+        estaOcupado = true;
+      }
+    }
+
+    return {
+      hora: h,
+      duracion: duracionHoras,
+      ocupado: estaOcupado
+    };
+  });
+}
+
+// Filter canchas
+function getCanchasFiltradas() {
+  let canchas = window.state.config.canchas || [];
+  if (window.state.selectedSport !== 'todos') {
+    canchas = canchas.filter(c => c.deporte === window.state.selectedSport);
+  }
+  if (window.state.selectedLocation !== 'todos') {
+    canchas = canchas.filter(c => c.ubicacion === window.state.selectedLocation);
+  }
+  return canchas;
+}
+
+// ================= RENDER FUNCTIONS =================
+
+function renderHeader() {
+  const cfg = window.state.config;
+
+  const subEl = document.getElementById('hero-subtitle');
+  if (subEl && cfg.subtitulo) {
+    subEl.textContent = cfg.subtitulo;
+  }
+
+  const dirEl = document.getElementById('footer-direccion');
+  if (dirEl && cfg.direccion) {
+    dirEl.textContent = cfg.direccion;
+  }
+
+  const mapsBtn = document.getElementById('btn-google-maps');
+  if (mapsBtn && cfg.maps) {
+    mapsBtn.href = cfg.maps;
+  }
+
+  const waLink = document.getElementById('footer-wa-link');
+  if (waLink && cfg.whatsapp) {
+    const cleanPhone = String(cfg.whatsapp).replace(/\D/g, '');
+    waLink.href = `https://wa.me/${cleanPhone}`;
+  }
+}
+
+function renderCanchas() {
+  const cont = document.getElementById('canchas-grid');
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  const canchas = getCanchasFiltradas();
+
+  if (canchas.length === 0) {
+    cont.innerHTML = `
+      <div class="p-8 rounded-2xl bg-[#161F30] border border-slate-800 text-center text-slate-400 col-span-full">
+        No hay canchas disponibles que coincidan con los filtros seleccionados.
+      </div>
+    `;
+    return;
+  }
+
+  if (!window.state.selectedCanchaId || !canchas.some(c => c.id === window.state.selectedCanchaId)) {
+    window.state.selectedCanchaId = canchas[0].id;
+  }
+
+  canchas.forEach(cancha => {
+    const isSelected = cancha.id === window.state.selectedCanchaId;
+    const card = document.createElement('div');
+    card.className = `glass-card p-5 cursor-pointer transition-all duration-300 ${isSelected ? 'border-2 border-[#00E676] bg-[#1C273D] shadow-[0_0_25px_rgba(0,230,118,0.25)]' : 'border border-slate-800 hover:border-slate-600'}`;
+
+    const isPadel = cancha.deporte === 'padel';
+    const sportBadgeClass = isPadel ? 'badge-neon' : 'badge-location-interior';
+    const sportBadgeLabel = isPadel ? '🎾 Pádel' : `⚽ Fútbol ${cancha.jugadores || 5}`;
+    const locationBadgeClass = cancha.ubicacion === 'interior' ? 'badge-location-interior' : 'badge-location-exterior';
+    const locationBadgeLabel = cancha.ubicacion === 'interior' ? '🏠 Interior' : '☀️ Exterior';
+
+    const pitchSvg = getCourtSvgHtml(cancha);
+
+    card.innerHTML = `
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <h4 class="font-sports text-lg font-bold text-white tracking-wide truncate">${escapeHtml(cancha.nombre)}</h4>
+        ${isSelected ? '<span class="w-2.5 h-2.5 rounded-full bg-[#00E676] shadow-[0_0_8px_#00E676]"></span>' : ''}
+      </div>
+      <div class="flex items-center gap-2 mb-3">
+        <span class="${sportBadgeClass}">${sportBadgeLabel}</span>
+        <span class="${locationBadgeClass}">${locationBadgeLabel}</span>
+      </div>
+      ${pitchSvg}
+      <div class="flex items-center justify-between pt-3 mt-2 border-t border-slate-800">
+        <div class="text-xs text-slate-400 truncate max-w-[140px]" title="${escapeHtml(cancha.superficie || '')}">
+          ${escapeHtml(cancha.superficie || 'Césped Pro')}
+        </div>
+        <div class="font-bebas text-2xl text-[#00E676]">
+          ${formatCurrency(cancha.precio)} <span class="text-xs font-body text-slate-400">/ h</span>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      window.state.selectedCanchaId = cancha.id;
+      window.state.selectedHora = null;
+      document.getElementById('booking-form').classList.add('hidden');
+      render();
+    });
+
+    cont.appendChild(card);
+  });
+}
+
+function renderFechas() {
+  const cont = document.getElementById('fechas-row');
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  const fechas = generarProximasFechas();
+  if (fechas.length === 0) {
+    cont.innerHTML = '<p class="text-slate-400 text-sm">El complejo no tiene días de atención activos configurados.</p>';
+    return;
+  }
+
+  if (!window.state.selectedFecha || !fechas.includes(window.state.selectedFecha)) {
+    window.state.selectedFecha = fechas[0];
+  }
+
+  fechas.forEach(iso => {
+    const { dow, num } = formatFechaLabel(iso);
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = `fecha-pill-modern ${iso === window.state.selectedFecha ? 'active' : ''}`;
+    pill.innerHTML = `<div class="dow">${dow}</div><div class="num">${num}</div>`;
+    pill.addEventListener('click', () => {
+      window.state.selectedFecha = iso;
+      window.state.selectedHora = null;
+      document.getElementById('booking-form').classList.add('hidden');
+      render();
+    });
+    cont.appendChild(pill);
+  });
+}
+
+function renderHorarios() {
+  const grid = document.getElementById('horarios-grid');
+  const vacio = document.getElementById('sin-horarios');
+  if (!grid || !vacio) return;
+  grid.innerHTML = '';
+
+  if (!window.state.selectedFecha || !window.state.selectedCanchaId) {
+    vacio.classList.add('hidden');
+    return;
+  }
+
+  const duracion = window.state.selectedDuration || 1;
+  const slots = horariosDisponibles(window.state.selectedCanchaId, window.state.selectedFecha, duracion);
+
+  const titleEl = document.getElementById('horarios-section-title');
+  if (titleEl) {
+    titleEl.textContent = `4. Horarios Disponibles (${duracion === 2 ? 'Turno Doble de 2 Horas' : 'Turno de 1 Hora'}):`;
+  }
+
+  if (slots.length === 0 || slots.every(s => s.ocupado)) {
+    vacio.classList.remove('hidden');
+  } else {
+    vacio.classList.add('hidden');
+  }
+
+  slots.forEach(s => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `slot-btn-modern ${s.hora === window.state.selectedHora ? 'selected' : ''}`;
+
+    const [hStr, mStr] = s.hora.split(':').map(Number);
+    const nextH = (hStr + duracion) % 24;
+    const slotRangeLabel = `${s.hora} a ${pad2(nextH)}:${pad2(mStr)}`;
+
+    btn.innerHTML = `
+      <span class="text-base font-sports tracking-wide">${s.hora} hs</span>
+      <span class="sub-label">${slotRangeLabel}</span>
+    `;
+    btn.disabled = s.ocupado;
+
+    if (!s.ocupado) {
+      btn.addEventListener('click', () => {
+        window.state.selectedHora = s.hora;
+        const cancha = (window.state.config.canchas || []).find(c => c.id === window.state.selectedCanchaId);
+
+        document.getElementById('confirm-panel').classList.add('hidden');
+        document.getElementById('booking-form').classList.remove('hidden');
+
+        // Update booking summary
+        const slotTitleEl = document.getElementById('selected-slot-label');
+        if (slotTitleEl && cancha) {
+          const sportIcon = cancha.deporte === 'padel' ? '🎾' : '⚽';
+          const durLabel = duracion === 2 ? '2 Horas (Doble Turno)' : '1 Hora';
+          slotTitleEl.textContent = `${sportIcon} ${cancha.nombre} · ${formatFechaLarga(window.state.selectedFecha)} · ${s.hora} a ${pad2(nextH)}:${pad2(mStr)} hs (${durLabel})`;
+        }
+
+        const tagsContainer = document.getElementById('selected-slot-tags');
+        if (tagsContainer && cancha) {
+          const isPadel = cancha.deporte === 'padel';
+          const locLabel = cancha.ubicacion === 'interior' ? '🏠 Interior Techada' : '☀️ Exterior';
+          const locClass = cancha.ubicacion === 'interior' ? 'badge-location-interior' : 'badge-location-exterior';
+          const formatLabel = isPadel ? 'Pádel 2 vs 2' : `Fútbol ${cancha.jugadores || 5}`;
+          const durBadge = duracion === 2 ? '<span class="badge-neon font-bold">⏱️ Doble Turno (2hs)</span>' : '';
+          tagsContainer.innerHTML = `
+            <span class="${isPadel ? 'badge-neon' : 'badge-location-interior'}">${formatLabel}</span>
+            <span class="${locClass}">${locLabel}</span>
+            ${durBadge}
+          `;
+        }
+
+        const priceValEl = document.getElementById('selected-slot-price-val');
+        if (priceValEl && cancha) {
+          const totalCalc = Number(cancha.precio || 20000) * duracion;
+          if (duracion === 2) {
+            priceValEl.innerHTML = `${formatCurrency(totalCalc)} <span class="text-xs font-body text-slate-400 font-normal">(2hs x ${formatCurrency(cancha.precio)})</span>`;
+          } else {
+            priceValEl.textContent = formatCurrency(totalCalc);
+          }
+        }
+
+        document.getElementById('form-error').textContent = '';
+        render();
+
+        // Smooth scroll to form on mobile
+        document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+
+    grid.appendChild(btn);
+  });
+}
+
+function renderServicios() {
+  const grid = document.getElementById('servicios-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const servicios = window.state.servicios || [];
+  if (servicios.length === 0) {
+    grid.innerHTML = '<p class="text-slate-400 col-span-full text-center">No hay servicios cargados actualmente.</p>';
+    return;
+  }
+
+  // Map icon names to Lucide icons
+  const iconMap = {
+    'Trophy': 'trophy',
+    'Flame': 'flame',
+    'Utensils': 'utensils',
+    'ShieldCheck': 'shield-check',
+    'Car': 'car',
+    'Sparkles': 'sparkles',
+    'Wifi': 'wifi',
+    'Tv': 'tv'
+  };
+
+  servicios.filter(s => s.activo !== false).forEach(srv => {
+    const card = document.createElement('div');
+    card.className = 'glass-card p-6 flex flex-col justify-between group';
+
+    const lucideName = iconMap[srv.icono] || 'check-circle-2';
+    const tagsHtml = (srv.tags || []).map(t => `<span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">${escapeHtml(t)}</span>`).join('');
+
+    card.innerHTML = `
+      <div class="space-y-4">
+        <div class="w-12 h-12 rounded-xl bg-[#1E293B] border border-[#00E676]/30 group-hover:border-[#00E676] group-hover:scale-110 flex items-center justify-center text-[#00E676] transition-all shadow-[0_0_15px_rgba(0,230,118,0.1)]">
+          <i data-lucide="${lucideName}" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-sports font-bold text-white tracking-wide mb-2">${escapeHtml(srv.titulo)}</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">${escapeHtml(srv.descripcion)}</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2 pt-6 mt-6 border-t border-slate-800">
+        ${tagsHtml}
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+function renderEventos() {
+  const grid = document.getElementById('eventos-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const eventos = window.state.eventos || [];
+  if (eventos.length === 0) {
+    grid.innerHTML = '<p class="text-slate-400 col-span-full text-center">No hay eventos ni torneos programados en este momento. ¡Volvé a consultar pronto!</p>';
+    return;
+  }
+
+  const cfg = window.state.config;
+
+  eventos.filter(e => e.activo !== false).forEach(ev => {
+    const card = document.createElement('div');
+    card.className = 'glass-card overflow-hidden flex flex-col justify-between group';
+
+    const cleanWa = ev.whatsappContacto ? String(ev.whatsappContacto).replace(/\D/g, '') : (cfg.whatsapp ? String(cfg.whatsapp).replace(/\D/g, '') : '');
+    const waMsg = `Hola! Quiero inscribirme / consultar información sobre el evento: *${ev.titulo}* (${ev.fecha})`;
+    const waUrl = cleanWa ? `https://wa.me/${cleanWa}?text=${encodeURIComponent(waMsg)}` : `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
+
+    const isAvailable = ev.estado === 'Inscripciones Abiertas';
+    const statusBadgeClass = isAvailable ? 'bg-[#00E676]/20 text-[#00E676] border-[#00E676]/40' : (ev.estado === 'Últimos Cupos' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-red-500/20 text-red-400 border-red-500/40');
+
+    card.innerHTML = `
+      <div>
+        <div class="relative h-48 overflow-hidden">
+          <img src="${escapeHtml(ev.imagen || 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80')}" alt="${escapeHtml(ev.titulo)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#161F30] via-transparent to-transparent"></div>
+          <div class="absolute top-3 left-3">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${statusBadgeClass} backdrop-blur-md">
+              ${escapeHtml(ev.estado)}
+            </span>
+          </div>
+          <div class="absolute top-3 right-3">
+            <span class="badge-neon text-[11px] backdrop-blur-md">
+              ${escapeHtml(ev.categoria || 'Torneo')}
+            </span>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <div class="text-xs text-[#00E676] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1">
+              <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+              <span>${escapeHtml(ev.fecha)} · ${escapeHtml(ev.horario || '')}</span>
+            </div>
+            <h3 class="text-2xl font-sports font-bold text-white tracking-wide leading-tight">${escapeHtml(ev.titulo)}</h3>
+          </div>
+
+          <p class="text-slate-300 text-sm leading-relaxed">${escapeHtml(ev.descripcion)}</p>
+
+          ${ev.premio ? `
+          <div class="p-3 rounded-xl bg-[#0B0F19] border border-amber-500/30 flex items-center gap-2.5">
+            <i data-lucide="award" class="w-5 h-5 text-[#FFD600] shrink-0"></i>
+            <span class="text-xs font-bold text-amber-300">${escapeHtml(ev.premio)}</span>
+          </div>` : ''}
+        </div>
+      </div>
+
+      <div class="p-6 pt-0">
+        <a href="${waUrl}" target="_blank" class="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md">
+          <i data-lucide="message-circle" class="w-4 h-4"></i>
+          <span>Inscribirme / Consultar por WhatsApp</span>
+        </a>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+function setupFilterButtons() {
+  // Sport Filters
+  document.querySelectorAll('[data-filter-sport]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter-sport]').forEach(b => b.classList.remove('active', 'active-padel', 'active-futbol'));
+      const sport = btn.getAttribute('data-filter-sport');
+      window.state.selectedSport = sport;
+
+      if (sport === 'padel') {
+        btn.classList.add('active-padel');
+      } else if (sport === 'futbol') {
+        btn.classList.add('active-futbol');
+      } else {
+        btn.classList.add('active');
+      }
+
+      window.state.selectedHora = null;
+      document.getElementById('booking-form').classList.add('hidden');
+      render();
+    });
+  });
+
+  // Location Filters
+  document.querySelectorAll('[data-filter-location]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter-location]').forEach(b => b.classList.remove('active'));
+      const loc = btn.getAttribute('data-filter-location');
+      window.state.selectedLocation = loc;
+      btn.classList.add('active');
+
+      window.state.selectedHora = null;
+      document.getElementById('booking-form').classList.add('hidden');
+      render();
+    });
+  });
+
+  // Duration Filters (1h vs 2h)
+  document.querySelectorAll('[data-duration]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-duration]').forEach(b => b.classList.remove('active'));
+      const dur = parseInt(btn.getAttribute('data-duration')) || 1;
+      window.state.selectedDuration = dur;
+      btn.classList.add('active');
+
+      window.state.selectedHora = null;
+      document.getElementById('booking-form').classList.add('hidden');
+      render();
+    });
+  });
+}
+
+// ================= BOOKING SUBMISSION =================
+
+async function reservarTurno() {
+  const nombre = document.getElementById('cliente-nombre').value.trim();
+  const whatsapp = document.getElementById('cliente-whatsapp').value.trim();
+  const equipo = document.getElementById('cliente-equipo').value.trim();
+  const errEl = document.getElementById('form-error');
+  errEl.textContent = '';
+
+  if (!nombre) {
+    errEl.textContent = 'Por favor ingresá tu nombre y apellido.';
+    return;
+  }
+  if (!window.state.selectedCanchaId) {
+    errEl.textContent = 'Por favor seleccioná una cancha.';
+    return;
+  }
+  if (!window.state.selectedFecha || !window.state.selectedHora) {
+    errEl.textContent = 'Por favor seleccioná un día y horario disponible.';
+    return;
+  }
+
+  const btn = document.getElementById('btn-reservar');
+  btn.disabled = true;
+  btn.innerHTML = '<span>Procesando reserva...</span> ⏳';
+
+  try {
+    const response = await fetch('/api/turnos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        canchaId: window.state.selectedCanchaId,
+        fecha: window.state.selectedFecha,
+        hora: window.state.selectedHora,
+        duracion: window.state.selectedDuration || 1,
+        nombre,
+        whatsapp,
+        equipo
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      errEl.textContent = data.message || 'No se pudo completar la reserva.';
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5 text-black"></i><span>Confirmar Reserva de Turno</span>';
+      if (window.lucide) window.lucide.createIcons();
+      await loadTurnos();
+      render();
+      return;
+    }
+
+    // Success
+    window.state.lastBooking = data.turno;
+    if (!Array.isArray(window.state.turnos)) window.state.turnos = [];
+    window.state.turnos.push(data.turno);
+
+    document.getElementById('cliente-nombre').value = '';
+    document.getElementById('cliente-whatsapp').value = '';
+    document.getElementById('cliente-equipo').value = '';
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5 text-black"></i><span>Confirmar Reserva de Turno</span>';
+    if (window.lucide) window.lucide.createIcons();
+
+    document.getElementById('booking-form').classList.add('hidden');
+    showConfirmationPanel(data.turno);
+    render();
+
+  } catch (error) {
+    console.error('Error al reservar:', error);
+    errEl.textContent = 'Error de conexión con el servidor. Reintentá en unos momentos.';
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5 text-black"></i><span>Confirmar Reserva de Turno</span>';
+    if (window.lucide) window.lucide.createIcons();
+  }
+}
+
+function showConfirmationPanel(turno) {
+  const panel = document.getElementById('confirm-panel');
+  const box = document.getElementById('confirm-card-content');
+  const iconBox = document.getElementById('confirm-icon-box');
+
+  const isPadel = turno.deporte === 'padel';
+  if (iconBox) {
+    iconBox.textContent = isPadel ? '🎾' : '⚽';
+    iconBox.style.borderColor = isPadel ? '#00E676' : '#10B981';
+  }
+
+  const [hStr, mStr] = turno.hora.split(':').map(Number);
+  const dur = Number(turno.duracion) || 1;
+  const nextH = (hStr + dur) % 24;
+  const horaFinTxt = turno.horaFin || `${pad2(nextH)}:${pad2(mStr)}`;
+  const cfg = window.state.config;
+
+  const sportLabel = isPadel ? 'Pádel (4 Jugadores / 2 vs 2)' : `Fútbol ${turno.jugadores || 5}`;
+  const locLabel = turno.ubicacion === 'interior' ? '🏠 Interior (Techada)' : '☀️ Exterior (Aire Libre)';
+  const durLabel = dur === 2 ? '2 Horas (Doble Turno)' : '1 Hora';
+
+  box.innerHTML = `
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">🏟️ Cancha:</span>
+      <span class="font-bold text-white">${escapeHtml(turno.canchaNombre)}</span>
+    </div>
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">🎯 Deporte:</span>
+      <span class="font-bold text-white">${sportLabel}</span>
+    </div>
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">📍 Ubicación:</span>
+      <span class="font-bold text-white">${locLabel}</span>
+    </div>
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">📅 Fecha:</span>
+      <span class="font-bold text-white">${formatFechaLarga(turno.fecha)}</span>
+    </div>
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">⏰ Horario:</span>
+      <span class="font-bold text-[#00E676]">${turno.hora} a ${horaFinTxt} hs (${durLabel})</span>
+    </div>
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">👤 Jugador / Capitán:</span>
+      <span class="font-bold text-white">${escapeHtml(turno.nombre)}</span>
+    </div>
+    ${turno.equipo ? `
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">🏆 Equipo / Pareja:</span>
+      <span class="font-bold text-[#00E5FF]">${escapeHtml(turno.equipo)}</span>
+    </div>` : ''}
+    ${cfg.direccion ? `
+    <div class="flex justify-between items-center py-1.5 border-b border-slate-800 text-xs">
+      <span class="text-slate-400 font-semibold uppercase">📍 Dirección:</span>
+      <span class="font-medium text-slate-300">${escapeHtml(cfg.direccion)}</span>
+    </div>` : ''}
+    <div class="flex justify-between items-center pt-3 text-sm">
+      <span class="font-bold text-white uppercase">💰 Total a Pagar:</span>
+      <span class="font-bebas text-2xl text-[#00E676]">${formatCurrency(turno.precio)} ${dur === 2 ? `<span class="text-xs font-body text-slate-400 font-normal">(2hs x ${formatCurrency(turno.precioUnitario)})</span>` : ''}</span>
+    </div>
+  `;
+
+  panel.classList.remove('hidden');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function confirmarPorWhatsapp() {
+  const last = window.state.lastBooking;
+  if (!last) return;
+
+  const cfg = window.state.config;
+  const destino = cfg.whatsapp ? cfg.whatsapp.replace(/\D/g, '') : '';
+  const [hStr, mStr] = last.hora.split(':').map(Number);
+  const dur = Number(last.duracion) || 1;
+  const nextH = (hStr + dur) % 24;
+  const horaFinTxt = last.horaFin || `${pad2(nextH)}:${pad2(mStr)}`;
+
+  const isPadel = last.deporte === 'padel';
+  const sportName = isPadel ? '🎾 PADEL (2 vs 2)' : `⚽ FUTBOL ${last.jugadores || 5}`;
+  const locName = last.ubicacion === 'interior' ? '🏠 Interior / Techada' : '☀️ Exterior';
+  const durName = dur === 2 ? '2 HORAS / DOBLE TURNO' : '1 HORA';
+
+  const mensaje = 
+`*RESERVA DE TURNO - ${cfg.nombre || 'COMPLEJO PADEL 3'}*
+
+*Jugador/Capitán:* ${last.nombre}
+${last.equipo ? `*Equipo/Pareja:* ${last.equipo}\n` : ''}*Deporte:* ${sportName}
+*Cancha:* ${last.canchaNombre} (${locName})
+*Fecha:* ${formatFechaLarga(last.fecha)}
+*Horario:* ${last.hora} a ${horaFinTxt} hs (${durName})
+*TOTAL A PAGAR:* ${formatCurrency(last.precio)} ${dur === 2 ? `(2hs x ${formatCurrency(last.precioUnitario)})` : ''}
+${cfg.direccion ? `*Dirección:* ${cfg.direccion}\n` : ''}${cfg.maps ? `*Ubicación Maps:* ${cfg.maps}\n` : ''}
+Hola! Quiero confirmar la reserva de este turno. Muchas gracias!`;
+
+  const url = destino
+    ? `https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`
+    : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+
+  window.open(url, '_blank');
+
+  // Mark as confirmed on backend
+  fetch(`/api/turnos/${last.id}/confirmar`, { method: 'PATCH' }).catch(() => {});
+}
+
+// ================= API FETCHING =================
+
+async function loadConfig() {
+  try {
+    const res = await fetch('/api/config');
+    const data = await res.json();
+    if (data.success && data.config) {
+      window.state.config = data.config;
+    }
+  } catch (e) {
+    console.warn('Error al cargar config de API:', e);
+  }
+}
+
+async function loadTurnos() {
+  try {
+    const res = await fetch('/api/turnos');
+    const data = await res.json();
+    if (data.success && Array.isArray(data.turnos)) {
+      window.state.turnos = data.turnos;
+    }
+  } catch (e) {
+    console.warn('Error al cargar turnos de API:', e);
+  }
+}
+
+async function loadServicios() {
+  try {
+    const res = await fetch('/api/servicios');
+    const data = await res.json();
+    if (data.success && Array.isArray(data.servicios)) {
+      window.state.servicios = data.servicios;
+    }
+  } catch (e) {
+    console.warn('Error al cargar servicios:', e);
+  }
+}
+
+async function loadEventos() {
+  try {
+    const res = await fetch('/api/eventos');
+    const data = await res.json();
+    if (data.success && Array.isArray(data.eventos)) {
+      window.state.eventos = data.eventos;
+    }
+  } catch (e) {
+    console.warn('Error al cargar eventos:', e);
+  }
+}
+
+function render() {
+  renderHeader();
+  renderCanchas();
+  renderFechas();
+  renderHorarios();
+  renderServicios();
+  renderEventos();
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
+// ================= INITIALIZATION =================
+
+async function initApp() {
+  await Promise.all([
+    loadConfig(),
+    loadTurnos(),
+    loadServicios(),
+    loadEventos()
+  ]);
+
+  setupFilterButtons();
+
+  document.getElementById('btn-reservar')?.addEventListener('click', reservarTurno);
+  document.getElementById('btn-confirmar-whatsapp')?.addEventListener('click', confirmarPorWhatsapp);
+  document.getElementById('btn-reservar-otro')?.addEventListener('click', () => {
+    window.state.lastBooking = null;
+    window.state.selectedHora = null;
+    document.getElementById('confirm-panel').classList.add('hidden');
+    render();
+  });
+
+  render();
+}
+
+window.addEventListener('DOMContentLoaded', initApp);

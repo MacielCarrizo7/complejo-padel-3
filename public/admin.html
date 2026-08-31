@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración CMS · COMPLEJO PADEL 3</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandDark: '#0B0F19',
+            brandDarker: '#070A10',
+            brandCard: '#161F30',
+            brandCardHover: '#1C273D',
+            brandSurface: '#1E293B',
+            brandNeon: '#00E676',
+            brandNeonHover: '#00C853',
+            brandCyan: '#00E5FF',
+            brandGold: '#FFD600',
+            brandTurf: '#10B981',
+            brandRed: '#FF3D71'
+          },
+          fontFamily: {
+            sports: ['Oswald', 'Bebas Neue', 'sans-serif'],
+            bebas: ['Bebas Neue', 'cursive'],
+            body: ['Outfit', 'Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#0B0F19] text-white font-body antialiased min-h-screen relative selection:bg-[#00E676] selection:text-black">
+
+  <!-- Top Admin Navbar -->
+  <header class="navbar-blur sticky top-0 z-50 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        
+        <!-- Logo + Brand -->
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-xl bg-[#161F30] border border-[#00E676]/40 flex items-center justify-center p-1 shadow-[0_0_15px_rgba(0,230,118,0.2)]">
+            <img src="assets/logo.png" alt="Logo" class="w-full h-full object-contain">
+          </div>
+          <div>
+            <div class="font-sports text-xl font-bold tracking-wider text-white flex items-center gap-1.5">
+              PADEL <span class="text-[#00E676]">3</span>
+              <span class="text-xs bg-[#00E676]/10 text-[#00E676] border border-[#00E676]/30 px-2 py-0.5 rounded font-mono font-bold ml-2">CMS ADMIN</span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Panel de Control General</div>
+          </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center gap-3">
+          <a href="/" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#161F30] hover:bg-[#1E293B] text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-all">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            <span>Ver Web Pública</span>
+          </a>
+          <button id="btn-admin-logout" class="hidden px-4 py-2 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold transition-all flex items-center gap-1.5">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span>Cerrar Sesión</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- ================= AUTH CONTAINER (LOGIN & SETUP) ================= -->
+    <div id="admin-auth-container" class="max-w-md mx-auto my-12">
+      
+      <!-- Card Login -->
+      <div id="auth-login-box" class="glass-card p-8 text-center space-y-6">
+        <div class="w-16 h-16 rounded-2xl bg-[#0B0F19] border border-[#00E676]/30 flex items-center justify-center mx-auto text-[#00E676] shadow-[0_0_20px_rgba(0,230,118,0.2)]">
+          <i data-lucide="lock" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-sports font-bold text-white uppercase">Acceso Administrador</h2>
+          <p class="text-slate-400 text-xs mt-1">Ingresá el PIN para gestionar turnos, canchas, eventos y servicios.</p>
+        </div>
+        
+        <div class="space-y-3 text-left">
+          <label for="admin-pin-input" class="block text-xs font-bold text-slate-300 uppercase">PIN de Seguridad</label>
+          <input id="admin-pin-input" type="password" maxlength="12" placeholder="••••" class="w-full px-4 py-3 text-center text-2xl tracking-[8px] rounded-xl bg-[#1E293B] border border-slate-700 text-white focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all">
+          <p id="admin-auth-error" class="text-red-400 text-xs font-semibold min-h-[18px] text-center"></p>
+        </div>
+
+        <button id="btn-admin-login" class="btn-neon-pill w-full justify-center py-3.5">
+          <i data-lucide="key" class="w-4 h-4 text-black"></i>
+          <span>Ingresar al Panel</span>
+        </button>
+
+        <!-- PIN Recovery via WhatsApp -->
+        <div class="pt-4 border-t border-slate-800">
+          <button id="btn-recuperar-pin-wa" type="button" class="text-xs text-[#00E5FF] hover:underline flex items-center justify-center gap-1.5 mx-auto font-medium">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            <span>¿Olvidaste tu PIN? Enviar a mi WhatsApp</span>
+          </button>
+          <div id="pin-recovery-feedback" class="text-xs mt-2 hidden"></div>
+        </div>
+      </div>
+
+      <!-- Card Initial Setup -->
+      <div id="auth-setup-box" class="glass-card p-8 text-center space-y-6 hidden">
+        <div class="w-16 h-16 rounded-2xl bg-[#0B0F19] border border-[#00E676]/30 flex items-center justify-center mx-auto text-[#00E676]">
+          <i data-lucide="shield-alert" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-sports font-bold text-white uppercase">Configuración de Seguridad</h2>
+          <p class="text-slate-400 text-xs mt-1">Definí un PIN de al menos 4 dígitos para proteger el panel de administración.</p>
+        </div>
+        
+        <div class="space-y-3 text-left">
+          <label for="admin-pin-setup" class="block text-xs font-bold text-slate-300 uppercase">Nuevo PIN de Administrador</label>
+          <input id="admin-pin-setup" type="password" maxlength="12" placeholder="Ej: 1234" class="w-full px-4 py-3 text-center text-2xl tracking-[8px] rounded-xl bg-[#1E293B] border border-slate-700 text-white focus:outline-none focus:border-[#00E676] transition-all">
+        </div>
+
+        <button id="btn-admin-setup" class="btn-neon-pill w-full justify-center py-3.5">
+          <i data-lucide="check" class="w-4 h-4 text-black"></i>
+          <span>Activar Panel Administrador</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ================= ACTIVE ADMIN DASHBOARD ================= -->
+    <div id="admin-dashboard-view" class="hidden space-y-8">
+      
+      <!-- Top Tabs Navigation -->
+      <div class="flex flex-wrap gap-2 p-1.5 rounded-2xl bg-[#161F30] border border-slate-800">
+        <button class="admin-tab-btn active px-5 py-2.5 rounded-xl font-sports font-bold text-sm uppercase tracking-wide transition-all flex items-center gap-2" data-admin-tab="agenda">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+          <span>Agenda & Finanzas</span>
+        </button>
+        <button class="admin-tab-btn px-5 py-2.5 rounded-xl font-sports font-bold text-sm uppercase tracking-wide text-slate-400 hover:text-white transition-all flex items-center gap-2" data-admin-tab="canchas">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          <span>Gestión de Canchas</span>
+        </button>
+        <button class="admin-tab-btn px-5 py-2.5 rounded-xl font-sports font-bold text-sm uppercase tracking-wide text-slate-400 hover:text-white transition-all flex items-center gap-2" data-admin-tab="eventos">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+          <span>Eventos & Torneos</span>
+        </button>
+        <button class="admin-tab-btn px-5 py-2.5 rounded-xl font-sports font-bold text-sm uppercase tracking-wide text-slate-400 hover:text-white transition-all flex items-center gap-2" data-admin-tab="servicios">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>Servicios</span>
+        </button>
+        <button class="admin-tab-btn px-5 py-2.5 rounded-xl font-sports font-bold text-sm uppercase tracking-wide text-slate-400 hover:text-white transition-all flex items-center gap-2" data-admin-tab="config">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          <span>Configuración & Textos</span>
+        </button>
+      </div>
+
+      <!-- ================= TAB 1: AGENDA & FINANZAS ================= -->
+      <section id="tab-content-agenda" class="admin-tab-content space-y-6">
+        
+        <!-- Real-Time Metric KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <div class="glass-card p-5 border border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400 uppercase">Canchas Activas</span>
+              <div class="w-8 h-8 rounded-lg bg-[#00E676]/10 text-[#00E676] flex items-center justify-center">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="metric-canchas" class="font-sports text-3xl font-bold text-white mt-2">0</div>
+            <div class="text-[11px] text-slate-400 mt-1">Pádel y Fútbol en complejo</div>
+          </div>
+
+          <div class="glass-card p-5 border border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400 uppercase">Turnos para Hoy</span>
+              <div class="w-8 h-8 rounded-lg bg-[#00E5FF]/10 text-[#00E5FF] flex items-center justify-center">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="metric-turnos-hoy" class="font-sports text-3xl font-bold text-[#00E5FF] mt-2">0</div>
+            <div class="text-[11px] text-slate-400 mt-1">Reservas del día de hoy</div>
+          </div>
+
+          <div class="glass-card p-5 border border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400 uppercase">Recaudación de Hoy</span>
+              <div class="w-8 h-8 rounded-lg bg-[#00E676]/10 text-[#00E676] flex items-center justify-center">
+                <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="metric-ingresos-hoy" class="font-bebas text-3xl font-bold text-[#00E676] mt-2">$ 0</div>
+            <div class="text-[11px] text-slate-400 mt-1">Facturación proyectada hoy</div>
+          </div>
+
+          <div class="glass-card p-5 border border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-400 uppercase">Total Reservas Futuras</span>
+              <div class="w-8 h-8 rounded-lg bg-[#FFD600]/10 text-[#FFD600] flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div id="metric-ingresos-total" class="font-bebas text-3xl font-bold text-[#FFD600] mt-2">$ 0</div>
+            <div class="text-[11px] text-slate-400 mt-1">Ingresos de turnos agendados</div>
+          </div>
+
+        </div>
+
+        <!-- Sub-view toggle (Lista de Turnos vs Siluetas Tácticas) -->
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div class="flex items-center gap-2">
+            <button id="btn-subview-lista" class="px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all">
+              <i data-lucide="list" class="w-3.5 h-3.5"></i>
+              <span>Lista de Turnos</span>
+            </button>
+            <button id="btn-subview-tactica" class="px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all">
+              <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+              <span>Vista Siluetas Tácticas</span>
+            </button>
+          </div>
+
+          <!-- Export Actions -->
+          <div class="flex items-center gap-2">
+            <button id="btn-export-csv" class="px-4 py-2 rounded-lg bg-[#1E293B] hover:bg-[#28384E] text-slate-200 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-all">
+              <i data-lucide="download" class="w-3.5 h-3.5 text-[#00E676]"></i>
+              <span>Exportar Excel / CSV</span>
+            </button>
+            <button id="btn-print-agenda" class="px-4 py-2 rounded-lg bg-[#1E293B] hover:bg-[#28384E] text-slate-200 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-all">
+              <i data-lucide="printer" class="w-3.5 h-3.5 text-[#00E5FF]"></i>
+              <span>Imprimir Agenda</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- View 1: Lista de Turnos con Filtros Avanzados -->
+        <div id="admin-agenda-list-view" class="space-y-6">
+          
+          <!-- Filters & Search Bar -->
+          <div class="glass-card p-6 border border-slate-800 space-y-4">
+            
+            <!-- Quick Search by Client Name or Phone -->
+            <div>
+              <label for="admin-search-query" class="block text-xs font-bold text-slate-400 uppercase mb-1">
+                Buscador Rápido (Nombre, WhatsApp o Equipo):
+              </label>
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input id="admin-search-query" type="text" placeholder="Buscar por nombre de cliente, teléfono..." class="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#00E676]">
+              </div>
+            </div>
+
+            <!-- Multi Filter Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-slate-800">
+              
+              <div>
+                <label for="filter-agenda-cancha" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">🏟️ Cancha</label>
+                <select id="filter-agenda-cancha" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
+                  <option value="todas">Todas las canchas</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="filter-agenda-fecha-preset" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">📅 Rango de Fecha</label>
+                <select id="filter-agenda-fecha-preset" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
+                  <option value="todos">Todos los turnos futuros</option>
+                  <option value="hoy">Hoy</option>
+                  <option value="manana">Mañana</option>
+                  <option value="semana">Próximos 7 días</option>
+                  <option value="todos_historicos">Todo el historial (incluye pasados)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="filter-agenda-deporte" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">🎯 Deporte</label>
+                <select id="filter-agenda-deporte" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
+                  <option value="todos">Todos los deportes</option>
+                  <option value="padel">🎾 Pádel</option>
+                  <option value="futbol">⚽ Fútbol</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="filter-agenda-estado" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">⚡ Estado</label>
+                <select id="filter-agenda-estado" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
+                  <option value="todos">Todos los estados</option>
+                  <option value="confirmados">WhatsApp Confirmado ✓</option>
+                  <option value="pendientes">Pendiente de confirmación ⏳</option>
+                </select>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Agenda List Container -->
+          <div id="admin-agenda-list-container" class="space-y-4">
+            <!-- Dynamic agenda items rendered by admin.js -->
+          </div>
+
+          <div id="admin-agenda-empty" class="hidden p-8 rounded-2xl bg-[#161F30] border border-slate-800 text-center text-slate-400">
+            No se encontraron turnos que coincidan con los filtros seleccionados.
+          </div>
+
+        </div>
+
+        <!-- View 2: Siluetas Tácticas de Canchas -->
+        <div id="admin-tactical-view" class="hidden space-y-6">
+          <div class="glass-card p-6 border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-sports text-lg font-bold text-white uppercase">Estado Visual de Ocupación por Pistas</h3>
+              <span class="text-xs text-slate-400">Seleccioná el día para ver la matriz de horarios</span>
+            </div>
+            <div id="admin-tactical-fechas" class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin"></div>
+          </div>
+          <div id="admin-tactical-pitches-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+      </section>
+
+      <!-- ================= TAB 2: GESTIÓN DE CANCHAS ================= -->
+      <section id="tab-content-canchas" class="admin-tab-content hidden space-y-6">
+        <div class="glass-card p-6 sm:p-8 border border-slate-800 space-y-6">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div>
+              <h2 class="text-2xl font-sports font-bold text-white uppercase">Gestión de Canchas & Precios</h2>
+              <p class="text-slate-400 text-xs mt-1">Configurá las pistas de pádel y canchas de fútbol, precios por turno, superficies y formatos.</p>
+            </div>
+            <button id="btn-add-cancha" class="btn-neon-pill text-xs py-2.5 px-4">
+              <i data-lucide="plus" class="w-4 h-4 text-black"></i>
+              <span>Agregar Nueva Cancha</span>
+            </button>
+          </div>
+
+          <div id="admin-canchas-manager-container" class="space-y-4">
+            <!-- Dynamic courts rendered by admin.js -->
+          </div>
+
+          <div class="pt-6 border-t border-slate-800 flex justify-end">
+            <button id="btn-save-canchas" class="btn-neon-pill px-8 py-3">
+              <i data-lucide="save" class="w-4 h-4 text-black"></i>
+              <span>Guardar Cambios de Canchas</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: GESTIÓN DE EVENTOS Y TORNEOS ================= -->
+      <section id="tab-content-eventos" class="admin-tab-content hidden space-y-6">
+        <div class="glass-card p-6 sm:p-8 border border-slate-800 space-y-6">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div>
+              <h2 class="text-2xl font-sports font-bold text-white uppercase">Módulo de Eventos & Torneos</h2>
+              <p class="text-slate-400 text-xs mt-1">Creá, editá o finalizá torneos de pádel, clínicas de entrenamiento y campeonatos de fútbol.</p>
+            </div>
+            <button id="btn-add-evento" class="btn-neon-pill text-xs py-2.5 px-4">
+              <i data-lucide="plus" class="w-4 h-4 text-black"></i>
+              <span>Crear Nuevo Evento</span>
+            </button>
+          </div>
+
+          <div id="admin-eventos-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Dynamic events rendered by admin.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: GESTIÓN DE SERVICIOS ================= -->
+      <section id="tab-content-servicios" class="admin-tab-content hidden space-y-6">
+        <div class="glass-card p-6 sm:p-8 border border-slate-800 space-y-6">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div>
+              <h2 class="text-2xl font-sports font-bold text-white uppercase">Servicios del Complejo</h2>
+              <p class="text-slate-400 text-xs mt-1">Administrá las comodidades que se muestran en la sección de servicios de la web.</p>
+            </div>
+            <button id="btn-add-servicio" class="btn-neon-pill text-xs py-2.5 px-4">
+              <i data-lucide="plus" class="w-4 h-4 text-black"></i>
+              <span>Agregar Servicio</span>
+            </button>
+          </div>
+
+          <div id="admin-servicios-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Dynamic services rendered by admin.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: CONFIGURACIÓN & TEXTOS ================= -->
+      <section id="tab-content-config" class="admin-tab-content hidden space-y-6">
+        <div class="glass-card p-6 sm:p-8 border border-slate-800 space-y-6">
+          
+          <div class="pb-6 border-b border-slate-800">
+            <h2 class="text-2xl font-sports font-bold text-white uppercase">Configuración General & Textos</h2>
+            <p class="text-slate-400 text-xs mt-1">Actualizá los datos institucionales, teléfonos, ubicación y horarios de atención.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="cfg-nombre" class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre del Complejo</label>
+              <input id="cfg-nombre" type="text" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+            <div>
+              <label for="cfg-subtitulo" class="block text-xs font-bold text-slate-300 uppercase mb-1">Slogan / Subtítulo</label>
+              <input id="cfg-subtitulo" type="text" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="cfg-direccion" class="block text-xs font-bold text-slate-300 uppercase mb-1">Dirección del Complejo</label>
+              <input id="cfg-direccion" type="text" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+            <div>
+              <label for="cfg-maps" class="block text-xs font-bold text-slate-300 uppercase mb-1">Link a Google Maps</label>
+              <input id="cfg-maps" type="url" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="cfg-whatsapp" class="block text-xs font-bold text-slate-300 uppercase mb-1">WhatsApp Oficial (con código de país, ej: 54911...)</label>
+              <input id="cfg-whatsapp" type="text" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+            <div>
+              <label for="cfg-pin-nuevo" class="block text-xs font-bold text-slate-300 uppercase mb-1">Cambiar PIN de Acceso Admin (opcional)</label>
+              <input id="cfg-pin-nuevo" type="password" placeholder="Dejar en blanco si no se desea cambiar" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label for="cfg-hora-inicio" class="block text-xs font-bold text-slate-300 uppercase mb-1">Horario de Apertura</label>
+              <input id="cfg-hora-inicio" type="time" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+            <div>
+              <label for="cfg-hora-fin" class="block text-xs font-bold text-slate-300 uppercase mb-1">Horario de Cierre</label>
+              <input id="cfg-hora-fin" type="time" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Días de Atención Semanal</label>
+            <div id="cfg-dias-container" class="flex flex-wrap gap-2">
+              <label class="px-3 py-2 rounded-lg bg-[#1E293B] text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-2">
+                <input type="checkbox" value="1" checked class="accent-[#00E676]"> Lun
+              </label>
+              <label class="px-3 py-2 rounded-lg bg-[#1E293B] text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-2">
+                <input type="checkbox" value="2" checked class="accent-[#00E676]"> Mar
+              </label>
+              <label class="px-3 py-2 rounded-lg bg-[#1E293B] text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-2">
+                <input type="checkbox" value="3" checked class="accent-[#00E676]"> Mié
+              </label>
+              <label class="px-3 py-2 rounded-lg bg-[#1E293B] text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-2">
+                <input type="checkbox" value="4" checked class="accent-[#00E676]"> Jue
+              </label>
+              <label class="px-3 py-2 rounded-lg bg-[#1E293B] text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-2">
+                <input type="checkbox" value="5" checked class="accent-[#00E676]"> Vie
+              </label>
+              <label class="px-3 py-2 rounded-lg bg-[#1E293B] text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-2">
+                <input type="checkbox" value="6" checked class="accent-[#00E676]"> Sáb
+              </label>
+              <label class="px-3 py-2 rounded-lg bg-[#1E293B] text-xs font-semibold cursor-pointer border border-slate-700 flex items-center gap-2">
+                <input type="checkbox" value="0" checked class="accent-[#00E676]"> Dom
+              </label>
+            </div>
+          </div>
+
+          <div class="pt-6 border-t border-slate-800 flex justify-end">
+            <button id="btn-save-general-config" class="btn-neon-pill px-8 py-3">
+              <i data-lucide="save" class="w-4 h-4 text-black"></i>
+              <span>Guardar Configuración General</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="js/admin.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
