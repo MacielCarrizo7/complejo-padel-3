@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservar Turno Online · COMPLEJO PADEL 3</title>
+  <meta name="description" content="Reservá tu turno de Pádel y Fútbol en Complejo Padel 3, Lavalle, Mendoza. Canchas techadas y exterior, césped sintético oficial WPT e iluminación LED.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brandDark: '#0B0F19',
+            brandDarker: '#070A10',
+            brandCard: '#161F30',
+            brandCardHover: '#1C273D',
+            brandSurface: '#1E293B',
+            brandNeon: '#00E676',
+            brandNeonHover: '#00C853',
+            brandCyan: '#00E5FF',
+            brandGold: '#FFD600',
+            brandTurf: '#10B981',
+            brandRed: '#FF3D71'
+          },
+          fontFamily: {
+            sports: ['Oswald', 'Bebas Neue', 'sans-serif'],
+            bebas: ['Bebas Neue', 'cursive'],
+            body: ['Outfit', 'Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Firebase App & Analytics SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
+      authDomain: "complejo-padel-3.firebaseapp.com",
+      projectId: "complejo-padel-3",
+      storageBucket: "complejo-padel-3.firebasestorage.app",
+      messagingSenderId: "975322009594",
+      appId: "1:975322009594:web:e81ead05c09307e7255e43",
+      measurementId: "G-RY4RW29MRS"
+    };
+    if (window.firebase && !firebase.apps.length) {
+      const app = firebase.initializeApp(firebaseConfig);
+      if (firebase.analytics) firebase.analytics();
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom CSS Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#0B0F19] text-white font-body selection:bg-[#00E676] selection:text-black antialiased relative min-h-screen flex flex-col justify-between">
+
+  <!-- Glow Meshes in Background -->
+  <div class="hero-glow-mesh"></div>
+  <div class="hero-glow-blue"></div>
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="sticky top-0 z-50 navbar-blur w-full">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        
+        <!-- Logo + Brand -->
+        <a href="/" class="flex items-center gap-3 group">
+          <div class="w-12 h-12 rounded-xl bg-[#161F30] border border-[rgba(0,230,118,0.3)] flex items-center justify-center p-1.5 shadow-[0_0_15px_rgba(0,230,118,0.2)] group-hover:shadow-[0_0_25px_rgba(0,230,118,0.4)] transition-all">
+            <img src="assets/logo.png" alt="Complejo Padel 3 Logo" class="w-full h-full object-contain">
+          </div>
+          <div class="flex flex-col">
+            <span class="font-sports text-2xl font-bold tracking-wider leading-none text-white flex items-center gap-1.5">
+              PADEL <span class="text-[#00E676]">3</span>
+            </span>
+            <span class="text-[10px] tracking-widest uppercase font-semibold text-slate-400">Complejo Deportivo</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-8">
+          <a href="/" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Inicio</a>
+          <a href="/#canchas" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Canchas</a>
+          <a href="/#servicios" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Servicios</a>
+          <a href="/#eventos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors flex items-center gap-1.5">
+            Eventos & Torneos
+          </a>
+          <a href="/#porque-elegirnos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Nosotros</a>
+          <a href="/#ubicacion" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Contacto</a>
+        </nav>
+
+        <!-- Right Action CTA -->
+        <div class="hidden md:flex items-center gap-4">
+          <a href="/" class="px-5 py-2.5 rounded-full bg-[#161F30] hover:bg-[#1E293B] border border-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-[#00E676]"></i>
+            <span>Volver al Inicio</span>
+          </a>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <div class="flex md:hidden items-center gap-3">
+          <a href="/" class="px-3 py-1.5 rounded-full bg-[#161F30] border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1">
+            <i data-lucide="home" class="w-3.5 h-3.5 text-[#00E676]"></i>
+            <span>Inicio</span>
+          </a>
+          <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg bg-[#161F30] border border-slate-700 text-slate-200 hover:text-white" aria-label="Abrir menú">
+            <i data-lucide="menu" id="menu-icon-open" class="w-6 h-6"></i>
+            <i data-lucide="x" id="menu-icon-close" class="w-6 h-6 hidden"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Slide Down Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-[#0D1322] border-b border-slate-800 px-6 py-6 space-y-4">
+      <a href="/" class="mobile-nav-link block text-base font-semibold text-white hover:text-[#00E676]">Inicio</a>
+      <a href="/#canchas" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Canchas & Precios</a>
+      <a href="/#servicios" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Servicios del Complejo</a>
+      <a href="/#eventos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Eventos y Torneos</a>
+      <a href="/#porque-elegirnos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">¿Por qué elegirnos?</a>
+      <a href="/#ubicacion" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Ubicación & Contacto</a>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT: RESERVAS ================= -->
+  <main class="flex-grow">
+    
+    <!-- Hero Header de Reservas -->
+    <section class="relative pt-10 pb-12 md:pt-14 md:pb-16 border-b border-slate-800/80 bg-gradient-to-b from-[#0D1117] via-[#0B0F19] to-[#0B0F19]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+        
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#161F30] border border-[rgba(0,230,118,0.3)] shadow-[0_0_20px_rgba(0,230,118,0.15)]">
+          <span class="w-2 h-2 rounded-full bg-[#00E676] animate-ping"></span>
+          <span class="font-sports text-xs uppercase tracking-widest text-[#00E676] font-bold">SISTEMA DE RESERVAS EN LÍNEA</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-sports font-bold tracking-tight uppercase text-white">
+          RESERVÁ TU TURNO <span class="text-[#00E676] glow-text-neon">EN VIVO</span>
+        </h1>
+
+        <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+          Elegí la fecha, la cancha y tu horario preferido. Disponibilidad en tiempo real con confirmación inmediata por WhatsApp.
+        </p>
+
+      </div>
+    </section>
+
+    <!-- INSTRUCTIVO: ¿Cómo Reservar? -->
+    <section class="py-12 bg-[#070A10]/60 border-b border-slate-800/80">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center mb-8">
+          <span class="text-xs font-bold uppercase tracking-widest text-[#00E5FF]">Guía Rápida</span>
+          <h2 class="text-2xl sm:text-3xl font-sports font-bold text-white uppercase mt-1">¿Cómo Reservar? - Es muy fácil</h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- Step 1 -->
+          <div class="glass-card p-6 border border-slate-800 space-y-3 relative group hover:border-[#00E676]/40 transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-[#0B0F19] border border-[#00E676]/30 flex items-center justify-center text-[#00E676] font-sports text-xl font-bold group-hover:scale-110 transition-transform">
+              1
+            </div>
+            <h3 class="font-sports text-lg font-bold text-white uppercase">Elegí el Día y Deporte</h3>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Navegá por las fechas disponibles y filtrá según prefieras Pádel o Fútbol.
+            </p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="glass-card p-6 border border-slate-800 space-y-3 relative group hover:border-[#00E676]/40 transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-[#0B0F19] border border-[#00E5FF]/30 flex items-center justify-center text-[#00E5FF] font-sports text-xl font-bold group-hover:scale-110 transition-transform">
+              2
+            </div>
+            <h3 class="font-sports text-lg font-bold text-white uppercase">Cancha y Duración</h3>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Seleccioná entre turno estándar de 1 hora o turno doble de 2 horas continuas.
+            </p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="glass-card p-6 border border-slate-800 space-y-3 relative group hover:border-[#00E676]/40 transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-[#0B0F19] border border-[#00E676]/30 flex items-center justify-center text-[#00E676] font-sports text-xl font-bold group-hover:scale-110 transition-transform">
+              3
+            </div>
+            <h3 class="font-sports text-lg font-bold text-white uppercase">Seleccioná tu Horario</h3>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Hacé clic en el horario libre que mejor se adapte a tu equipo para iniciar la reserva.
+            </p>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="glass-card p-6 border border-slate-800 space-y-3 relative group hover:border-[#FFD600]/40 transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-[#0B0F19] border border-[#FFD600]/30 flex items-center justify-center text-[#FFD600] font-sports text-xl font-bold group-hover:scale-110 transition-transform">
+              4
+            </div>
+            <h3 class="font-sports text-lg font-bold text-white uppercase">Confirmá por WhatsApp</h3>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Completá tu nombre y enviá el mensaje automático con los detalles de tu turno.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MOTOR INTERACTIVO DE RESERVAS -->
+    <section id="reservar" class="py-16 md:py-20 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        
+        <!-- Booking Engine Controls Container -->
+        <div class="glass-card p-6 sm:p-8 space-y-8 border border-slate-800/80 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          
+          <!-- 1. Fechas Slider / Selector (14 días próximos) -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <i data-lucide="calendar" class="w-4 h-4 text-[#00E676]"></i>
+                1. Seleccioná el Día:
+              </span>
+              <span id="label-fecha-seleccionada" class="text-xs font-sports font-semibold text-[#00E676] bg-[#00E676]/10 px-3 py-1 rounded-full border border-[#00E676]/30">
+                Hoy
+              </span>
+            </div>
+
+            <!-- Date Pills Scrollable Container -->
+            <div id="fechas-container" class="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin">
+              <!-- Dynamically populated by app.js -->
+            </div>
+          </div>
+
+          <!-- 2. Duración del Turno (1h vs 2h) & Filtro de Deportes -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t border-slate-800">
+            
+            <!-- Duración Selector (5 cols) -->
+            <div class="md:col-span-6 space-y-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                2. Duración del Turno:
+              </span>
+              <div class="grid grid-cols-2 gap-3">
+                <button type="button" class="btn-duracion active px-4 py-3 rounded-xl border font-sports text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.3)]" data-duracion="1">
+                  <i data-lucide="clock" class="w-4 h-4"></i>
+                  <span>1 Hora (Estándar)</span>
+                </button>
+                <button type="button" class="btn-duracion px-4 py-3 rounded-xl border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white font-sports text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all font-semibold" data-duracion="2">
+                  <i data-lucide="flame" class="w-4 h-4 text-[#00E5FF]"></i>
+                  <span>2 Horas (Doble Turno)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtro Deporte (3 cols) -->
+            <div class="md:col-span-3 space-y-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                Deporte:
+              </span>
+              <div class="flex rounded-xl bg-[#161F30] p-1 border border-slate-700">
+                <button type="button" class="btn-filter-sport active flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-[#00E676] text-black" data-sport="todos">
+                  Todos
+                </button>
+                <button type="button" class="btn-filter-sport flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-sport="padel">
+                  🎾 Pádel
+                </button>
+                <button type="button" class="btn-filter-sport flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-sport="futbol">
+                  ⚽ Fútbol
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtro Ubicación (3 cols) -->
+            <div class="md:col-span-3 space-y-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                Ubicación:
+              </span>
+              <div class="flex rounded-xl bg-[#161F30] p-1 border border-slate-700">
+                <button type="button" class="btn-filter-loc active flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-[#00E676] text-black" data-loc="todos">
+                  Todas
+                </button>
+                <button type="button" class="btn-filter-loc flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-loc="interior">
+                  🏠 Techada
+                </button>
+                <button type="button" class="btn-filter-loc flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-loc="exterior">
+                  ☀️ Exterior
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- 3. Grilla de Canchas y Horarios Dinámicos -->
+        <div id="canchas-booking-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamically populated by app.js -->
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE CONFIRMACIÓN DE RESERVA -->
+  <div id="booking-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full p-6 sm:p-8 space-y-6 border border-[#00E676]/40 shadow-[0_0_50px_rgba(0,230,118,0.2)] animate-scale-up">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#00E676]/10 text-[#00E676] flex items-center justify-center border border-[#00E676]/30">
+            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="font-sports text-xl font-bold text-white uppercase leading-none">Confirmar Turno</h3>
+            <span class="text-xs text-slate-400">Completá tus datos para agendar</span>
+          </div>
+        </div>
+        <button id="btn-close-modal" type="button" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Resumen del Turno Seleccionado -->
+      <div class="p-4 rounded-2xl bg-[#0B0F19] border border-slate-800 space-y-2">
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>🏟️ Cancha:</span>
+          <strong id="modal-cancha-nombre" class="text-white text-sm font-sports uppercase">-</strong>
+        </div>
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>📅 Fecha:</span>
+          <strong id="modal-fecha-texto" class="text-white text-sm">-</strong>
+        </div>
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>⏰ Horario:</span>
+          <strong id="modal-horario-texto" class="text-[#00E676] text-sm font-sports">-</strong>
+        </div>
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>⏳ Duración:</span>
+          <strong id="modal-duracion-texto" class="text-white text-sm">1 Hora</strong>
+        </div>
+        <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+          <span class="text-xs uppercase font-bold text-slate-300">Total a Pagar:</span>
+          <strong id="modal-precio-total" class="font-bebas text-2xl text-[#00E676]">$ 0</strong>
+        </div>
+      </div>
+
+      <!-- Formulario del Jugador -->
+      <form id="form-confirm-booking" class="space-y-4">
+        <div>
+          <label for="input-nombre" class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre Completo *</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input id="input-nombre" type="text" placeholder="Ej: Fernando Belasteguín" required class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#00E676] transition-all">
+          </div>
+        </div>
+
+        <div>
+          <label for="input-whatsapp" class="block text-xs font-bold text-slate-300 uppercase mb-1">Teléfono / WhatsApp *</label>
+          <div class="relative">
+            <i data-lucide="phone" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input id="input-whatsapp" type="tel" placeholder="Ej: 261 456 7890" required class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#00E676] transition-all">
+          </div>
+        </div>
+
+        <div>
+          <label for="input-equipo" class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre del Equipo / Pareja (Opcional)</label>
+          <div class="relative">
+            <i data-lucide="shield" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input id="input-equipo" type="text" placeholder="Ej: Los Lobos del Pádel" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#00E676] transition-all">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-booking" class="btn-neon-pill w-full justify-center py-3.5 text-sm font-bold shadow-[0_0_20px_rgba(0,230,118,0.4)]">
+          <i data-lucide="send" class="w-4 h-4 text-black"></i>
+          <span>Confirmar y Enviar por WhatsApp</span>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-[#070A10] border-t border-slate-800/80 py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <img src="assets/logo.png" alt="Logo" class="w-8 h-8 object-contain">
+        <span class="font-sports text-lg font-bold text-white">COMPLEJO PADEL 3</span>
+      </div>
+      <p class="text-xs text-slate-400 text-center">
+        © 2026 Complejo Padel 3 · Lavalle, Mendoza · Todos los derechos reservados.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

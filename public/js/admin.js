@@ -947,15 +947,29 @@ function renderEventosTab() {
           <option value="Últimos Cupos" ${ev.estado === 'Últimos Cupos' ? 'selected' : ''}>Últimos Cupos</option>
           <option value="Cupos Agotados" ${ev.estado === 'Cupos Agotados' ? 'selected' : ''}>Cupos Agotados</option>
           <option value="Finalizado" ${ev.estado === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
+          <option value="Consultar Disponibilidad / Reservas Abiertas" ${ev.estado === 'Consultar Disponibilidad / Reservas Abiertas' ? 'selected' : ''}>Consultar Disponibilidad / Reservas Abiertas</option>
         </select>
 
-        <button class="btn-del-evento p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${ev.id}" title="Eliminar evento">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center gap-2">
+          <button class="btn-edit-evento p-2 rounded-lg bg-[#00E5FF]/10 hover:bg-[#00E5FF] text-[#00E5FF] hover:text-black transition-all border border-[#00E5FF]/30" data-id="${ev.id}" title="Editar evento">
+            <i data-lucide="edit-3" class="w-4 h-4"></i>
+          </button>
+          <button class="btn-del-evento p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${ev.id}" title="Eliminar evento">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
     `;
 
     container.appendChild(card);
+  });
+
+  // Edit Event Button Handlers
+  container.querySelectorAll('.btn-edit-evento').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      openEditEventoModal(id);
+    });
   });
 
   container.querySelectorAll('.select-estado-evento').forEach(sel => {
@@ -993,6 +1007,34 @@ function renderEventosTab() {
       }
     });
   });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openEditEventoModal(id) {
+  const ev = (adminState.eventos || []).find(e => e.id === id);
+  if (!ev) return;
+
+  const modal = document.getElementById('modal-edit-evento');
+  if (!modal) return;
+
+  document.getElementById('edit-evento-id').value = ev.id;
+  document.getElementById('edit-evento-titulo').value = ev.titulo || '';
+  document.getElementById('edit-evento-categoria').value = ev.categoria || '';
+  document.getElementById('edit-evento-estado').value = ev.estado || 'Inscripciones Abiertas';
+  document.getElementById('edit-evento-fecha').value = ev.fecha || '';
+  document.getElementById('edit-evento-horario').value = ev.horario || '';
+  document.getElementById('edit-evento-premio').value = ev.premio || '';
+  document.getElementById('edit-evento-descripcion').value = ev.descripcion || '';
+  document.getElementById('edit-evento-imagen').value = ev.imagen || '';
+  document.getElementById('edit-evento-whatsapp').value = ev.whatsappContacto || '';
+
+  modal.classList.remove('hidden');
+}
+
+function closeEditEventoModal() {
+  const modal = document.getElementById('modal-edit-evento');
+  if (modal) modal.classList.add('hidden');
 }
 
 async function createNewEvento() {
@@ -1050,9 +1092,14 @@ function renderServiciosTab() {
           <h4 class="font-sports text-xl font-bold text-white">${escapeHtml(srv.titulo)}</h4>
           <span class="text-xs text-[#00E676] font-mono">Icono: ${escapeHtml(srv.icono)}</span>
         </div>
-        <button class="btn-del-servicio p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${srv.id}" title="Eliminar servicio">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center gap-2">
+          <button class="btn-edit-servicio p-2 rounded-lg bg-[#00E5FF]/10 hover:bg-[#00E5FF] text-[#00E5FF] hover:text-black transition-all border border-[#00E5FF]/30" data-id="${srv.id}" title="Editar servicio">
+            <i data-lucide="edit-3" class="w-4 h-4"></i>
+          </button>
+          <button class="btn-del-servicio p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${srv.id}" title="Eliminar servicio">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
 
       <p class="text-slate-400 text-xs leading-relaxed">${escapeHtml(srv.descripcion)}</p>
@@ -1063,6 +1110,14 @@ function renderServiciosTab() {
     `;
 
     container.appendChild(card);
+  });
+
+  // Edit Service Button Handlers
+  container.querySelectorAll('.btn-edit-servicio').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      openEditServicioModal(id);
+    });
   });
 
   container.querySelectorAll('.btn-del-servicio').forEach(btn => {
@@ -1083,6 +1138,29 @@ function renderServiciosTab() {
       }
     });
   });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openEditServicioModal(id) {
+  const srv = (adminState.servicios || []).find(s => s.id === id);
+  if (!srv) return;
+
+  const modal = document.getElementById('modal-edit-servicio');
+  if (!modal) return;
+
+  document.getElementById('edit-servicio-id').value = srv.id;
+  document.getElementById('edit-servicio-titulo').value = srv.titulo || '';
+  document.getElementById('edit-servicio-icono').value = srv.icono || 'Sparkles';
+  document.getElementById('edit-servicio-descripcion').value = srv.descripcion || '';
+  document.getElementById('edit-servicio-tags').value = (srv.tags || []).join(', ');
+
+  modal.classList.remove('hidden');
+}
+
+function closeEditServicioModal() {
+  const modal = document.getElementById('modal-edit-servicio');
+  if (modal) modal.classList.add('hidden');
 }
 
 async function createNewServicio() {
@@ -1090,7 +1168,7 @@ async function createNewServicio() {
   if (!titulo) return;
 
   const descripcion = prompt('Descripción del Servicio:');
-  const icono = prompt('Icono (Trophy, Flame, Utensils, ShieldCheck, Car, Sparkles):', 'Sparkles');
+  const icono = prompt('Icono (Trophy, Flame, Utensils, ShieldCheck, Car, Sparkles, Gift):', 'Sparkles');
   const tagsStr = prompt('Etiquetas separadas por comas (Ej: Bebidas, Comidas):', 'Servicio Pro');
   const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
 
@@ -1277,6 +1355,94 @@ async function initAdmin() {
     }
   });
 
+  // Event Edit Modal Listeners
+  document.getElementById('btn-close-edit-evento')?.addEventListener('click', closeEditEventoModal);
+  document.getElementById('btn-cancel-edit-evento')?.addEventListener('click', closeEditEventoModal);
+  document.getElementById('modal-edit-evento')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-edit-evento') closeEditEventoModal();
+  });
+
+  document.getElementById('form-edit-evento')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-evento-id').value;
+    const titulo = document.getElementById('edit-evento-titulo').value.trim();
+    const categoria = document.getElementById('edit-evento-categoria').value.trim();
+    const estado = document.getElementById('edit-evento-estado').value;
+    const fecha = document.getElementById('edit-evento-fecha').value.trim();
+    const horario = document.getElementById('edit-evento-horario').value.trim();
+    const premio = document.getElementById('edit-evento-premio').value.trim();
+    const descripcion = document.getElementById('edit-evento-descripcion').value.trim();
+    const imagen = document.getElementById('edit-evento-imagen').value.trim();
+    const whatsappContacto = document.getElementById('edit-evento-whatsapp').value.trim();
+
+    try {
+      const res = await fetch(`/api/eventos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo,
+          categoria,
+          estado,
+          fecha,
+          horario,
+          premio,
+          descripcion,
+          imagen,
+          whatsappContacto
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const idx = adminState.eventos.findIndex(x => x.id === id);
+        if (idx !== -1) adminState.eventos[idx] = data.evento;
+        closeEditEventoModal();
+        renderEventosTab();
+        alert('✓ Evento actualizado exitosamente.');
+      } else {
+        alert(data.message || 'Error al actualizar evento.');
+      }
+    } catch (err) {
+      alert('Error de conexión al actualizar evento.');
+    }
+  });
+
+  // Service Edit Modal Listeners
+  document.getElementById('btn-close-edit-servicio')?.addEventListener('click', closeEditServicioModal);
+  document.getElementById('btn-cancel-edit-servicio')?.addEventListener('click', closeEditServicioModal);
+  document.getElementById('modal-edit-servicio')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-edit-servicio') closeEditServicioModal();
+  });
+
+  document.getElementById('form-edit-servicio')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-servicio-id').value;
+    const titulo = document.getElementById('edit-servicio-titulo').value.trim();
+    const icono = document.getElementById('edit-servicio-icono').value;
+    const descripcion = document.getElementById('edit-servicio-descripcion').value.trim();
+    const tagsStr = document.getElementById('edit-servicio-tags').value.trim();
+    const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    try {
+      const res = await fetch(`/api/servicios/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, icono, descripcion, tags })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const idx = adminState.servicios.findIndex(x => x.id === id);
+        if (idx !== -1) adminState.servicios[idx] = data.servicio;
+        closeEditServicioModal();
+        renderServiciosTab();
+        alert('✓ Servicio actualizado exitosamente.');
+      } else {
+        alert(data.message || 'Error al actualizar servicio.');
+      }
+    } catch (err) {
+      alert('Error de conexión al actualizar servicio.');
+    }
+  });
+
   // Story Generator Mode Buttons
   const btnModeGeneral = document.getElementById('btn-story-mode-general');
   const btnModeCancha = document.getElementById('btn-story-mode-cancha');
@@ -1296,6 +1462,41 @@ async function initAdmin() {
     btnModeCancha.className = 'story-mode-btn active px-3 py-2.5 rounded-xl text-xs font-bold border transition-all text-center flex flex-col items-center gap-1 bg-[#00E676] text-black border-[#00E676]';
     btnModeGeneral.className = 'story-mode-btn px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white transition-all text-center flex flex-col items-center gap-1';
     boxCanchaSelect?.classList.remove('hidden');
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  // Story Sport Filters (Todos, Pádel, Fútbol)
+  const btnSportTodos = document.getElementById('btn-story-sport-todos');
+  const btnSportPadel = document.getElementById('btn-story-sport-padel');
+  const btnSportFutbol = document.getElementById('btn-story-sport-futbol');
+
+  const updateStorySportButtonsActive = (activeBtn) => {
+    [btnSportTodos, btnSportPadel, btnSportFutbol].forEach(b => {
+      if (b) b.className = 'btn-story-sport py-2 rounded-xl bg-[#1E293B] hover:bg-[#2A3B53] text-slate-300 border border-slate-700 text-xs font-semibold transition-all text-center';
+    });
+    if (activeBtn) {
+      activeBtn.className = 'btn-story-sport active py-2 rounded-xl bg-[#00E676] text-black font-bold text-xs transition-all text-center';
+    }
+  };
+
+  btnSportTodos?.addEventListener('click', () => {
+    storyState.deporte = 'todos';
+    updateStorySportButtonsActive(btnSportTodos);
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  btnSportPadel?.addEventListener('click', () => {
+    storyState.deporte = 'padel';
+    updateStorySportButtonsActive(btnSportPadel);
+    syncStorySummary();
+    renderStoryCanvas();
+  });
+
+  btnSportFutbol?.addEventListener('click', () => {
+    storyState.deporte = 'futbol';
+    updateStorySportButtonsActive(btnSportFutbol);
     syncStorySummary();
     renderStoryCanvas();
   });
@@ -1357,7 +1558,7 @@ async function initAdmin() {
     renderStoryCanvas();
   });
 
-  // Action Buttons
+  // Action Buttons - Generate Canvas in Real Time
   document.getElementById('btn-generate-story-canvas')?.addEventListener('click', () => {
     syncStorySummary();
     renderStoryCanvas();
@@ -1375,6 +1576,7 @@ async function initAdmin() {
 
 let storyState = {
   mode: 'general', // 'general' | 'cancha'
+  deporte: 'todos', // 'todos' | 'padel' | 'futbol'
   fecha: hoyISO(),
   canchaId: null,
   logoImage: null
@@ -1436,7 +1638,13 @@ function getTurnosLibresParaCancha(canchaId, fecha) {
 function renderHistoriasTab() {
   const selectCancha = document.getElementById('story-cancha-select');
   if (selectCancha) {
-    const canchas = adminState.config?.canchas || [];
+    let canchas = adminState.config?.canchas || [];
+    if (storyState.deporte === 'padel') {
+      canchas = canchas.filter(c => c.deporte === 'padel');
+    } else if (storyState.deporte === 'futbol') {
+      canchas = canchas.filter(c => c.deporte === 'futbol');
+    }
+
     let html = '';
     canchas.forEach(c => {
       const emoji = c.deporte === 'padel' ? '🎾' : '⚽';
@@ -1462,7 +1670,13 @@ function syncStorySummary() {
   const summaryDetails = document.getElementById('story-summary-details');
   if (!summaryText || !summaryDetails) return;
 
-  const canchas = adminState.config?.canchas || [];
+  let canchas = adminState.config?.canchas || [];
+  if (storyState.deporte === 'padel') {
+    canchas = canchas.filter(c => c.deporte === 'padel');
+  } else if (storyState.deporte === 'futbol') {
+    canchas = canchas.filter(c => c.deporte === 'futbol');
+  }
+
   let totalLibres = 0;
   const details = [];
 
@@ -1472,7 +1686,8 @@ function syncStorySummary() {
       totalLibres += libres.length;
       details.push(`• ${c.nombre}: ${libres.length} libres`);
     });
-    summaryText.textContent = `${totalLibres} turnos libres en total para ${formatFechaLarga(storyState.fecha)}`;
+    const depLabel = storyState.deporte === 'padel' ? 'Pádel' : (storyState.deporte === 'futbol' ? 'Fútbol' : 'Todas las Canchas');
+    summaryText.textContent = `${totalLibres} turnos libres (${depLabel}) para ${formatFechaLarga(storyState.fecha)}`;
     summaryDetails.textContent = details.join(' | ');
   } else {
     const cancha = canchas.find(c => c.id === storyState.canchaId) || canchas[0];
@@ -1567,7 +1782,12 @@ async function renderStoryCanvas() {
   // Sub headline
   ctx.font = 'bold 24px "Outfit", "Inter", sans-serif';
   ctx.fillStyle = '#A3E635';
-  ctx.fillText('⚡ RESERVÁ TU CANCHA HOY Y JUGÁ CON AMIGOS 🎾', width / 2, 205);
+  const subHeadline = storyState.deporte === 'futbol'
+    ? '⚡ RESERVÁ TU CANCHA DE FÚTBOL HOY Y JUGÁ CON AMIGOS ⚽'
+    : (storyState.deporte === 'padel'
+      ? '⚡ RESERVÁ TU CANCHA DE PÁDEL HOY Y JUGÁ CON AMIGOS 🎾'
+      : '⚡ RESERVÁ TU CANCHA HOY Y JUGÁ CON AMIGOS 🎾⚽');
+  ctx.fillText(subHeadline, width / 2, 205);
   ctx.restore();
 
   // 3. LATERAL CURVED ACCENTS (Verde Lima #62B400 y Naranja #FF6A00)
@@ -1629,7 +1849,13 @@ async function renderStoryCanvas() {
 }
 
 function renderCanvasGeneralMode(ctx, width, height) {
-  const canchas = adminState.config?.canchas || [];
+  let canchas = adminState.config?.canchas || [];
+  if (storyState.deporte === 'padel') {
+    canchas = canchas.filter(c => c.deporte === 'padel');
+  } else if (storyState.deporte === 'futbol') {
+    canchas = canchas.filter(c => c.deporte === 'futbol');
+  }
+
   const courtThemes = [
     { name: 'Azul Indoor', primary: '#0072CE', bgTint: '#F0F7FF', badgeText: 'INDOOR TECHADA' },
     { name: 'Verde Indoor', primary: '#62B400', bgTint: '#F4FBF0', badgeText: 'INDOOR PANORÁMICA' },
@@ -1643,7 +1869,7 @@ function renderCanvasGeneralMode(ctx, width, height) {
   let currentY = 405;
   const cardSpacing = 24;
   const availableHeight = 1240;
-  const cardHeight = Math.min(380, Math.floor((availableHeight - (displayCanchas.length - 1) * cardSpacing) / displayCanchas.length));
+  const cardHeight = Math.min(380, Math.floor((availableHeight - (displayCanchas.length - 1) * cardSpacing) / Math.max(1, displayCanchas.length)));
 
   displayCanchas.forEach((cancha, idx) => {
     const theme = courtThemes[idx % courtThemes.length];

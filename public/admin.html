@@ -182,8 +182,8 @@
       <!-- ================= TAB 1: AGENDA & FINANZAS ================= -->
       <section id="tab-content-agenda" class="admin-tab-content space-y-6">
         
-        <!-- Real-Time Metric KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Real-Time Metric KPI Cards (Cierre Diario Operativo) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           
           <div class="glass-card p-5 border border-slate-800">
             <div class="flex items-center justify-between">
@@ -209,24 +209,13 @@
 
           <div class="glass-card p-5 border border-slate-800">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-400 uppercase">Recaudación de Hoy</span>
+              <span class="text-xs font-bold text-slate-400 uppercase">Recaudación de Hoy (Cierre)</span>
               <div class="w-8 h-8 rounded-lg bg-[#00E676]/10 text-[#00E676] flex items-center justify-center">
                 <i data-lucide="dollar-sign" class="w-4 h-4"></i>
               </div>
             </div>
             <div id="metric-ingresos-hoy" class="font-bebas text-3xl font-bold text-[#00E676] mt-2">$ 0</div>
-            <div class="text-[11px] text-slate-400 mt-1">Facturación proyectada hoy</div>
-          </div>
-
-          <div class="glass-card p-5 border border-slate-800">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-400 uppercase">Total Reservas Futuras</span>
-              <div class="w-8 h-8 rounded-lg bg-[#FFD600]/10 text-[#FFD600] flex items-center justify-center">
-                <i data-lucide="trending-up" class="w-4 h-4"></i>
-              </div>
-            </div>
-            <div id="metric-ingresos-total" class="font-bebas text-3xl font-bold text-[#FFD600] mt-2">$ 0</div>
-            <div class="text-[11px] text-slate-400 mt-1">Ingresos de turnos agendados</div>
+            <div class="text-[11px] text-slate-400 mt-1">Cierre de caja y facturación del día</div>
           </div>
 
         </div>
@@ -553,6 +542,22 @@
                 </div>
               </div>
 
+              <!-- Selector de Deporte para Historias -->
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">🎯 Deporte para la Historia</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <button type="button" id="btn-story-sport-todos" class="btn-story-sport active py-2 rounded-xl bg-[#00E676] text-black font-bold text-xs transition-all text-center" data-story-sport="todos">
+                    Todos
+                  </button>
+                  <button type="button" id="btn-story-sport-padel" class="btn-story-sport py-2 rounded-xl bg-[#1E293B] hover:bg-[#2A3B53] text-slate-300 border border-slate-700 text-xs font-semibold transition-all text-center" data-story-sport="padel">
+                    🎾 Pádel
+                  </button>
+                  <button type="button" id="btn-story-sport-futbol" class="btn-story-sport py-2 rounded-xl bg-[#1E293B] hover:bg-[#2A3B53] text-slate-300 border border-slate-700 text-xs font-semibold transition-all text-center" data-story-sport="futbol">
+                    ⚽ Fútbol
+                  </button>
+                </div>
+              </div>
+
               <!-- Selector de Fecha -->
               <div>
                 <label for="story-fecha-select" class="block text-xs font-bold text-slate-300 uppercase mb-1">📅 Fecha de Turnos</label>
@@ -636,6 +641,162 @@
 
   </main>
 
+  <!-- ================= MODAL DE EDICIÓN DE EVENTOS / TORNEOS ================= -->
+  <div id="modal-edit-evento" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-xl w-full p-6 sm:p-8 space-y-6 border border-[#00E676]/40 shadow-[0_0_50px_rgba(0,230,118,0.2)] max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#00E676]/10 text-[#00E676] flex items-center justify-center border border-[#00E676]/30">
+            <i data-lucide="trophy" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-sports text-xl font-bold text-white uppercase leading-none">Editar Evento / Torneo</h3>
+            <span class="text-xs text-slate-400">Modificá los datos del torneo o clínica</span>
+          </div>
+        </div>
+        <button id="btn-close-edit-evento" type="button" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <form id="form-edit-evento" class="space-y-4">
+        <input id="edit-evento-id" type="hidden">
+
+        <div>
+          <label for="edit-evento-titulo" class="block text-xs font-bold text-slate-300 uppercase mb-1">Título del Evento *</label>
+          <input id="edit-evento-titulo" type="text" required class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="edit-evento-categoria" class="block text-xs font-bold text-slate-300 uppercase mb-1">Categoría</label>
+            <input id="edit-evento-categoria" type="text" placeholder="Ej: 4ta a 7ma Caballeros" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          </div>
+          <div>
+            <label for="edit-evento-estado" class="block text-xs font-bold text-slate-300 uppercase mb-1">Estado</label>
+            <select id="edit-evento-estado" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+              <option value="Inscripciones Abiertas">Inscripciones Abiertas</option>
+              <option value="Últimos Cupos">Últimos Cupos</option>
+              <option value="Cupos Agotados">Cupos Agotados</option>
+              <option value="Finalizado">Finalizado</option>
+              <option value="Consultar Disponibilidad / Reservas Abiertas">Consultar Disponibilidad / Reservas Abiertas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="edit-evento-fecha" class="block text-xs font-bold text-slate-300 uppercase mb-1">Fecha *</label>
+            <input id="edit-evento-fecha" type="text" required placeholder="Ej: 12 al 14 de Septiembre" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          </div>
+          <div>
+            <label for="edit-evento-horario" class="block text-xs font-bold text-slate-300 uppercase mb-1">Horario</label>
+            <input id="edit-evento-horario" type="text" placeholder="Ej: Desde las 18:00 hs" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          </div>
+        </div>
+
+        <div>
+          <label for="edit-evento-premio" class="block text-xs font-bold text-slate-300 uppercase mb-1">Premios / Beneficios</label>
+          <input id="edit-evento-premio" type="text" placeholder="Ej: $ 250.000 en Premios + Trofeos" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+        </div>
+
+        <div>
+          <label for="edit-evento-descripcion" class="block text-xs font-bold text-slate-300 uppercase mb-1">Descripción / Bases</label>
+          <textarea id="edit-evento-descripcion" rows="3" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="edit-evento-imagen" class="block text-xs font-bold text-slate-300 uppercase mb-1">URL de Imagen</label>
+            <input id="edit-evento-imagen" type="url" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          </div>
+          <div>
+            <label for="edit-evento-whatsapp" class="block text-xs font-bold text-slate-300 uppercase mb-1">WhatsApp de Inscripción</label>
+            <input id="edit-evento-whatsapp" type="text" placeholder="5491112345678" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-3 border-t border-slate-800">
+          <button type="button" id="btn-cancel-edit-evento" class="px-5 py-2.5 rounded-xl bg-[#161F30] hover:bg-[#1E293B] border border-slate-700 text-slate-300 text-xs font-bold transition-all">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-submit-edit-evento" class="btn-neon-pill px-6 py-2.5 text-xs font-bold">
+            <i data-lucide="save" class="w-4 h-4 text-black"></i>
+            <span>Guardar Cambios del Evento</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= MODAL DE EDICIÓN DE SERVICIOS ================= -->
+  <div id="modal-edit-servicio" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full p-6 sm:p-8 space-y-6 border border-[#00E676]/40 shadow-[0_0_50px_rgba(0,230,118,0.2)]">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#00E5FF]/10 text-[#00E5FF] flex items-center justify-center border border-[#00E5FF]/30">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-sports text-xl font-bold text-white uppercase leading-none">Editar Servicio</h3>
+            <span class="text-xs text-slate-400">Modificá nombre, descripción e icono</span>
+          </div>
+        </div>
+        <button id="btn-close-edit-servicio" type="button" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <form id="form-edit-servicio" class="space-y-4">
+        <input id="edit-servicio-id" type="hidden">
+
+        <div>
+          <label for="edit-servicio-titulo" class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre del Servicio *</label>
+          <input id="edit-servicio-titulo" type="text" required class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+        </div>
+
+        <div>
+          <label for="edit-servicio-icono" class="block text-xs font-bold text-slate-300 uppercase mb-1">Icono</label>
+          <select id="edit-servicio-icono" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+            <option value="Trophy">Trophy (Trofeo)</option>
+            <option value="Flame">Flame (Fuego / Fútbol)</option>
+            <option value="Utensils">Utensils (Buffet / Restaurante)</option>
+            <option value="ShieldCheck">ShieldCheck (Vestuarios / Higiene)</option>
+            <option value="Car">Car (Estacionamiento)</option>
+            <option value="Sparkles">Sparkles (Paletas / Accesorios)</option>
+            <option value="Gift">Gift (Cumpleaños / Pelotero)</option>
+            <option value="Wifi">Wifi (Internet)</option>
+            <option value="Tv">Tv (Pantallas HD)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="edit-servicio-descripcion" class="block text-xs font-bold text-slate-300 uppercase mb-1">Descripción del Servicio</label>
+          <textarea id="edit-servicio-descripcion" rows="3" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]"></textarea>
+        </div>
+
+        <div>
+          <label for="edit-servicio-tags" class="block text-xs font-bold text-slate-300 uppercase mb-1">Badges / Etiquetas (separadas por comas)</label>
+          <input id="edit-servicio-tags" type="text" placeholder="Ej: Pelotero Techado, Castillo Inflable, Vajilla" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+        </div>
+
+        <div class="pt-3 flex justify-end gap-3 border-t border-slate-800">
+          <button type="button" id="btn-cancel-edit-servicio" class="px-5 py-2.5 rounded-xl bg-[#161F30] hover:bg-[#1E293B] border border-slate-700 text-slate-300 text-xs font-bold transition-all">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-submit-edit-servicio" class="btn-neon-pill px-6 py-2.5 text-xs font-bold">
+            <i data-lucide="save" class="w-4 h-4 text-black"></i>
+            <span>Guardar Cambios del Servicio</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/admin.js"></script>
   <script>
@@ -647,3 +808,4 @@
   </script>
 </body>
 </html>
+

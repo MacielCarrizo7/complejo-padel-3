@@ -21,7 +21,13 @@ async function runTests() {
 
   const rLogo = await fetch(`${baseUrl}/assets/logo.png`);
   assert.strictEqual(rLogo.status, 200, 'logo.png debe responder 200');
-  console.log('✓ Rutas /, /admin y recursos estáticos cargados correctamente');
+
+  const rReservasPage = await fetch(`${baseUrl}/reservas.html`);
+  assert.strictEqual(rReservasPage.status, 200, 'reservas.html debe responder 200');
+  const reservasHtml = await rReservasPage.text();
+  assert(reservasHtml.includes('¿Cómo Reservar? - Es muy fácil'), 'reservas.html debe incluir el instructivo');
+  assert(reservasHtml.includes('canchas-booking-grid'), 'reservas.html debe contener la grilla de turnos');
+  console.log('✓ Rutas /, /reservas.html, /admin y recursos estáticos cargados correctamente');
 
   // 2. Config API
   console.log('\n2. Verificando API de Configuración...');
@@ -36,14 +42,18 @@ async function runTests() {
   const rServicios = await fetch(`${baseUrl}/api/servicios`);
   const dServicios = await rServicios.json();
   assert(dServicios.success, 'GET /api/servicios debe ser exitoso');
-  assert(dServicios.servicios.length >= 3, 'Debe haber servicios cargados');
-  console.log(`✓ Servicios cargados: ${dServicios.servicios.length} servicios disponibles`);
+  assert(dServicios.servicios.length >= 4, 'Debe haber servicios cargados');
+  const srvCumple = dServicios.servicios.find(s => s.titulo.includes('Cumpleaños'));
+  assert(srvCumple, 'Debe existir el servicio de Cumpleaños & Pelotero');
+  console.log(`✓ Servicios cargados: ${dServicios.servicios.length} servicios disponibles (incluye Cumpleaños & Pelotero)`);
 
   const rEventos = await fetch(`${baseUrl}/api/eventos`);
   const dEventos = await rEventos.json();
   assert(dEventos.success, 'GET /api/eventos debe ser exitoso');
-  assert(dEventos.eventos.length >= 1, 'Debe haber eventos cargados');
-  console.log(`✓ Eventos cargados: ${dEventos.eventos.length} torneos/eventos disponibles`);
+  assert(dEventos.eventos.length >= 2, 'Debe haber eventos cargados');
+  const evCumple = dEventos.eventos.find(e => e.titulo.includes('CUMPLEAÑOS'));
+  assert(evCumple, 'Debe existir el evento de Cumpleaños Infantiles');
+  console.log(`✓ Eventos cargados: ${dEventos.eventos.length} torneos/eventos disponibles (incluye Cumpleaños Infantiles)`);
 
   // 4. Canchas filtering (Pádel vs Fútbol, Exterior vs Interior)
   console.log('\n4. Verificando filtros de deporte y ubicación...');
@@ -117,8 +127,32 @@ async function runTests() {
   assert(dDelete.success, 'Cancelación de turno debe ser exitosa');
   console.log('✓ Cancelación y liberación de cancha validada correctamente');
 
-  // 8. Métricas Financieras
-  console.log('\n8. Validando métricas financieras en tiempo real...');
+  // 8. Edición de Eventos y Servicios API
+  console.log('\n8. Validando endpoints de edición (PUT) para Eventos y Servicios...');
+  const rPutEv = await fetch(`${baseUrl}/api/eventos/${evCumple.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      estado: 'Consultar Disponibilidad / Reservas Abiertas'
+    })
+  });
+  const dPutEv = await rPutEv.json();
+  assert(dPutEv.success, 'Edición de evento debe responder exitoso');
+  console.log('✓ Endpoint PUT /api/eventos/:id validado');
+
+  const rPutSrv = await fetch(`${baseUrl}/api/servicios/${srvCumple.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      icono: 'Gift'
+    })
+  });
+  const dPutSrv = await rPutSrv.json();
+  assert(dPutSrv.success, 'Edición de servicio debe responder exitoso');
+  console.log('✓ Endpoint PUT /api/servicios/:id validado');
+
+  // 9. Métricas Financieras
+  console.log('\n9. Validando métricas financieras en tiempo real...');
   const rMetrics = await fetch(`${baseUrl}/api/metrics`);
   const dMetrics = await rMetrics.json();
   assert(dMetrics.success, 'GET /api/metrics debe ser exitoso');
@@ -134,3 +168,4 @@ runTests().catch(err => {
   console.error('\n❌ ERROR EN PRUEBAS:', err);
   process.exit(1);
 });
+

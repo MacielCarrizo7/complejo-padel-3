@@ -139,6 +139,14 @@ const DEFAULT_STATE = {
       icono: 'Sparkles',
       tags: ['Paletas Pro', 'Tubos presurizados', 'Grip nuevo'],
       activo: true
+    },
+    {
+      id: 'srv_7',
+      titulo: 'Cumpleaños & Pelotero Infantil',
+      descripcion: 'Predio adaptado con pelotero techado, inflables, vajilla y actividades deportivas coordinadas para los más chicos.',
+      icono: 'Gift',
+      tags: ['Pelotero Techado', 'Castillo Inflable', 'Coordinador', 'Vajilla'],
+      activo: true
     }
   ],
   eventos: [
@@ -178,6 +186,19 @@ const DEFAULT_STATE = {
       descripcion: 'Copa nocturna bajo iluminación LED. Mínimo 3 partidos garantizados por equipo, asado para el campeón y consumición incluida en el buffet.',
       premio: 'Copa Campeón + Asado completo para 10 personas',
       imagen: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+      whatsappContacto: '5491112345678',
+      activo: true
+    },
+    {
+      id: 'ev_4',
+      titulo: 'CUMPLEAÑOS & EVENTOS INFANTILES',
+      categoria: 'Eventos Sociales & Festejos',
+      fecha: 'Todos los fines de semana',
+      horario: 'Turnos de 3 a 4 hs',
+      estado: 'Consultar Disponibilidad / Reservas Abiertas',
+      descripcion: 'Festejá tu cumple en el complejo: uso de canchas de fútbol/pádel, espacio techado para pelotero, castillo inflable, mesa dulce, vajilla y coordinador deportivo.',
+      premio: 'Incluye vajilla, coordinador deportivo y pelotero techado',
+      imagen: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=800&q=80',
       whatsappContacto: '5491112345678',
       activo: true
     }

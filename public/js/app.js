@@ -826,6 +826,361 @@ async function loadEventos() {
   }
 }
 
+// ================= DEDICATED RESERVAS.HTML PAGE LOGIC =================
+
+function renderReservasPage() {
+  const fechasContainer = document.getElementById('fechas-container');
+  const canchasBookingGrid = document.getElementById('canchas-booking-grid');
+  if (!canchasBookingGrid) return; // Not on reservas.html
+
+  // 1. Render Date Pills
+  if (fechasContainer) {
+    fechasContainer.innerHTML = '';
+    const fechas = generarProximasFechas();
+    if (!window.state.selectedFecha || !fechas.includes(window.state.selectedFecha)) {
+      window.state.selectedFecha = fechas[0] || hoyISO();
+    }
+
+    const labelFecha = document.getElementById('label-fecha-seleccionada');
+    if (labelFecha && window.state.selectedFecha) {
+      labelFecha.textContent = formatFechaLarga(window.state.selectedFecha);
+    }
+
+    fechas.forEach(iso => {
+      const { dow, num } = formatFechaLabel(iso);
+      const isSelected = iso === window.state.selectedFecha;
+      const isToday = iso === hoyISO();
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `flex flex-col items-center justify-center min-w-[70px] py-3 px-4 rounded-2xl border transition-all ${
+        isSelected
+          ? 'bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.4)] scale-105'
+          : 'bg-[#161F30] text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
+      }`;
+      btn.innerHTML = `
+        <span class="text-[11px] uppercase tracking-wider ${isSelected ? 'text-black font-extrabold' : 'text-slate-400 font-semibold'}">${dow}</span>
+        <span class="text-xl font-sports font-bold leading-tight ${isSelected ? 'text-black' : 'text-white'}">${num}</span>
+        ${isToday ? `<span class="text-[9px] uppercase tracking-widest ${isSelected ? 'text-black' : 'text-[#00E676]'} font-bold">Hoy</span>` : ''}
+      `;
+
+      btn.addEventListener('click', () => {
+        window.state.selectedFecha = iso;
+        renderReservasPage();
+      });
+
+      fechasContainer.appendChild(btn);
+    });
+  }
+
+  // 2. Render Courts with In-Card Time Slots
+  canchasBookingGrid.innerHTML = '';
+  const canchas = getCanchasFiltradas();
+  const duracion = window.state.selectedDuration || 1;
+
+  if (canchas.length === 0) {
+    canchasBookingGrid.innerHTML = `
+      <div class="p-12 rounded-3xl bg-[#161F30] border border-slate-800 text-center text-slate-400 col-span-full space-y-3">
+        <i data-lucide="info" class="w-8 h-8 text-slate-500 mx-auto"></i>
+        <p class="text-base font-semibold text-slate-300">No hay canchas disponibles con los filtros seleccionados.</p>
+        <p class="text-xs text-slate-500">Probá seleccionando "Todos" los deportes o cambiando de ubicación.</p>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  canchas.forEach(cancha => {
+    const isPadel = cancha.deporte === 'padel';
+    const slots = horariosDisponibles(cancha.id, window.state.selectedFecha, duracion);
+    const disponiblesCount = slots.filter(s => !s.ocupado).length;
+
+    const card = document.createElement('div');
+    card.className = 'glass-card p-6 flex flex-col justify-between border border-slate-800 hover:border-slate-600 transition-all rounded-3xl group shadow-xl';
+
+    const sportBadgeClass = isPadel ? 'badge-neon' : 'badge-location-interior';
+    const sportBadgeLabel = isPadel ? '🎾 Pádel' : `⚽ Fútbol ${cancha.jugadores || 5}`;
+    const locationBadgeClass = cancha.ubicacion === 'interior' ? 'badge-location-interior' : 'badge-location-exterior';
+    const locationBadgeLabel = cancha.ubicacion === 'interior' ? '🏠 Techada' : '☀️ Exterior';
+
+    const pitchSvg = getCourtSvgHtml(cancha);
+
+    // Calculate slots HTML
+    let slotsHtml = '';
+    if (slots.length === 0) {
+      slotsHtml = '<p class="text-xs text-slate-500 col-span-full text-center py-2">Sin horarios configurados.</p>';
+    } else {
+      slotsHtml = slots.map(s => {
+        const [hStr, mStr] = s.hora.split(':').map(Number);
+        const nextH = (hStr + duracion) % 24;
+        const slotRangeLabel = `${s.hora} a ${pad2(nextH)}:${pad2(mStr)}`;
+
+        if (s.ocupado) {
+          return `
+            <button type="button" disabled class="py-2 px-2 rounded-xl bg-[#0B0F19]/60 border border-slate-800 text-slate-600 cursor-not-allowed text-xs font-semibold text-center opacity-50">
+              <span class="block font-sports line-through">${s.hora}</span>
+              <span class="text-[9px] block">Ocupado</span>
+            </button>
+          `;
+        } else {
+          return `
+            <button type="button" data-court-id="${cancha.id}" data-slot-hour="${s.hora}" class="btn-select-slot py-2.5 px-2 rounded-xl bg-[#1E293B] hover:bg-[#00E676] hover:text-black border border-slate-700 hover:border-[#00E676] text-white transition-all text-center group/btn shadow-sm hover:scale-105 hover:shadow-[0_0_12px_rgba(0,230,118,0.4)]">
+              <span class="block font-sports text-sm font-bold group-hover/btn:text-black">${s.hora}</span>
+              <span class="text-[9px] text-slate-400 group-hover/btn:text-black font-semibold block">${slotRangeLabel}</span>
+            </button>
+          `;
+        }
+      }).join('');
+    }
+
+    card.innerHTML = `
+      <div class="space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h3 class="font-sports text-xl font-bold text-white tracking-wide uppercase">${escapeHtml(cancha.nombre)}</h3>
+            <span class="text-xs text-slate-400">${escapeHtml(cancha.superficie || 'Césped Pro')}</span>
+          </div>
+          <div class="text-right">
+            <span class="font-bebas text-2xl text-[#00E676] leading-none">${formatCurrency(cancha.precio)}</span>
+            <span class="text-[10px] text-slate-400 block font-semibold">/ hora</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="${sportBadgeClass}">${sportBadgeLabel}</span>
+          <span class="${locationBadgeClass}">${locationBadgeLabel}</span>
+          <span class="text-xs ml-auto font-semibold ${disponiblesCount > 0 ? 'text-[#00E676]' : 'text-slate-500'}">
+            ${disponiblesCount > 0 ? `🟢 ${disponiblesCount} libres` : '🔴 Completo'}
+          </span>
+        </div>
+
+        ${pitchSvg}
+
+        <div class="pt-3 border-t border-slate-800/80 space-y-2">
+          <div class="flex items-center justify-between text-xs text-slate-300 font-bold uppercase tracking-wider">
+            <span>Horarios Disponibles (${duracion}h):</span>
+            <span class="text-[10px] font-normal text-slate-400">Clic para reservar</span>
+          </div>
+          <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
+            ${slotsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+    canchasBookingGrid.appendChild(card);
+  });
+
+  // Attach slot click handlers to open Modal
+  document.querySelectorAll('.btn-select-slot').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const courtId = btn.getAttribute('data-court-id');
+      const hour = btn.getAttribute('data-slot-hour');
+      openBookingModal(courtId, hour);
+    });
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openBookingModal(canchaId, hora) {
+  const modal = document.getElementById('booking-modal');
+  if (!modal) return;
+
+  const cancha = (window.state.config.canchas || []).find(c => c.id === canchaId);
+  if (!cancha) return;
+
+  window.state.selectedCanchaId = canchaId;
+  window.state.selectedHora = hora;
+
+  const duracion = window.state.selectedDuration || 1;
+  const [hStr, mStr] = hora.split(':').map(Number);
+  const nextH = (hStr + duracion) % 24;
+  const horaFinTxt = `${pad2(nextH)}:${pad2(mStr)}`;
+  const total = Number(cancha.precio || 20000) * duracion;
+
+  document.getElementById('modal-cancha-nombre').textContent = cancha.nombre;
+  document.getElementById('modal-fecha-texto').textContent = formatFechaLarga(window.state.selectedFecha);
+  document.getElementById('modal-horario-texto').textContent = `${hora} a ${horaFinTxt} hs`;
+  document.getElementById('modal-duracion-texto').textContent = duracion === 2 ? '2 Horas (Doble Turno)' : '1 Hora';
+  document.getElementById('modal-precio-total').textContent = formatCurrency(total);
+
+  modal.classList.remove('hidden');
+}
+
+function closeBookingModal() {
+  const modal = document.getElementById('booking-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+// Setup Reservas Page Filter & Modal Handlers
+function setupReservasPage() {
+  // Duration buttons
+  document.querySelectorAll('.btn-duracion').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-duracion').forEach(b => {
+        b.className = 'btn-duracion px-4 py-3 rounded-xl border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white font-sports text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all font-semibold';
+      });
+      btn.className = 'btn-duracion active px-4 py-3 rounded-xl border font-sports text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.3)]';
+      window.state.selectedDuration = parseInt(btn.getAttribute('data-duracion')) || 1;
+      renderReservasPage();
+    });
+  });
+
+  // Sport Filter buttons
+  document.querySelectorAll('.btn-filter-sport').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-filter-sport').forEach(b => {
+        b.className = 'btn-filter-sport flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all';
+      });
+      btn.className = 'btn-filter-sport active flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-[#00E676] text-black';
+      window.state.selectedSport = btn.getAttribute('data-sport');
+      renderReservasPage();
+    });
+  });
+
+  // Location Filter buttons
+  document.querySelectorAll('.btn-filter-loc').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-filter-loc').forEach(b => {
+        b.className = 'btn-filter-loc flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all';
+      });
+      btn.className = 'btn-filter-loc active flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-[#00E676] text-black';
+      window.state.selectedLocation = btn.getAttribute('data-loc');
+      renderReservasPage();
+    });
+  });
+
+  // Modal Close buttons
+  document.getElementById('btn-close-modal')?.addEventListener('click', closeBookingModal);
+  document.getElementById('booking-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'booking-modal') closeBookingModal();
+  });
+
+  // Form Submission
+  const form = document.getElementById('form-confirm-booking');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById('input-nombre').value.trim();
+      const whatsapp = document.getElementById('input-whatsapp').value.trim();
+      const equipo = document.getElementById('input-equipo').value.trim();
+      const submitBtn = document.getElementById('btn-submit-booking');
+
+      if (!nombre || !whatsapp) {
+        alert('Por favor completá tu nombre y WhatsApp.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Registrando turno...</span> ⏳';
+
+      try {
+        const res = await fetch('/api/turnos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            canchaId: window.state.selectedCanchaId,
+            fecha: window.state.selectedFecha,
+            hora: window.state.selectedHora,
+            duracion: window.state.selectedDuration || 1,
+            nombre,
+            whatsapp,
+            equipo
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data.message || 'No se pudo reservar el turno.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 text-black"></i><span>Confirmar y Enviar por WhatsApp</span>';
+          if (window.lucide) window.lucide.createIcons();
+          await loadTurnos();
+          renderReservasPage();
+          return;
+        }
+
+        // Add to local state
+        window.state.lastBooking = data.turno;
+        if (!Array.isArray(window.state.turnos)) window.state.turnos = [];
+        window.state.turnos.push(data.turno);
+
+        // Open WhatsApp confirmation
+        const cfg = window.state.config;
+        const destino = cfg.whatsapp ? String(cfg.whatsapp).replace(/\D/g, '') : '';
+        const dur = Number(data.turno.duracion) || 1;
+        const [hStr, mStr] = data.turno.hora.split(':').map(Number);
+        const nextH = (hStr + dur) % 24;
+        const horaFinTxt = data.turno.horaFin || `${pad2(nextH)}:${pad2(mStr)}`;
+        const sportName = data.turno.deporte === 'padel' ? '🎾 PÁDEL (2 vs 2)' : `⚽ FÚTBOL ${data.turno.jugadores || 5}`;
+
+        const mensaje = 
+`*RESERVA DE TURNO - ${cfg.nombre || 'COMPLEJO PADEL 3'}*
+
+*Jugador/Capitán:* ${data.turno.nombre}
+${data.turno.equipo ? `*Equipo/Pareja:* ${data.turno.equipo}\n` : ''}*Deporte:* ${sportName}
+*Cancha:* ${data.turno.canchaNombre} (${data.turno.ubicacion === 'interior' ? '🏠 Techada' : '☀️ Exterior'})
+*Fecha:* ${formatFechaLarga(data.turno.fecha)}
+*Horario:* ${data.turno.hora} a ${horaFinTxt} hs (${dur === 2 ? '2 Horas / Doble Turno' : '1 Hora'})
+*TOTAL A PAGAR:* ${formatCurrency(data.turno.precio)}
+${cfg.direccion ? `*Dirección:* ${cfg.direccion}\n` : ''}
+Hola! Quiero confirmar la reserva de este turno. Muchas gracias!`;
+
+        const waUrl = destino ? `https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}` : `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+        window.open(waUrl, '_blank');
+
+        // Reset & Close Modal
+        form.reset();
+        closeBookingModal();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 text-black"></i><span>Confirmar y Enviar por WhatsApp</span>';
+
+        alert('¡Turno reservado con éxito! Se abrió WhatsApp para enviar la confirmación.');
+        renderReservasPage();
+
+      } catch (err) {
+        console.error('Error al reservar:', err);
+        alert('Error al conectar con el servidor.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 text-black"></i><span>Confirmar y Enviar por WhatsApp</span>';
+      }
+    });
+  }
+}
+
+// Mobile Menu Handler
+function setupMobileMenu() {
+  const btn = document.getElementById('mobile-menu-btn');
+  const menu = document.getElementById('mobile-menu');
+  const iconOpen = document.getElementById('menu-icon-open');
+  const iconClose = document.getElementById('menu-icon-close');
+
+  if (!btn || !menu) return;
+
+  btn.addEventListener('click', () => {
+    const isHidden = menu.classList.contains('hidden');
+    if (isHidden) {
+      menu.classList.remove('hidden');
+      if (iconOpen) iconOpen.classList.add('hidden');
+      if (iconClose) iconClose.classList.remove('hidden');
+    } else {
+      menu.classList.add('hidden');
+      if (iconOpen) iconOpen.classList.remove('hidden');
+      if (iconClose) iconClose.classList.add('hidden');
+    }
+  });
+
+  document.querySelectorAll('.mobile-nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      menu.classList.add('hidden');
+      if (iconOpen) iconOpen.classList.remove('hidden');
+      if (iconClose) iconClose.classList.add('hidden');
+    });
+  });
+}
+
 function render() {
   renderHeader();
   renderCanchas();
@@ -833,6 +1188,7 @@ function render() {
   renderHorarios();
   renderServicios();
   renderEventos();
+  renderReservasPage();
   if (window.lucide) {
     window.lucide.createIcons();
   }
@@ -848,14 +1204,16 @@ async function initApp() {
     loadEventos()
   ]);
 
+  setupMobileMenu();
   setupFilterButtons();
+  setupReservasPage();
 
   document.getElementById('btn-reservar')?.addEventListener('click', reservarTurno);
   document.getElementById('btn-confirmar-whatsapp')?.addEventListener('click', confirmarPorWhatsapp);
   document.getElementById('btn-reservar-otro')?.addEventListener('click', () => {
     window.state.lastBooking = null;
     window.state.selectedHora = null;
-    document.getElementById('confirm-panel').classList.add('hidden');
+    document.getElementById('confirm-panel')?.classList.add('hidden');
     render();
   });
 
@@ -863,3 +1221,4 @@ async function initApp() {
 }
 
 window.addEventListener('DOMContentLoaded', initApp);
+

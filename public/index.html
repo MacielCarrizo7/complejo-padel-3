@@ -93,8 +93,12 @@
         </a>
 
         <!-- Desktop Navigation Links -->
-        <nav class="hidden md:flex items-center gap-8">
+        <nav class="hidden md:flex items-center gap-7">
           <a href="#inicio" class="text-sm font-semibold text-white hover:text-[#00E676] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#00E676] after:shadow-[0_0_8px_#00E676]">Inicio</a>
+          <a href="reservas.html" class="text-sm font-bold text-[#00E676] hover:text-[#00C853] transition-colors flex items-center gap-1.5 bg-[#00E676]/10 px-3 py-1 rounded-full border border-[#00E676]/30 shadow-[0_0_10px_rgba(0,230,118,0.15)]">
+            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+            <span>Reservar Turnos</span>
+          </a>
           <a href="#canchas" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Canchas</a>
           <a href="#servicios" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Servicios</a>
           <a href="#eventos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors flex items-center gap-1.5">
@@ -107,7 +111,7 @@
 
         <!-- Right Action CTA -->
         <div class="hidden md:flex items-center gap-4">
-          <a href="#reservar" class="btn-neon-pill">
+          <a href="reservas.html" class="btn-neon-pill">
             <i data-lucide="calendar" class="w-4 h-4 text-black"></i>
             <span>Reservar Turno</span>
           </a>
@@ -115,7 +119,7 @@
 
         <!-- Mobile Menu Toggle Button -->
         <div class="flex md:hidden items-center gap-3">
-          <a href="#reservar" class="btn-neon-pill text-xs py-2 px-3">
+          <a href="reservas.html" class="btn-neon-pill text-xs py-2 px-3">
             <span>Reservar</span>
           </a>
           <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg bg-[#161F30] border border-slate-700 text-slate-200 hover:text-white" aria-label="Abrir menú">
@@ -130,13 +134,17 @@
     <!-- Mobile Slide Down Menu -->
     <div id="mobile-menu" class="hidden md:hidden bg-[#0D1322] border-b border-slate-800 px-6 py-6 space-y-4">
       <a href="#inicio" class="mobile-nav-link block text-base font-semibold text-white hover:text-[#00E676]">Inicio</a>
+      <a href="reservas.html" class="mobile-nav-link block text-base font-bold text-[#00E676] hover:text-[#00C853] flex items-center gap-2">
+        <i data-lucide="calendar" class="w-4 h-4"></i>
+        <span>Reservar Turnos Online</span>
+      </a>
       <a href="#canchas" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Canchas & Precios</a>
       <a href="#servicios" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Servicios del Complejo</a>
       <a href="#eventos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Eventos y Torneos</a>
       <a href="#porque-elegirnos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">¿Por qué elegirnos?</a>
       <a href="#ubicacion" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676]">Ubicación & Contacto</a>
       <div class="pt-4 border-t border-slate-800">
-        <a href="#reservar" class="btn-neon-pill w-full justify-center">
+        <a href="reservas.html" class="btn-neon-pill w-full justify-center">
           <i data-lucide="calendar" class="w-4 h-4 text-black"></i>
           <span>Reservar Turno Online</span>
         </a>
@@ -343,202 +351,60 @@
     </div>
   </section>
 
-  <!-- ================= MOTOR DE RESERVAS (CLIENT BOOKING) ================= -->
-  <section id="reservar" class="py-20 relative">
+  <!-- ================= BANNER DESTACADO: RESERVAR TURNOS ONLINE ================= -->
+  <section id="reservar" class="py-16 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="glass-card p-6 sm:p-10 border border-[rgba(0,230,118,0.25)] shadow-[0_0_50px_rgba(0,0,0,0.6)]">
+      <div class="glass-card p-8 sm:p-12 border border-[rgba(0,230,118,0.3)] shadow-[0_0_50px_rgba(0,0,0,0.6)] relative overflow-hidden bg-gradient-to-br from-[#161F30] via-[#0D1322] to-[#0B0F19]">
         
-        <!-- Header del Motor -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-8 border-b border-slate-800">
-          <div>
-            <span class="badge-neon mb-2">Pádel & Fútbol</span>
-            <h2 class="text-3xl sm:text-4xl font-sports font-bold text-white uppercase">
-              Reservá tu Turno en Vivo
+        <!-- Glow accents in card -->
+        <div class="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-[#00E676]/10 blur-3xl pointer-events-none"></div>
+        
+        <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+          
+          <div class="space-y-4 max-w-2xl text-center lg:text-left">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0B0F19] border border-[#00E676]/30 text-[#00E676] text-xs font-bold uppercase">
+              <span class="w-2 h-2 rounded-full bg-[#00E676] animate-pulse"></span>
+              <span>Disponibilidad en Tiempo Real</span>
+            </div>
+
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase tracking-wide">
+              RESERVÁ TU CANCHA <span class="text-[#00E676] glow-text-neon">EN MINUTOS</span>
             </h2>
-            <p class="text-slate-400 text-sm mt-1">
-              Seleccioná deporte, cancha, fecha y horario. Confirmación instantánea por WhatsApp.
+
+            <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+              Consultá la grilla completa con 14 días de calendario para pistas de <strong>Pádel</strong> y <strong>Fútbol 5 & 7</strong>. Turnos estándar de 1h y doble turno de 2hs con confirmación inmediata por WhatsApp.
             </p>
-          </div>
-          
-          <!-- Live Status Indicator -->
-          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0B0F19] border border-slate-700">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse"></span>
-            <span class="text-xs font-semibold text-slate-300">Disponibilidad en tiempo real</span>
-          </div>
-        </div>
 
-        <!-- Sport & Location Filter Buttons -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
-          
-          <!-- Sport Filter -->
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filtrar por Deporte:</label>
-            <div class="flex flex-wrap gap-2">
-              <button class="filter-btn-modern active" data-filter-sport="todos">
-                <span>🏆 Todos</span>
-              </button>
-              <button class="filter-btn-modern" data-filter-sport="padel">
-                <span>🎾 Pádel</span>
-              </button>
-              <button class="filter-btn-modern" data-filter-sport="futbol">
-                <span>⚽ Fútbol</span>
-              </button>
+            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2 text-xs text-slate-300">
+              <span class="flex items-center gap-1.5 font-semibold">
+                <i data-lucide="check-circle" class="w-4 h-4 text-[#00E676]"></i>
+                Confirmación por WhatsApp
+              </span>
+              <span class="flex items-center gap-1.5 font-semibold">
+                <i data-lucide="check-circle" class="w-4 h-4 text-[#00E676]"></i>
+                Pistas Techadas & Exterior
+              </span>
+              <span class="flex items-center gap-1.5 font-semibold">
+                <i data-lucide="check-circle" class="w-4 h-4 text-[#00E676]"></i>
+                Sin Registro Previo
+              </span>
             </div>
           </div>
 
-          <!-- Location Filter -->
-          <div>
-            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filtrar por Ubicación:</label>
-            <div class="flex flex-wrap gap-2">
-              <button class="filter-btn-modern active" data-filter-location="todos">
-                <span>📍 Todas</span>
-              </button>
-              <button class="filter-btn-modern" data-filter-location="interior">
-                <span>🏠 Interior Techada</span>
-              </button>
-              <button class="filter-btn-modern" data-filter-location="exterior">
-                <span>☀️ Exterior</span>
-              </button>
-            </div>
+          <div class="shrink-0 w-full sm:w-auto text-center">
+            <a href="reservas.html" class="btn-neon-pill text-base sm:text-lg px-10 py-5 shadow-[0_0_30px_rgba(0,230,118,0.5)] font-bold w-full sm:w-auto justify-center">
+              <i data-lucide="calendar" class="w-5 h-5 text-black"></i>
+              <span>Ir al Sistema de Reservas</span>
+              <i data-lucide="arrow-right" class="w-5 h-5 text-black ml-1"></i>
+            </a>
+            <p class="text-[11px] text-slate-400 mt-2">Acceso a instructivo y grilla interactiva</p>
           </div>
 
-        </div>
-
-        <!-- PASO 1: Canchas Selector Grid -->
-        <div class="my-8">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">1</span>
-            <h3 class="text-lg font-sports font-bold text-white uppercase tracking-wide">Seleccioná la Cancha:</h3>
-          </div>
-          <div id="canchas-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- Rendered dynamically by app.js -->
-          </div>
-        </div>
-
-        <!-- PASO 2: Date Selector (Horizontal Scroll) -->
-        <div class="my-8">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">2</span>
-            <h3 class="text-lg font-sports font-bold text-white uppercase tracking-wide">Seleccioná el Día:</h3>
-          </div>
-          <div id="fechas-row" class="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin">
-            <!-- Rendered dynamically by app.js -->
-          </div>
-        </div>
-
-        <!-- PASO 3: Duration Selector (1h vs 2h) -->
-        <div class="my-8">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">3</span>
-            <h3 class="text-lg font-sports font-bold text-white uppercase tracking-wide">Duración del Turno:</h3>
-          </div>
-          <div class="flex flex-wrap gap-3">
-            <button type="button" class="filter-btn-modern active" data-duration="1">
-              <span>⏱️ 1 Hora de Turno</span>
-            </button>
-            <button type="button" class="filter-btn-modern" data-duration="2" id="btn-duration-2h">
-              <span>⏱️ 2 Horas (Doble Turno · Recomendado Pádel 🎾)</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- PASO 4: Time Slot Selector -->
-        <div class="my-8">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-full bg-[#00E676] text-black font-bold text-xs flex items-center justify-center">4</span>
-              <h3 id="horarios-section-title" class="text-lg font-sports font-bold text-white uppercase tracking-wide">
-                Horarios Disponibles:
-              </h3>
-            </div>
-          </div>
-          <div id="horarios-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            <!-- Rendered dynamically by app.js -->
-          </div>
-          <div id="sin-horarios" class="hidden p-6 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-slate-400">
-            No hay horarios disponibles en esta cancha para la fecha y duración seleccionadas. Probá con otro día u otra cancha.
-          </div>
-        </div>
-
-        <!-- Formulario de Confirmación / Reserva -->
-        <div id="booking-form" class="hidden mt-8 pt-8 border-t border-slate-800">
-          
-          <!-- Summary Box -->
-          <div class="p-6 rounded-2xl bg-[#0B0F19] border border-[rgba(0,230,118,0.3)] shadow-[0_0_20px_rgba(0,230,118,0.1)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-            <div>
-              <div id="selected-slot-label" class="font-sports text-xl text-white font-bold tracking-wide">
-                Pista 1 - Cristal · Sábado 29 de agosto · 19:00 hs
-              </div>
-              <div id="selected-slot-tags" class="flex flex-wrap gap-2 mt-2">
-                <!-- Badges -->
-              </div>
-            </div>
-            <div class="text-left md:text-right">
-              <div class="text-xs text-slate-400 font-semibold uppercase">Total a Pagar:</div>
-              <div id="selected-slot-price-val" class="font-bebas text-3xl text-[#00E676]">
-                $ 24.000
-              </div>
-            </div>
-          </div>
-
-          <!-- Input Fields -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label for="cliente-nombre" class="block text-xs font-bold text-slate-300 uppercase mb-1">
-                Nombre y Apellido del Jugador / Capitán *
-              </label>
-              <input id="cliente-nombre" type="text" placeholder="Ej: Lucas Martínez" class="w-full px-4 py-3 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all" required>
-            </div>
-            <div>
-              <label for="cliente-whatsapp" class="block text-xs font-bold text-slate-300 uppercase mb-1">
-                WhatsApp de Contacto (opcional)
-              </label>
-              <input id="cliente-whatsapp" type="tel" placeholder="Ej: 261 456-7890" class="w-full px-4 py-3 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all">
-            </div>
-          </div>
-
-          <div class="mb-6">
-            <label for="cliente-equipo" class="block text-xs font-bold text-slate-300 uppercase mb-1">
-              Nombre de Pareja o Equipo (opcional)
-            </label>
-            <input id="cliente-equipo" type="text" placeholder="Ej: Los Smashers / Galácticos FC" class="w-full px-4 py-3 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-[#00E676] focus:ring-1 focus:ring-[#00E676] transition-all">
-          </div>
-
-          <p id="form-error" class="text-red-400 text-sm font-semibold mb-4 min-h-[20px]"></p>
-
-          <button id="btn-reservar" class="btn-neon-pill w-full justify-center text-lg py-4 shadow-[0_0_30px_rgba(0,230,118,0.4)]">
-            <i data-lucide="check-circle-2" class="w-5 h-5 text-black"></i>
-            <span>Confirmar Reserva de Turno</span>
-          </button>
-        </div>
-
-        <!-- Panel de Confirmación Exitoso -->
-        <div id="confirm-panel" class="hidden mt-8 p-8 rounded-2xl bg-[#0B0F19] border-2 border-[#00E676] text-center space-y-6">
-          <div id="confirm-icon-box" class="w-20 h-20 rounded-full bg-[#161F30] border-2 border-[#00E676] flex items-center justify-center text-4xl mx-auto shadow-[0_0_30px_rgba(0,230,118,0.3)]">
-            🎾
-          </div>
-          <div>
-            <h3 class="text-3xl font-sports font-bold text-white uppercase">¡Turno Reservado con Éxito!</h3>
-            <p class="text-slate-400 text-sm mt-1">Tu lugar ha sido registrado en el sistema del complejo.</p>
-          </div>
-
-          <div id="confirm-card-content" class="max-w-lg mx-auto bg-[#161F30] p-6 rounded-xl border border-slate-700 text-left space-y-3">
-            <!-- Dynamic summary content -->
-          </div>
-
-          <div class="max-w-lg mx-auto space-y-3">
-            <button id="btn-confirmar-whatsapp" class="w-full py-4 px-6 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-base flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(37,211,102,0.4)]">
-              <i data-lucide="message-circle" class="w-5 h-5"></i>
-              <span>Confirmar Asistencia por WhatsApp</span>
-            </button>
-            <button id="btn-reservar-otro" class="w-full py-3 px-6 rounded-full bg-[#1E293B] hover:bg-[#28384E] text-slate-300 hover:text-white font-semibold text-sm transition-all">
-              Reservar Otro Turno
-            </button>
-          </div>
         </div>
 
       </div>
+
     </div>
   </section>
 
