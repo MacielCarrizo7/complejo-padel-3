@@ -206,6 +206,32 @@ function setupAdminFirestoreListeners() {
       }
     }
   }, err => console.warn('Admin Firestore servicios onSnapshot error:', err));
+
+  // Escucha reactiva en tiempo real de la colección 'eventos'
+  firebaseFirestore.collection('eventos').onSnapshot(snapshot => {
+    if (!snapshot.empty) {
+      const list = [];
+      snapshot.forEach(doc => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      adminState.eventos = list;
+      if (adminState.currentTab === 'eventos') {
+        renderEventosTab();
+      }
+    }
+  }, err => console.warn('Admin Firestore eventos onSnapshot error:', err));
+
+  // Escucha reactiva en tiempo real de la colección 'turnos'
+  firebaseFirestore.collection('turnos').onSnapshot(snapshot => {
+    if (!snapshot.empty) {
+      const list = [];
+      snapshot.forEach(doc => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      adminState.turnos = list;
+      fetchMetrics().then(() => renderMetricsKpis());
+    }
+  }, err => console.warn('Admin Firestore turnos onSnapshot error:', err));
 }
 
 async function saveToFirestore(docId, data) {
@@ -647,28 +673,55 @@ function populateAgendaFilters() {
 function getFilteredTurnos() {
   const { cancha, fechaPreset, deporte, estado, search } = adminState.filters;
   const hoy = hoyISO();
+  const now = new Date();
+
+  const estFilter = String(estado || 'todos').toLowerCase().trim();
+  const depFilter = String(deporte || 'todos').toLowerCase().trim();
+  const canchaFilter = String(cancha || 'todas').toLowerCase().trim();
+  const fechaFilt = String(fechaPreset || 'todos').toLowerCase().trim();
 
   return (adminState.turnos || []).filter(t => {
-    if (deporte !== 'todos' && t.deporte !== deporte) return false;
-    if (cancha !== 'todas' && t.canchaId !== cancha) return false;
-    if (estado === 'confirmados' && !t.confirmado) return false;
-    if (estado === 'pendientes' && t.confirmado) return false;
-
-    if (fechaPreset === 'hoy' && t.fecha !== hoy) return false;
-    if (fechaPreset === 'manana') {
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      if (t.fecha !== formatDateISO(d)) return false;
+    // 1. Filtro Deporte
+    if (depFilter !== 'todos') {
+      const tDep = String(t.deporte || '').toLowerCase().trim();
+      if (tDep !== depFilter) return false;
     }
-    if (fechaPreset === 'semana') {
-      const d7 = new Date();
-      d7.setDate(d7.getDate() + 7);
-      if (t.fecha < hoy || t.fecha > formatDateISO(d7)) return false;
-    }
-    if (fechaPreset === 'todos' && t.fecha < hoy) return false;
 
-    if (search) {
-      const q = search.toLowerCase();
+    // 2. Filtro Cancha
+    if (canchaFilter !== 'todas') {
+      const tCanchaId = String(t.canchaId || '').toLowerCase().trim();
+      const tCanchaNom = String(t.canchaNombre || '').toLowerCase().trim();
+      if (tCanchaId !== canchaFilter && tCanchaNom !== canchaFilter) return false;
+    }
+
+    // 3. Filtro Estado (Normalizado con soporte para todas las variantes)
+    if (estFilter !== 'todos') {
+      const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
+      if ((estFilter === 'confirmados' || estFilter === 'confirmado') && !isConfirmed) return false;
+      if ((estFilter === 'pendientes' || estFilter === 'pendiente') && isConfirmed) return false;
+    }
+
+    // 4. Filtro de Fechas (formato local YYYY-MM-DD sin desfase UTC)
+    const turnoFecha = String(t.fecha || '').trim();
+    if (fechaFilt === 'hoy') {
+      if (turnoFecha !== hoy) return false;
+    } else if (fechaFilt === 'manana') {
+      const tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const manana = `${tom.getFullYear()}-${pad2(tom.getMonth() + 1)}-${pad2(tom.getDate())}`;
+      if (turnoFecha !== manana) return false;
+    } else if (fechaFilt === 'semana') {
+      const sem = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
+      const en7dias = `${sem.getFullYear()}-${pad2(sem.getMonth() + 1)}-${pad2(sem.getDate())}`;
+      if (turnoFecha < hoy || turnoFecha > en7dias) return false;
+    } else if (fechaFilt === 'todos') {
+      // Todos los turnos futuros
+      if (turnoFecha < hoy) return false;
+    }
+    // Si es 'todos_historicos' o cualquier otro, muestra todo el historial
+
+    // 5. Búsqueda de texto libre
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
       const matchName = String(t.nombre || '').toLowerCase().includes(q);
       const matchWa = String(t.whatsapp || '').toLowerCase().includes(q);
       const matchTeam = String(t.equipo || '').toLowerCase().includes(q);
@@ -727,12 +780,14 @@ function renderAgendaListItems() {
 
     const card = document.createElement('div');
     card.className = 'glass-card p-5 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group';
+    card.setAttribute('data-turno-card', t.id);
 
     const isPadel = t.deporte === 'padel';
     const dur = Number(t.duracion) || 1;
     const [hStr, mStr] = t.hora.split(':').map(Number);
     const nextH = (hStr + dur) % 24;
     const horaFin = t.horaFin || `${pad2(nextH)}:${pad2(mStr)}`;
+    const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
 
     card.innerHTML = `
       <div class="flex items-start gap-4">
@@ -745,8 +800,8 @@ function renderAgendaListItems() {
           <div class="flex flex-wrap items-center gap-2">
             <span class="font-bold text-white text-base">${escapeHtml(t.nombre)}</span>
             ${t.equipo ? `<span class="text-xs text-[#00E5FF] font-semibold">(${escapeHtml(t.equipo)})</span>` : ''}
-            <span class="px-2 py-0.5 rounded text-[11px] font-bold ${t.confirmado ? 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}">
-              ${t.confirmado ? '✓ WhatsApp Confirmado' : '⏳ Pendiente'}
+            <span id="badge-turno-${t.id}" class="px-2 py-0.5 rounded text-[11px] font-bold ${isConfirmed ? 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}">
+              ${isConfirmed ? '✓ Confirmado' : '⏳ Pendiente'}
             </span>
           </div>
 
@@ -764,8 +819,8 @@ function renderAgendaListItems() {
           <div class="text-[10px] text-slate-400 font-semibold">${dur === 2 ? 'Turno Doble' : '1 Hora'}</div>
         </div>
 
-        <button class="btn-toggle-confirm p-2.5 rounded-xl bg-[#1E293B] hover:bg-[#00E676] text-slate-300 hover:text-black transition-all" data-id="${t.id}" title="${t.confirmado ? 'Marcar como pendiente' : 'Marcar como confirmado'}">
-          <i data-lucide="${t.confirmado ? 'check-circle-2' : 'clock'}" class="w-4 h-4"></i>
+        <button id="btn-confirm-${t.id}" class="btn-toggle-confirm p-2.5 rounded-xl transition-all ${isConfirmed ? 'bg-[#00E676] text-black hover:bg-[#00E676]/80 shadow-[0_0_12px_rgba(0,230,118,0.35)]' : 'bg-[#1E293B] hover:bg-[#00E676] text-slate-300 hover:text-black border border-slate-700'}" data-id="${t.id}" title="${isConfirmed ? 'Confirmado - Clic para marcar como pendiente' : 'Pendiente - Clic para confirmar turno'}">
+          <i data-lucide="${isConfirmed ? 'check-circle-2' : 'clock'}" class="w-4 h-4 ${isConfirmed ? 'text-black' : 'text-amber-400'}"></i>
         </button>
 
         <button class="btn-cancel-turno p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${t.id}" title="Cancelar turno y liberar cancha">
@@ -786,76 +841,116 @@ function renderAgendaListItems() {
 
       if (confirm(`¿Cancelar el turno de ${turno.nombre} (${turno.canchaNombre} - ${formatFechaLarga(turno.fecha)} ${turno.hora} hs)?\nLa cancha quedará liberada al instante.`)) {
         try {
-          const res = await fetch(`/api/turnos/${id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          const data = await res.json();
-          if (data.success) {
-            adminState.turnos = adminState.turnos.filter(t => t.id !== id);
-            await deleteTurnoFromFirestore(id);
-            saveToFirestore('turnos', { list: adminState.turnos });
-            await fetchMetrics();
-            renderActiveTabContent();
-          } else {
-            alert(data.message || 'Error al cancelar turno.');
-          }
+          adminState.turnos = adminState.turnos.filter(t => t.id !== id);
+          await deleteTurnoFromFirestore(id);
+          saveToFirestore('turnos', { list: adminState.turnos });
+          fetch(`/api/turnos/${id}`, { method: 'DELETE' }).catch(() => null);
+          await fetchMetrics();
+          renderActiveTabContent();
         } catch (e) {
-          alert('Error de conexión al cancelar turno.');
+          console.warn(e);
         }
       }
     });
   });
 
+  // Toggle Confirmación Manual: actualiza DOM de inmediato sin ocultar la tarjeta ni necesitar F5
   container.querySelectorAll('.btn-toggle-confirm').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
-      try {
-        const res = await fetch(`/api/turnos/${id}/confirmar`, { method: 'PATCH' });
-        const data = await res.json();
-        if (data.success) {
-          const t = adminState.turnos.find(x => x.id === id);
-          if (t) t.confirmado = true;
-          renderActiveTabContent();
+      const t = adminState.turnos.find(x => x.id === id);
+      if (!t) return;
+
+      const currentConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
+      const willBeConfirmed = !currentConfirmed;
+      const nuevoEstado = willBeConfirmed ? 'confirmado' : 'pendiente';
+
+      t.confirmado = willBeConfirmed;
+      t.estado = nuevoEstado;
+
+      // Actualizar el DOM de ESTA tarjeta inmediatamente
+      const badge = document.getElementById(`badge-turno-${id}`);
+      if (badge) {
+        if (willBeConfirmed) {
+          badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40';
+          badge.innerHTML = '✓ Confirmado';
+        } else {
+          badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+          badge.innerHTML = '⏳ Pendiente';
         }
-      } catch (e) {}
+      }
+
+      if (willBeConfirmed) {
+        btn.className = 'btn-toggle-confirm p-2.5 rounded-xl bg-[#00E676] text-black hover:bg-[#00E676]/80 transition-all shadow-[0_0_12px_rgba(0,230,118,0.35)]';
+        btn.title = 'Confirmado - Clic para marcar como pendiente';
+        btn.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-black"></i>';
+      } else {
+        btn.className = 'btn-toggle-confirm p-2.5 rounded-xl bg-[#1E293B] hover:bg-[#00E676] text-slate-300 hover:text-black transition-all border border-slate-700';
+        btn.title = 'Pendiente - Clic para confirmar turno';
+        btn.innerHTML = '<i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>';
+      }
+      if (window.lucide) window.lucide.createIcons();
+
+      // Guardar en Firestore directo en 'turnos' y 'reservas'
+      try {
+        if (firebaseFirestore) {
+          const updateData = {
+            confirmado: willBeConfirmed,
+            estado: nuevoEstado,
+            updatedAt: new Date()
+          };
+          if (willBeConfirmed) updateData.confirmedAt = new Date();
+
+          await firebaseFirestore.collection('turnos').doc(id).set(updateData, { merge: true });
+          await firebaseFirestore.collection('reservas').doc(id).set(updateData, { merge: true });
+          console.log(`✓ Turno ${id} actualizado a ${nuevoEstado} en Firestore`);
+        }
+        fetch(`/api/turnos/${id}/confirmar`, { method: 'PATCH' }).catch(() => null);
+        saveToFirestore('turnos', { list: adminState.turnos });
+        fetchMetrics().then(() => renderMetricsKpis());
+      } catch (err) {
+        console.warn('Error al guardar estado de turno en Firestore:', err);
+      }
     });
   });
 }
 
 function exportAgendaToCSV() {
-  const filtered = getFilteredTurnos();
-  if (filtered.length === 0) {
-    alert('No hay turnos para exportar con los filtros actuales.');
+  let listToExport = getFilteredTurnos();
+  if (!listToExport || listToExport.length === 0) {
+    listToExport = adminState.turnos || [];
+  }
+  if (!listToExport || listToExport.length === 0) {
+    alert('No hay turnos registrados en la base de datos para exportar.');
     return;
   }
 
-  const headers = ['ID', 'Fecha', 'Hora_Inicio', 'Hora_Fin', 'Duracion_Hs', 'Cancha', 'Deporte', 'Ubicacion', 'Jugador', 'WhatsApp', 'Equipo', 'Precio_Total', 'Estado'];
-  const rows = filtered.map(t => [
-    `"${t.id}"`,
-    `"${t.fecha}"`,
-    `"${t.hora}"`,
-    `"${t.horaFin || ''}"`,
-    `"${t.duracion || 1}"`,
-    `"${(t.canchaNombre || '').replace(/"/g, '""')}"`,
-    `"${t.deporte || ''}"`,
-    `"${t.ubicacion || ''}"`,
-    `"${(t.nombre || '').replace(/"/g, '""')}"`,
-    `"${(t.whatsapp || '').replace(/"/g, '""')}"`,
-    `"${(t.equipo || '').replace(/"/g, '""')}"`,
-    `"${t.precio || 0}"`,
-    `"${t.confirmado ? 'Confirmado' : 'Pendiente'}"`
-  ]);
+  const headers = ['Fecha', 'Hora', 'Cliente', 'Teléfono', 'Cancha', 'Deporte', 'Estado', 'Precio', 'Duración'];
+  const rows = listToExport.map(t => {
+    const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
+    return [
+      `"${t.fecha || ''}"`,
+      `"${t.hora || ''}${t.horaFin ? ` a ${t.horaFin}` : ''}"`,
+      `"${String(t.nombre || '').replace(/"/g, '""')}"`,
+      `"${String(t.whatsapp || '').replace(/"/g, '""')}"`,
+      `"${String(t.canchaNombre || '').replace(/"/g, '""')}"`,
+      `"${String(t.deporte || '').toUpperCase()}"`,
+      `"${isConfirmed ? 'Confirmado' : 'Pendiente'}"`,
+      `"${t.precio || 0}"`,
+      `"${t.duracion || 1}h"`
+    ];
+  });
 
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `turnos_complejo_padel3_${hoyISO()}.csv`);
+  link.setAttribute('download', `agenda_turnos_${hoyISO()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function renderTacticalPitchesView() {
@@ -1173,15 +1268,19 @@ function renderEventosTab() {
 
       if (confirm(`¿Eliminar el evento "${ev.titulo}"?`)) {
         try {
-          const res = await fetch(`/api/eventos/${id}`, { method: 'DELETE' });
-          const data = await res.json();
-          if (data.success) {
-            adminState.eventos = adminState.eventos.filter(x => x.id !== id);
-            await deleteEventFromFirestore(id);
-            saveToFirestore('eventos', { list: adminState.eventos });
-            renderEventosTab();
+          // Eliminación DIRECTA en Cloud Firestore sin depender de servidor local
+          if (firebaseFirestore) {
+            await firebaseFirestore.collection('eventos').doc(id).delete();
+            console.log(`✓ Evento ${id} eliminado directamente en Firestore`);
           }
-        } catch (err) {}
+          adminState.eventos = adminState.eventos.filter(x => x.id !== id);
+          saveToFirestore('eventos', { list: adminState.eventos });
+          renderEventosTab();
+        } catch (err) {
+          console.error('Error al eliminar evento en Firestore:', err);
+          adminState.eventos = adminState.eventos.filter(x => x.id !== id);
+          renderEventosTab();
+        }
       }
     });
   });
@@ -1622,7 +1721,7 @@ async function initAdmin() {
 
   document.getElementById('form-edit-evento')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('edit-evento-id').value;
+    const id = document.getElementById('edit-evento-id').value.trim();
     const titulo = document.getElementById('edit-evento-titulo').value.trim();
     const categoria = document.getElementById('edit-evento-categoria').value.trim();
     const estado = document.getElementById('edit-evento-estado').value;
@@ -1633,7 +1732,10 @@ async function initAdmin() {
     const imagen = document.getElementById('edit-evento-imagen').value.trim();
     const whatsappContacto = document.getElementById('edit-evento-whatsapp').value.trim();
 
+    const eventId = id || (firebaseFirestore ? firebaseFirestore.collection('eventos').doc().id : `ev_${Date.now()}`);
+
     const payload = {
+      id: eventId,
       titulo,
       categoria,
       estado,
@@ -1642,35 +1744,32 @@ async function initAdmin() {
       premio,
       descripcion,
       imagen,
-      whatsappContacto
+      whatsappContacto,
+      activo: true,
+      updatedAt: new Date()
     };
 
     try {
-      const method = id ? 'PUT' : 'POST';
-      const url = id ? `/api/eventos/${id}` : '/api/eventos';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        if (id) {
-          const idx = adminState.eventos.findIndex(x => x.id === id);
-          if (idx !== -1) adminState.eventos[idx] = data.evento;
-        } else {
-          adminState.eventos.unshift(data.evento);
-        }
-        closeEditEventoModal();
-        renderEventosTab();
-        await saveEventToFirestore(data.evento);
-        saveToFirestore('eventos', { list: adminState.eventos });
-        alert(id ? '✓ Evento actualizado exitosamente.' : '✓ Evento creado exitosamente.');
-      } else {
-        alert(data.message || 'Error al guardar evento.');
+      // Guardado DIRECTO en Cloud Firestore con { merge: true }
+      if (firebaseFirestore) {
+        await firebaseFirestore.collection('eventos').doc(eventId).set(payload, { merge: true });
+        console.log(`✓ Evento guardado directamente en Firestore con { merge: true }:`, eventId);
       }
+
+      const idx = adminState.eventos.findIndex(x => x.id === eventId);
+      if (idx !== -1) {
+        adminState.eventos[idx] = { ...adminState.eventos[idx], ...payload };
+      } else {
+        adminState.eventos.unshift(payload);
+      }
+
+      saveToFirestore('eventos', { list: adminState.eventos });
+      closeEditEventoModal();
+      renderEventosTab();
+      alert(id ? '✓ Evento actualizado exitosamente en Firestore.' : '✓ Evento creado exitosamente en Firestore.');
     } catch (err) {
-      alert('Error de conexión al guardar evento.');
+      console.error('Error al guardar evento en Firestore:', err);
+      alert('Error al guardar evento en Firestore: ' + (err.message || ''));
     }
   });
 
