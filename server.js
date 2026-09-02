@@ -732,22 +732,25 @@ app.put('/api/servicios/:id', (req, res) => {
 });
 
 // 17. DELETE /api/servicios/:id
-app.delete('/api/servicios/:id', (req, res) => {
-  const { id } = req.params;
-  const idx = (db.servicios || []).findIndex(s => s.id === id);
+app.delete('/api/servicios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!Array.isArray(db.servicios)) db.servicios = [];
+    const idx = db.servicios.findIndex(s => s.id === id);
 
-  if (idx === -1) {
-    return res.status(404).json({ success: false, message: 'Servicio no encontrado.' });
+    if (idx !== -1) {
+      db.servicios.splice(idx, 1);
+      saveDatabase(db);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Servicio eliminado correctamente'
+    });
+  } catch (error) {
+    console.error('Error al eliminar servicio:', error);
+    return res.status(500).json({ error: 'Error al eliminar el servicio' });
   }
-
-  const [eliminado] = db.servicios.splice(idx, 1);
-  saveDatabase(db);
-
-  res.json({
-    success: true,
-    message: `Servicio "${eliminado.titulo}" eliminado exitosamente.`,
-    servicio: eliminado
-  });
 });
 
 // Start Express Server

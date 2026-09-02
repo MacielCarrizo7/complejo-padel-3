@@ -1274,15 +1274,23 @@ function renderServiciosTab() {
 
       if (confirm(`¿Eliminar el servicio "${srv.titulo}"?`)) {
         try {
-          const res = await fetch(`/api/servicios/${id}`, { method: 'DELETE' });
-          const data = await res.json();
-          if (data.success) {
-            adminState.servicios = adminState.servicios.filter(x => x.id !== id);
-            await deleteServiceFromFirestore(id);
-            saveToFirestore('servicios', { list: adminState.servicios });
-            renderServiciosTab();
-          }
-        } catch (e) {}
+          // 1. Eliminar directamente del documento en Firestore
+          await deleteServiceFromFirestore(id);
+
+          // 2. Enviar petición DELETE al backend
+          await fetch(`/api/servicios/${id}`, { method: 'DELETE' }).catch(() => null);
+
+          // 3. Remover de memoria local y de complejo_data/servicios
+          adminState.servicios = adminState.servicios.filter(x => x.id !== id);
+          saveToFirestore('servicios', { list: adminState.servicios });
+
+          // 4. Re-renderizar lista inmediatamente
+          renderServiciosTab();
+        } catch (e) {
+          console.error('Error al eliminar servicio:', e);
+          adminState.servicios = adminState.servicios.filter(x => x.id !== id);
+          renderServiciosTab();
+        }
       }
     });
   });
