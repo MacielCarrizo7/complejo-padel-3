@@ -183,6 +183,9 @@ async function saveToFirestore(docId, data) {
   try {
     if (firebaseFirestore) {
       await firebaseFirestore.collection('complejo_data').doc(docId).set(data, { merge: true });
+      if (docId === 'config') {
+        await firebaseFirestore.collection('config').doc('general').set(data, { merge: true });
+      }
       console.log(`✓ Sincronizado en Firestore (${docId})`);
     }
   } catch (err) {
@@ -190,20 +193,119 @@ async function saveToFirestore(docId, data) {
   }
 }
 
+async function saveServiceToFirestore(srv) {
+  try {
+    if (firebaseFirestore && srv && srv.id) {
+      await firebaseFirestore.collection('servicios').doc(srv.id).set(srv, { merge: true });
+      console.log(`✓ Servicio "${srv.titulo}" guardado en colección 'servicios'`);
+    }
+  } catch (err) {
+    console.warn('Error al guardar servicio en Firestore:', err);
+  }
+}
+
+async function deleteServiceFromFirestore(id) {
+  try {
+    if (firebaseFirestore && id) {
+      await firebaseFirestore.collection('servicios').doc(id).delete();
+      console.log(`✓ Servicio ${id} eliminado de colección 'servicios'`);
+    }
+  } catch (err) {
+    console.warn('Error al eliminar servicio de Firestore:', err);
+  }
+}
+
+async function saveEventToFirestore(ev) {
+  try {
+    if (firebaseFirestore && ev && ev.id) {
+      await firebaseFirestore.collection('eventos').doc(ev.id).set(ev, { merge: true });
+      console.log(`✓ Evento "${ev.titulo}" guardado en colección 'eventos'`);
+    }
+  } catch (err) {
+    console.warn('Error al guardar evento en Firestore:', err);
+  }
+}
+
+async function deleteEventFromFirestore(id) {
+  try {
+    if (firebaseFirestore && id) {
+      await firebaseFirestore.collection('eventos').doc(id).delete();
+      console.log(`✓ Evento ${id} eliminado de colección 'eventos'`);
+    }
+  } catch (err) {
+    console.warn('Error al eliminar evento de Firestore:', err);
+  }
+}
+
+async function saveTurnoToFirestore(turno) {
+  try {
+    if (firebaseFirestore && turno && turno.id) {
+      await firebaseFirestore.collection('turnos').doc(turno.id).set(turno, { merge: true });
+      await firebaseFirestore.collection('reservas').doc(turno.id).set(turno, { merge: true });
+      console.log(`✓ Turno "${turno.id}" guardado en colecciones 'turnos' y 'reservas'`);
+    }
+  } catch (err) {
+    console.warn('Error al guardar turno en Firestore:', err);
+  }
+}
+
+async function deleteTurnoFromFirestore(id) {
+  try {
+    if (firebaseFirestore && id) {
+      await firebaseFirestore.collection('turnos').doc(id).delete();
+      await firebaseFirestore.collection('reservas').doc(id).delete();
+      console.log(`✓ Turno ${id} eliminado de colecciones 'turnos' y 'reservas'`);
+    }
+  } catch (err) {
+    console.warn('Error al eliminar turno de Firestore:', err);
+  }
+}
+
 async function syncFromFirestore() {
   try {
     if (!firebaseFirestore) return;
+
+    // Config
     const docCfg = await firebaseFirestore.collection('complejo_data').doc('config').get();
-    if (docCfg.exists && docCfg.data().nombre) adminState.config = docCfg.data();
+    if (docCfg.exists && docCfg.data().nombre) {
+      adminState.config = docCfg.data();
+    } else {
+      const docGen = await firebaseFirestore.collection('config').doc('general').get();
+      if (docGen.exists && docGen.data().nombre) adminState.config = docGen.data();
+    }
 
-    const docSrv = await firebaseFirestore.collection('complejo_data').doc('servicios').get();
-    if (docSrv.exists && Array.isArray(docSrv.data().list)) adminState.servicios = docSrv.data().list;
+    // Servicios
+    const snapSrv = await firebaseFirestore.collection('servicios').get();
+    if (!snapSrv.empty) {
+      const list = [];
+      snapSrv.forEach(d => list.push(d.data()));
+      adminState.servicios = list;
+    } else {
+      const docSrv = await firebaseFirestore.collection('complejo_data').doc('servicios').get();
+      if (docSrv.exists && Array.isArray(docSrv.data().list)) adminState.servicios = docSrv.data().list;
+    }
 
-    const docEv = await firebaseFirestore.collection('complejo_data').doc('eventos').get();
-    if (docEv.exists && Array.isArray(docEv.data().list)) adminState.eventos = docEv.data().list;
+    // Eventos
+    const snapEv = await firebaseFirestore.collection('eventos').get();
+    if (!snapEv.empty) {
+      const list = [];
+      snapEv.forEach(d => list.push(d.data()));
+      adminState.eventos = list;
+    } else {
+      const docEv = await firebaseFirestore.collection('complejo_data').doc('eventos').get();
+      if (docEv.exists && Array.isArray(docEv.data().list)) adminState.eventos = docEv.data().list;
+    }
 
-    const docTur = await firebaseFirestore.collection('complejo_data').doc('turnos').get();
-    if (docTur.exists && Array.isArray(docTur.data().list)) adminState.turnos = docTur.data().list;
+    // Turnos / Reservas
+    const snapTur = await firebaseFirestore.collection('turnos').get();
+    if (!snapTur.empty) {
+      const list = [];
+      snapTur.forEach(d => list.push(d.data()));
+      adminState.turnos = list;
+    } else {
+      const docTur = await firebaseFirestore.collection('complejo_data').doc('turnos').get();
+      if (docTur.exists && Array.isArray(docTur.data().list)) adminState.turnos = docTur.data().list;
+    }
   } catch (err) {
     console.warn('Error al sincronizar datos desde Firestore:', err);
   }
@@ -662,6 +764,8 @@ function renderAgendaListItems() {
           const data = await res.json();
           if (data.success) {
             adminState.turnos = adminState.turnos.filter(t => t.id !== id);
+            await deleteTurnoFromFirestore(id);
+            saveToFirestore('turnos', { list: adminState.turnos });
             await fetchMetrics();
             renderActiveTabContent();
           } else {
@@ -1044,6 +1148,8 @@ function renderEventosTab() {
           const data = await res.json();
           if (data.success) {
             adminState.eventos = adminState.eventos.filter(x => x.id !== id);
+            await deleteEventFromFirestore(id);
+            saveToFirestore('eventos', { list: adminState.eventos });
             renderEventosTab();
           }
         } catch (err) {}
@@ -1172,8 +1278,9 @@ function renderServiciosTab() {
           const data = await res.json();
           if (data.success) {
             adminState.servicios = adminState.servicios.filter(x => x.id !== id);
-            renderServiciosTab();
+            await deleteServiceFromFirestore(id);
             saveToFirestore('servicios', { list: adminState.servicios });
+            renderServiciosTab();
           }
         } catch (e) {}
       }
@@ -1521,6 +1628,7 @@ async function initAdmin() {
         }
         closeEditEventoModal();
         renderEventosTab();
+        await saveEventToFirestore(data.evento);
         saveToFirestore('eventos', { list: adminState.eventos });
         alert(id ? '✓ Evento actualizado exitosamente.' : '✓ Evento creado exitosamente.');
       } else {
@@ -1576,6 +1684,7 @@ async function initAdmin() {
         }
         closeEditServicioModal();
         renderServiciosTab();
+        await saveServiceToFirestore(data.servicio);
         saveToFirestore('servicios', { list: adminState.servicios });
         alert(id ? '✓ Servicio actualizado exitosamente.' : '✓ Servicio creado exitosamente.');
       } else {

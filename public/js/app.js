@@ -683,6 +683,11 @@ async function reservarTurno() {
     if (!Array.isArray(window.state.turnos)) window.state.turnos = [];
     window.state.turnos.push(data.turno);
 
+    if (dbFs) {
+      dbFs.collection('turnos').doc(data.turno.id).set(data.turno).catch(e => console.warn('Error Firestore turnos:', e));
+      dbFs.collection('reservas').doc(data.turno.id).set(data.turno).catch(e => console.warn('Error Firestore reservas:', e));
+    }
+
     document.getElementById('cliente-nombre').value = '';
     document.getElementById('cliente-whatsapp').value = '';
     document.getElementById('cliente-equipo').value = '';
@@ -807,6 +812,209 @@ Hola! Quiero confirmar la reserva de este turno. Muchas gracias!`;
   fetch(`/api/turnos/${last.id}/confirmar`, { method: 'PATCH' }).catch(() => {});
 }
 
+// ================= FIREBASE FIRESTORE SYNC =================
+let dbFs = null;
+
+const DEFAULT_SERVICIOS = [
+  {
+    id: 'srv_1',
+    titulo: 'Canchas de Pádel WPT',
+    categoria: 'PÁDEL PRO',
+    imagen: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
+    descripcion: 'Pistas panorámicas con césped sintético oficial WPT, cristal templado e iluminación LED proyectada sin sombras.',
+    icono: 'Trophy',
+    tags: ['4 Canchas Panorámicas', 'Césped WPT', 'Techadas & Exterior'],
+    activo: true
+  },
+  {
+    id: 'srv_2',
+    titulo: 'Canchas de Fútbol 5 & 7',
+    categoria: 'FÚTBOL PREMIUM',
+    imagen: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+    descripcion: 'Canchas de fútbol con césped sintético de alta densidad 50mm, amortiguación premium e iluminación LED.',
+    icono: 'Flame',
+    tags: ['Fútbol 5 y 7', 'Sintético 50mm', 'Torneos & Partidos'],
+    activo: true
+  },
+  {
+    id: 'srv_3',
+    titulo: 'Snack Bar & Tercer Tiempo',
+    categoria: 'GASTRONOMÍA',
+    imagen: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+    descripcion: 'Disfrutá del mejor tercer tiempo con amigos en nuestro buffet equipado. Bebidas frías, picadas, comidas y pantallas HD.',
+    icono: 'Utensils',
+    tags: ['Bebidas Frías', 'Comidas Rápida', 'Pantallas HD'],
+    activo: true
+  },
+  {
+    id: 'srv_4',
+    titulo: 'Vestuarios & Duchas',
+    categoria: 'COMODIDADES',
+    imagen: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+    descripcion: 'Instalaciones sanitarias completas con duchas de agua caliente, lockers individuales y máxima higiene permanente.',
+    icono: 'ShieldCheck',
+    tags: ['Duchas Agua Caliente', 'Lockers Seguros', 'Higiene Pro'],
+    activo: true
+  },
+  {
+    id: 'srv_5',
+    titulo: 'Estacionamiento Privado',
+    categoria: 'SEGURIDAD',
+    imagen: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
+    descripcion: 'Predio con estacionamiento monitoreado dentro del complejo con fácil acceso a las canchas.',
+    icono: 'Car',
+    tags: ['Seguridad Monitoreada', 'Acceso Directo', 'Gratuito'],
+    activo: true
+  },
+  {
+    id: 'srv_6',
+    titulo: 'Ayuda Médica & Seguro',
+    categoria: 'SALUD & SEGURIDAD',
+    imagen: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80',
+    descripcion: 'Área protegida con servicio de emergencia médica y botiquín de primeros auxilios ante cualquier eventualidad.',
+    icono: 'HeartPulse',
+    tags: ['Área Protegida', 'Servicio Urgencias', 'Primeros Auxilios'],
+    activo: true
+  },
+  {
+    id: 'srv_7',
+    titulo: 'Alquiler de Paletas & Indumentaria',
+    categoria: 'EQUIPAMIENTO',
+    imagen: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=800&q=80',
+    descripcion: 'Equipamiento oficial de primeras marcas (Bullpadel, Head, Nox) y venta de accesorios para tu partido.',
+    icono: 'Sparkles',
+    tags: ['Paletas Pro', 'Tubos Presurizados', 'Grip Nuevo'],
+    activo: true
+  }
+];
+
+const DEFAULT_EVENTOS = [
+  {
+    id: 'ev_1',
+    titulo: 'Gran Torneo Apertura Pádel 2026',
+    categoria: '4ta a 7ma Caballeros y Damas',
+    fecha: '12 al 14 de Septiembre',
+    horario: 'Desde las 18:00 hs',
+    estado: 'Inscripciones Abiertas',
+    descripcion: 'Torneo de fin de semana con fase de grupos y llaves de eliminación directa. Premios en efectivo, indumentaria oficial y trofeos para campeones y subcampeones.',
+    premio: '$ 250.000 en Premios + Trofeos',
+    imagen: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
+    whatsappContacto: '5491112345678',
+    activo: true
+  },
+  {
+    id: 'ev_2',
+    titulo: 'Clínica Intensiva de Smash & Bandeja',
+    categoria: 'Nivel Inicial e Intermedio',
+    fecha: 'Sábado 19 de Septiembre',
+    horario: '10:00 a 13:00 hs',
+    estado: 'Últimos Cupos',
+    descripcion: 'Entrenamiento técnico y táctico con profesores federados. Corrección de golpes de ataque, posicionamiento en pista y videoanálisis.',
+    premio: 'Incluye hidratación y kit de entrenamiento',
+    imagen: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=800&q=80',
+    whatsappContacto: '5491112345678',
+    activo: true
+  },
+  {
+    id: 'ev_3',
+    titulo: 'Torneo Relámpago Fútbol 7 Nocturno',
+    categoria: 'Libre Masculino (Equipos 7 a 10 jug.)',
+    fecha: 'Viernes 25 de Septiembre',
+    horario: 'Desde las 20:00 hs',
+    estado: 'Inscripciones Abiertas',
+    descripcion: 'Copa nocturna bajo iluminación LED. Mínimo 3 partidos garantizados por equipo, asado para el campeón y consumición incluida en el buffet.',
+    premio: 'Copa Campeón + Asado completo para 10 personas',
+    imagen: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+    whatsappContacto: '5491112345678',
+    activo: true
+  },
+  {
+    id: 'ev_4',
+    titulo: 'CUMPLEAÑOS & EVENTOS INFANTILES',
+    categoria: 'Eventos Sociales & Festejos',
+    fecha: 'Todos los fines de semana',
+    horario: 'Turnos de 3 a 4 hs',
+    estado: 'Consultar Disponibilidad / Reservas Abiertas',
+    descripcion: 'Festejá tu cumple en el complejo: uso de canchas de fútbol/pádel, espacio techado para pelotero, castillo inflable, mesa dulce, vajilla y coordinador deportivo.',
+    premio: 'Incluye vajilla, coordinador deportivo y pelotero techado',
+    imagen: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=800&q=80',
+    whatsappContacto: '5491112345678',
+    activo: true
+  }
+];
+
+function initFirestoreApp() {
+  const fbConfig = {
+    apiKey: "AIzaSyCCjMf1IIcKsLu2wQPqB-UxGa3bmEmVnWs",
+    authDomain: "complejo-padel-3.firebaseapp.com",
+    projectId: "complejo-padel-3",
+    storageBucket: "complejo-padel-3.firebasestorage.app",
+    messagingSenderId: "975322009594",
+    appId: "1:975322009594:web:e81ead05c09307e7255e43",
+    measurementId: "G-RY4RW29MRS"
+  };
+
+  try {
+    if (window.firebase) {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(fbConfig);
+      }
+      dbFs = firebase.firestore();
+      setupFirestoreListeners();
+    }
+  } catch (err) {
+    console.warn('Error iniciando Firestore en cliente:', err);
+  }
+}
+
+function setupFirestoreListeners() {
+  if (!dbFs) return;
+
+  // 1. Escuchador de Servicios en tiempo real desde Firestore
+  dbFs.collection('servicios').onSnapshot(snapshot => {
+    if (!snapshot.empty) {
+      const list = [];
+      snapshot.forEach(doc => list.push(doc.data()));
+      window.state.servicios = list;
+      renderServicios();
+    } else {
+      DEFAULT_SERVICIOS.forEach(s => dbFs.collection('servicios').doc(s.id).set(s));
+      window.state.servicios = DEFAULT_SERVICIOS;
+      renderServicios();
+    }
+  }, err => console.warn('Firestore listener servicios error:', err));
+
+  // 2. Escuchador de Eventos en tiempo real desde Firestore
+  dbFs.collection('eventos').onSnapshot(snapshot => {
+    if (!snapshot.empty) {
+      const list = [];
+      snapshot.forEach(doc => list.push(doc.data()));
+      window.state.eventos = list;
+      renderEventos();
+    } else {
+      DEFAULT_EVENTOS.forEach(e => dbFs.collection('eventos').doc(e.id).set(e));
+      window.state.eventos = DEFAULT_EVENTOS;
+      renderEventos();
+    }
+  }, err => console.warn('Firestore listener eventos error:', err));
+
+  // 3. Escuchador de Turnos / Reservas en tiempo real desde Firestore
+  dbFs.collection('turnos').onSnapshot(snapshot => {
+    const list = [];
+    snapshot.forEach(doc => list.push(doc.data()));
+    window.state.turnos = list;
+    render();
+  }, err => console.warn('Firestore listener turnos error:', err));
+
+  // 4. Escuchador de Configuración General
+  dbFs.collection('config').doc('general').onSnapshot(doc => {
+    if (doc.exists) {
+      window.state.config = doc.data();
+      render();
+    }
+  }, err => console.warn('Firestore listener config error:', err));
+}
+
 // ================= API FETCHING =================
 
 async function loadConfig() {
@@ -837,7 +1045,7 @@ async function loadServicios() {
   try {
     const res = await fetch('/api/servicios');
     const data = await res.json();
-    if (data.success && Array.isArray(data.servicios)) {
+    if (data.success && Array.isArray(data.servicios) && data.servicios.length > 0) {
       window.state.servicios = data.servicios;
     }
   } catch (e) {
@@ -849,7 +1057,7 @@ async function loadEventos() {
   try {
     const res = await fetch('/api/eventos');
     const data = await res.json();
-    if (data.success && Array.isArray(data.eventos)) {
+    if (data.success && Array.isArray(data.eventos) && data.eventos.length > 0) {
       window.state.eventos = data.eventos;
     }
   } catch (e) {
@@ -1247,6 +1455,7 @@ function render() {
 // ================= INITIALIZATION =================
 
 async function initApp() {
+  initFirestoreApp();
   await Promise.all([
     loadConfig(),
     loadTurnos(),
