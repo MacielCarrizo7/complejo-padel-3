@@ -94,58 +94,72 @@ const DEFAULT_STATE = {
   servicios: [
     {
       id: 'srv_1',
-      titulo: 'Canchas de Pádel',
-      descripcion: 'Pistas panorámicas con césped sintético oficial WPT, cristal templado y luces LED de última generación.',
+      titulo: 'Canchas de Pádel WPT',
+      categoria: 'PÁDEL PRO',
+      imagen: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
+      descripcion: 'Pistas panorámicas con césped sintético oficial WPT, cristal templado e iluminación LED proyectada sin sombras.',
       icono: 'Trophy',
-      tags: ['4 canchas', 'Césped WPT', 'Interior y Exterior'],
+      tags: ['4 Canchas Panorámicas', 'Césped WPT', 'Techadas & Exterior'],
       activo: true
     },
     {
       id: 'srv_2',
-      titulo: 'Cancha de Fútbol 5 y 7',
-      descripcion: 'Canchas de fútbol con césped sintético de alta calidad y amortiguación, ideal para partidos y torneos.',
+      titulo: 'Canchas de Fútbol 5 & 7',
+      categoria: 'FÚTBOL PREMIUM',
+      imagen: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+      descripcion: 'Canchas de fútbol con césped sintético de alta densidad 50mm, amortiguación premium e iluminación LED.',
       icono: 'Flame',
-      tags: ['Fútbol 5 y 7', 'Césped Sintético', 'Iluminación Pro'],
+      tags: ['Fútbol 5 y 7', 'Sintético 50mm', 'Torneos & Partidos'],
       activo: true
     },
     {
       id: 'srv_3',
       titulo: 'Snack Bar & Tercer Tiempo',
-      descripcion: 'Disfrutá de un buen momento con amigos en nuestro buffet equipado. Comidas, bebidas frías, picadas y TV.',
+      categoria: 'GASTRONOMÍA',
+      imagen: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+      descripcion: 'Disfrutá del mejor tercer tiempo con amigos en nuestro buffet equipado. Bebidas frías, picadas, comidas y pantallas HD.',
       icono: 'Utensils',
-      tags: ['Bebidas frías', 'Comidas rápidas', 'Pantallas HD'],
+      tags: ['Bebidas Frías', 'Comidas Rápida', 'Pantallas HD'],
       activo: true
     },
     {
       id: 'srv_4',
       titulo: 'Vestuarios & Duchas',
-      descripcion: 'Instalaciones sanitarias completas con agua caliente, lockers seguros y máxima higiene constante.',
+      categoria: 'COMODIDADES',
+      imagen: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+      descripcion: 'Instalaciones sanitarias completas con duchas de agua caliente, lockers individuales y máxima higiene permanente.',
       icono: 'ShieldCheck',
-      tags: ['Duchas con agua caliente', 'Lockers', 'Higienización'],
+      tags: ['Duchas Agua Caliente', 'Lockers Seguros', 'Higiene Pro'],
       activo: true
     },
     {
       id: 'srv_5',
       titulo: 'Estacionamiento Privado',
-      descripcion: 'Predio con estacionamiento monitoreado para tu vehículo dentro del complejo.',
+      categoria: 'SEGURIDAD',
+      imagen: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
+      descripcion: 'Predio con estacionamiento monitoreado dentro del complejo con fácil acceso a las canchas.',
       icono: 'Car',
-      tags: ['Seguridad 24hs', 'Acceso directo', 'Gratuito'],
+      tags: ['Seguridad Monitoreada', 'Acceso Directo', 'Gratuito'],
       activo: true
     },
     {
       id: 'srv_6',
-      titulo: 'Alquiler de Paletas y Pelotas',
-      descripcion: 'Equipamiento de primeras marcas (Bullpadel, Head, Nox) para que juegues siempre con lo mejor.',
-      icono: 'Sparkles',
-      tags: ['Paletas Pro', 'Tubos presurizados', 'Grip nuevo'],
+      titulo: 'Ayuda Médica & Seguro',
+      categoria: 'SALUD & SEGURIDAD',
+      imagen: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80',
+      descripcion: 'Área protegida con servicio de emergencia médica y botiquín de primeros auxilios ante cualquier eventualidad.',
+      icono: 'HeartPulse',
+      tags: ['Área Protegida', 'Servicio Urgencias', 'Primeros Auxilios'],
       activo: true
     },
     {
       id: 'srv_7',
-      titulo: 'Cumpleaños & Pelotero Infantil',
-      descripcion: 'Predio adaptado con pelotero techado, inflables, vajilla y actividades deportivas coordinadas para los más chicos.',
-      icono: 'Gift',
-      tags: ['Pelotero Techado', 'Castillo Inflable', 'Coordinador', 'Vajilla'],
+      titulo: 'Alquiler de Paletas & Indumentaria',
+      categoria: 'EQUIPAMIENTO',
+      imagen: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=800&q=80',
+      descripcion: 'Equipamiento oficial de primeras marcas (Bullpadel, Head, Nox) y venta de accesorios para tu partido.',
+      icono: 'Sparkles',
+      tags: ['Paletas Pro', 'Tubos Presurizados', 'Grip Nuevo'],
       activo: true
     }
   ],
@@ -661,7 +675,7 @@ app.get('/api/servicios', (req, res) => {
 
 // 15. POST /api/servicios
 app.post('/api/servicios', (req, res) => {
-  const { titulo, descripcion, icono, tags, activo } = req.body;
+  const { titulo, descripcion, icono, categoria, imagen, tags, activo } = req.body;
 
   if (!titulo || !descripcion) {
     return res.status(400).json({ success: false, message: 'El título y descripción del servicio son obligatorios.' });
@@ -672,6 +686,8 @@ app.post('/api/servicios', (req, res) => {
     titulo: String(titulo).trim(),
     descripcion: String(descripcion).trim(),
     icono: String(icono || 'Trophy').trim(),
+    categoria: String(categoria || 'SERVICIO').trim(),
+    imagen: String(imagen || 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80').trim(),
     tags: Array.isArray(tags) ? tags.map(t => String(t).trim()) : [],
     activo: activo !== undefined ? Boolean(activo) : true
   };
@@ -696,11 +712,13 @@ app.put('/api/servicios/:id', (req, res) => {
     return res.status(404).json({ success: false, message: 'Servicio no encontrado.' });
   }
 
-  const { titulo, descripcion, icono, tags, activo } = req.body;
+  const { titulo, descripcion, icono, categoria, imagen, tags, activo } = req.body;
 
   if (titulo !== undefined) srv.titulo = String(titulo).trim();
   if (descripcion !== undefined) srv.descripcion = String(descripcion).trim();
   if (icono !== undefined) srv.icono = String(icono).trim();
+  if (categoria !== undefined) srv.categoria = String(categoria).trim();
+  if (imagen !== undefined) srv.imagen = String(imagen).trim();
   if (Array.isArray(tags)) srv.tags = tags.map(t => String(t).trim());
   if (activo !== undefined) srv.activo = Boolean(activo);
 

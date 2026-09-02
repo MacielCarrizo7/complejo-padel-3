@@ -447,35 +447,59 @@ function renderServicios() {
     'Utensils': 'utensils',
     'ShieldCheck': 'shield-check',
     'Car': 'car',
+    'HeartPulse': 'heart-pulse',
     'Sparkles': 'sparkles',
+    'Gift': 'gift',
     'Wifi': 'wifi',
-    'Tv': 'tv'
+    'Tv': 'tv',
+    'Medal': 'medal',
+    'Activity': 'activity'
   };
 
   servicios.filter(s => s.activo !== false).forEach(srv => {
     const card = document.createElement('div');
-    card.className = 'glass-card p-6 flex flex-col justify-between group';
+    card.className = 'glass-card group overflow-hidden flex flex-col justify-between transition-all duration-300 hover:border-[#00E676]/40 hover:shadow-[0_0_30px_rgba(0,230,118,0.15)]';
 
     const lucideName = iconMap[srv.icono] || 'check-circle-2';
-    const tagsHtml = (srv.tags || []).map(t => `<span class="text-xs bg-[#1E293B] text-slate-300 px-2.5 py-1 rounded-md font-medium">${escapeHtml(t)}</span>`).join('');
+    const tagsHtml = (srv.tags || []).map(t => `<span class="text-xs bg-[#1E293B] border border-slate-700/80 text-slate-300 px-2.5 py-1 rounded-lg font-medium">${escapeHtml(t)}</span>`).join('');
+    const defaultImg = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+    const imgUrl = srv.imagen || defaultImg;
+    const catBadge = srv.categoria || 'SERVICIO';
 
     card.innerHTML = `
-      <div class="space-y-4">
-        <div class="w-12 h-12 rounded-xl bg-[#1E293B] border border-[#00E676]/30 group-hover:border-[#00E676] group-hover:scale-110 flex items-center justify-center text-[#00E676] transition-all shadow-[0_0_15px_rgba(0,230,118,0.1)]">
-          <i data-lucide="${lucideName}" class="w-6 h-6"></i>
+      <div>
+        <div class="relative h-48 w-full overflow-hidden rounded-t-2xl">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(srv.titulo)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#161F30] via-transparent to-transparent"></div>
+          <div class="absolute top-3 left-3">
+            <span class="badge-neon font-bold text-[11px] backdrop-blur-md shadow-md uppercase tracking-wider">
+              ${escapeHtml(catBadge)}
+            </span>
+          </div>
         </div>
-        <div>
-          <h3 class="text-xl font-sports font-bold text-white tracking-wide mb-2">${escapeHtml(srv.titulo)}</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">${escapeHtml(srv.descripcion)}</p>
+
+        <div class="p-6 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-[#1E293B] border border-[#00E676]/30 group-hover:border-[#00E676] group-hover:scale-105 flex items-center justify-center text-[#00E676] transition-all shrink-0 shadow-[0_0_15px_rgba(0,230,118,0.1)]">
+              <i data-lucide="${lucideName}" class="w-5 h-5"></i>
+            </div>
+            <h3 class="text-xl font-sports font-bold text-white tracking-wide uppercase leading-tight">${escapeHtml(srv.titulo)}</h3>
+          </div>
+          <p class="text-slate-300 text-sm leading-relaxed">${escapeHtml(srv.descripcion)}</p>
         </div>
       </div>
-      <div class="flex flex-wrap gap-2 pt-6 mt-6 border-t border-slate-800">
-        ${tagsHtml}
+
+      <div class="p-6 pt-0">
+        <div class="flex flex-wrap gap-2 pt-4 border-t border-slate-800/80">
+          ${tagsHtml}
+        </div>
       </div>
     `;
 
     grid.appendChild(card);
   });
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function renderEventos() {

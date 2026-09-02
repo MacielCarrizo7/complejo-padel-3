@@ -133,6 +133,7 @@ function generarHorarios() {
 
 let firebaseApp = null;
 let firebaseAuth = null;
+let firebaseFirestore = null;
 
 function initFirebaseClient() {
   const fbConfig = {
@@ -146,23 +147,66 @@ function initFirebaseClient() {
   };
 
   try {
-    if (window.firebase && !firebase.apps.length) {
-      firebaseApp = firebase.initializeApp(fbConfig);
-      firebaseAuth = firebase.auth();
+    if (window.firebase) {
+      if (!firebase.apps.length) {
+        firebaseApp = firebase.initializeApp(fbConfig);
+      } else {
+        firebaseApp = firebase.app();
+      }
+      if (firebase.auth) firebaseAuth = firebase.auth();
+      if (firebase.firestore) firebaseFirestore = firebase.firestore();
 
-      firebaseAuth.onAuthStateChanged(user => {
-        if (user) {
-          onAuthSuccess(user);
-        } else {
-          // Check local stored session fallback
-          const savedSession = sessionStorage.getItem(ADMIN_SESSION_KEY);
-          if (savedSession) {
-            try {
-              const u = JSON.parse(savedSession);
-              onAuthSuccess(u);
-              return;
-            } catch (e) {}
+      if (firebaseAuth) {
+        firebaseAuth.onAuthStateChanged(user => {
+          if (user) {
+            onAuthSuccess(user);
+          } else {
+            const savedSession = sessionStorage.getItem(ADMIN_SESSION_KEY);
+            if (savedSession) {
+              try {
+                const u = JSON.parse(savedSession);
+                onAuthSuccess(u);
+                return;
+              } catch (e) {}
+            }
           }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Error inicializando Firebase SDK:', e);
+  }
+}
+
+async function saveToFirestore(docId, data) {
+  try {
+    if (firebaseFirestore) {
+      await firebaseFirestore.collection('complejo_data').doc(docId).set(data, { merge: true });
+      console.log(`✓ Sincronizado en Firestore (${docId})`);
+    }
+  } catch (err) {
+    console.warn(`Error al guardar en Firestore (${docId}):`, err);
+  }
+}
+
+async function syncFromFirestore() {
+  try {
+    if (!firebaseFirestore) return;
+    const docCfg = await firebaseFirestore.collection('complejo_data').doc('config').get();
+    if (docCfg.exists && docCfg.data().nombre) adminState.config = docCfg.data();
+
+    const docSrv = await firebaseFirestore.collection('complejo_data').doc('servicios').get();
+    if (docSrv.exists && Array.isArray(docSrv.data().list)) adminState.servicios = docSrv.data().list;
+
+    const docEv = await firebaseFirestore.collection('complejo_data').doc('eventos').get();
+    if (docEv.exists && Array.isArray(docEv.data().list)) adminState.eventos = docEv.data().list;
+
+    const docTur = await firebaseFirestore.collection('complejo_data').doc('turnos').get();
+    if (docTur.exists && Array.isArray(docTur.data().list)) adminState.turnos = docTur.data().list;
+  } catch (err) {
+    console.warn('Error al sincronizar datos desde Firestore:', err);
+  }
+}
           onAuthSignedOut();
         }
       });
@@ -895,6 +939,7 @@ async function saveCanchasConfig() {
     const data = await res.json();
     if (data.success) {
       adminState.config = data.config;
+      saveToFirestore('config', adminState.config);
       btn.textContent = '✓ ¡Canchas Guardadas!';
       setTimeout(() => {
         btn.disabled = false;
@@ -1020,21 +1065,33 @@ function renderEventosTab() {
 
 function openEditEventoModal(id) {
   const ev = (adminState.eventos || []).find(e => e.id === id);
-  if (!ev) return;
-
   const modal = document.getElementById('modal-edit-evento');
   if (!modal) return;
 
-  document.getElementById('edit-evento-id').value = ev.id;
-  document.getElementById('edit-evento-titulo').value = ev.titulo || '';
-  document.getElementById('edit-evento-categoria').value = ev.categoria || '';
-  document.getElementById('edit-evento-estado').value = ev.estado || 'Inscripciones Abiertas';
-  document.getElementById('edit-evento-fecha').value = ev.fecha || '';
-  document.getElementById('edit-evento-horario').value = ev.horario || '';
-  document.getElementById('edit-evento-premio').value = ev.premio || '';
-  document.getElementById('edit-evento-descripcion').value = ev.descripcion || '';
-  document.getElementById('edit-evento-imagen').value = ev.imagen || '';
-  document.getElementById('edit-evento-whatsapp').value = ev.whatsappContacto || '';
+  if (ev) {
+    document.getElementById('edit-evento-id').value = ev.id;
+    document.getElementById('edit-evento-titulo').value = ev.titulo || '';
+    document.getElementById('edit-evento-categoria').value = ev.categoria || '';
+    document.getElementById('edit-evento-estado').value = ev.estado || 'Inscripciones Abiertas';
+    document.getElementById('edit-evento-fecha').value = ev.fecha || '';
+    document.getElementById('edit-evento-horario').value = ev.horario || '';
+    document.getElementById('edit-evento-premio').value = ev.premio || '';
+    document.getElementById('edit-evento-descripcion').value = ev.descripcion || '';
+    document.getElementById('edit-evento-imagen').value = ev.imagen || '';
+    document.getElementById('edit-evento-whatsapp').value = ev.whatsappContacto || '';
+  } else {
+    // New Event mode
+    document.getElementById('edit-evento-id').value = '';
+    document.getElementById('edit-evento-titulo').value = '';
+    document.getElementById('edit-evento-categoria').value = '4ta a 7ma';
+    document.getElementById('edit-evento-estado').value = 'Inscripciones Abiertas';
+    document.getElementById('edit-evento-fecha').value = 'Fin de semana';
+    document.getElementById('edit-evento-horario').value = 'Desde las 18:00 hs';
+    document.getElementById('edit-evento-premio').value = '$ 200.000 en Premios + Trofeos';
+    document.getElementById('edit-evento-descripcion').value = 'Torneo con fase de grupos y eliminación directa.';
+    document.getElementById('edit-evento-imagen').value = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+    document.getElementById('edit-evento-whatsapp').value = adminState.config?.whatsapp || '';
+  }
 
   modal.classList.remove('hidden');
 }
@@ -1044,40 +1101,8 @@ function closeEditEventoModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-async function createNewEvento() {
-  const titulo = prompt('Título del Evento / Torneo (Ej: Torneo Relámpago Pádel):');
-  if (!titulo) return;
-
-  const fecha = prompt('Fecha del evento (Ej: 12 al 14 de Septiembre):', 'Fin de semana');
-  const categoria = prompt('Categoría (Ej: 4ta a 7ma Caballeros y Damas):', '4ta a 7ma');
-  const premio = prompt('Premios:', '$ 200.000 en Premios + Trofeos');
-  const descripcion = prompt('Descripción / Bases del torneo:', 'Torneo con fase de grupos y eliminación directa.');
-
-  const payload = {
-    titulo,
-    fecha,
-    categoria,
-    premio,
-    descripcion,
-    horario: 'Desde las 18:00 hs',
-    estado: 'Inscripciones Abiertas',
-    whatsappContacto: adminState.config?.whatsapp || ''
-  };
-
-  try {
-    const res = await fetch('/api/eventos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (data.success) {
-      adminState.eventos.unshift(data.evento);
-      renderEventosTab();
-    }
-  } catch (e) {
-    alert('Error al crear evento.');
-  }
+function createNewEvento() {
+  openEditEventoModal(null);
 }
 
 // ================= TAB 4: GESTIÓN DE SERVICIOS =================
@@ -1091,28 +1116,45 @@ function renderServiciosTab() {
 
   servicios.forEach(srv => {
     const card = document.createElement('div');
-    card.className = 'glass-card p-6 border border-slate-800 space-y-3';
+    card.className = 'glass-card overflow-hidden flex flex-col justify-between border border-slate-800 group transition-all hover:border-[#00E676]/40';
+
+    const defaultImg = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+    const imgUrl = srv.imagen || defaultImg;
+    const catBadge = srv.categoria || 'SERVICIO';
 
     card.innerHTML = `
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h4 class="font-sports text-xl font-bold text-white">${escapeHtml(srv.titulo)}</h4>
-          <span class="text-xs text-[#00E676] font-mono">Icono: ${escapeHtml(srv.icono)}</span>
+      <div>
+        <div class="relative h-40 w-full overflow-hidden">
+          <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(srv.titulo)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#161F30] via-transparent to-transparent"></div>
+          <div class="absolute top-3 left-3">
+            <span class="badge-neon font-bold text-[10px] backdrop-blur-md uppercase">${escapeHtml(catBadge)}</span>
+          </div>
+          <div class="absolute top-3 right-3 flex items-center gap-1 bg-[#161F30]/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-700 text-xs text-[#00E676] font-mono">
+            <span>Icono: ${escapeHtml(srv.icono)}</span>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button class="btn-edit-servicio p-2 rounded-lg bg-[#00E5FF]/10 hover:bg-[#00E5FF] text-[#00E5FF] hover:text-black transition-all border border-[#00E5FF]/30" data-id="${srv.id}" title="Editar servicio">
-            <i data-lucide="edit-3" class="w-4 h-4"></i>
-          </button>
-          <button class="btn-del-servicio p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${srv.id}" title="Eliminar servicio">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
+
+        <div class="p-6 space-y-3">
+          <div class="flex items-start justify-between gap-4">
+            <h4 class="font-sports text-xl font-bold text-white uppercase">${escapeHtml(srv.titulo)}</h4>
+            <div class="flex items-center gap-2 shrink-0">
+              <button class="btn-edit-servicio p-2 rounded-lg bg-[#00E5FF]/10 hover:bg-[#00E5FF] text-[#00E5FF] hover:text-black transition-all border border-[#00E5FF]/30" data-id="${srv.id}" title="Editar servicio">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+              <button class="btn-del-servicio p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${srv.id}" title="Eliminar servicio">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <p class="text-slate-300 text-xs leading-relaxed">${escapeHtml(srv.descripcion)}</p>
         </div>
       </div>
 
-      <p class="text-slate-400 text-xs leading-relaxed">${escapeHtml(srv.descripcion)}</p>
-
-      <div class="flex flex-wrap gap-1.5 pt-2">
-        ${(srv.tags || []).map(t => `<span class="text-[10px] bg-[#1E293B] text-slate-300 px-2 py-0.5 rounded">${escapeHtml(t)}</span>`).join('')}
+      <div class="p-6 pt-0">
+        <div class="flex flex-wrap gap-1.5 pt-3 border-t border-slate-800">
+          ${(srv.tags || []).map(t => `<span class="text-[10px] bg-[#1E293B] text-slate-300 px-2 py-0.5 rounded border border-slate-700/60">${escapeHtml(t)}</span>`).join('')}
+        </div>
       </div>
     `;
 
@@ -1140,6 +1182,7 @@ function renderServiciosTab() {
           if (data.success) {
             adminState.servicios = adminState.servicios.filter(x => x.id !== id);
             renderServiciosTab();
+            saveToFirestore('servicios', { list: adminState.servicios });
           }
         } catch (e) {}
       }
@@ -1149,18 +1192,50 @@ function renderServiciosTab() {
   if (window.lucide) window.lucide.createIcons();
 }
 
+function updateServicioImagePreview(url) {
+  const img = document.getElementById('edit-servicio-imagen-preview');
+  const placeholder = document.getElementById('edit-servicio-imagen-placeholder');
+  if (!img || !placeholder) return;
+
+  if (url && url.trim()) {
+    img.src = url.trim();
+    img.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+    img.onerror = () => {
+      img.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+    };
+  } else {
+    img.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+  }
+}
+
 function openEditServicioModal(id) {
   const srv = (adminState.servicios || []).find(s => s.id === id);
-  if (!srv) return;
-
   const modal = document.getElementById('modal-edit-servicio');
   if (!modal) return;
 
-  document.getElementById('edit-servicio-id').value = srv.id;
-  document.getElementById('edit-servicio-titulo').value = srv.titulo || '';
-  document.getElementById('edit-servicio-icono').value = srv.icono || 'Sparkles';
-  document.getElementById('edit-servicio-descripcion').value = srv.descripcion || '';
-  document.getElementById('edit-servicio-tags').value = (srv.tags || []).join(', ');
+  if (srv) {
+    document.getElementById('edit-servicio-id').value = srv.id;
+    document.getElementById('edit-servicio-titulo').value = srv.titulo || '';
+    document.getElementById('edit-servicio-icono').value = srv.icono || 'Sparkles';
+    document.getElementById('edit-servicio-categoria').value = srv.categoria || 'COMODIDADES';
+    document.getElementById('edit-servicio-imagen').value = srv.imagen || '';
+    document.getElementById('edit-servicio-descripcion').value = srv.descripcion || '';
+    document.getElementById('edit-servicio-tags').value = (srv.tags || []).join(', ');
+    updateServicioImagePreview(srv.imagen || '');
+  } else {
+    // New Service mode
+    document.getElementById('edit-servicio-id').value = '';
+    document.getElementById('edit-servicio-titulo').value = '';
+    document.getElementById('edit-servicio-icono').value = 'Sparkles';
+    document.getElementById('edit-servicio-categoria').value = 'COMODIDADES';
+    document.getElementById('edit-servicio-imagen').value = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+    document.getElementById('edit-servicio-descripcion').value = '';
+    document.getElementById('edit-servicio-tags').value = '';
+    updateServicioImagePreview('https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80');
+  }
 
   modal.classList.remove('hidden');
 }
@@ -1170,29 +1245,9 @@ function closeEditServicioModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-async function createNewServicio() {
-  const titulo = prompt('Título del Servicio (Ej: Snack Bar):');
-  if (!titulo) return;
-
-  const descripcion = prompt('Descripción del Servicio:');
-  const icono = prompt('Icono (Trophy, Flame, Utensils, ShieldCheck, Car, Sparkles, Gift):', 'Sparkles');
-  const tagsStr = prompt('Etiquetas separadas por comas (Ej: Bebidas, Comidas):', 'Servicio Pro');
-  const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
-
-  try {
-    const res = await fetch('/api/servicios', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titulo, descripcion, icono, tags })
-    });
-    const data = await res.json();
-    if (data.success) {
-      adminState.servicios.push(data.servicio);
-      renderServiciosTab();
-    }
-  } catch (e) {
-    alert('Error al crear servicio.');
-  }
+function createNewServicio() {
+  openEditServicioModal(null);
+}
 }
 
 // ================= TAB 5: CONFIGURACIÓN & TEXTOS =================
@@ -1267,6 +1322,7 @@ async function saveGeneralConfig() {
 
     if (data.success) {
       adminState.config = data.config;
+      saveToFirestore('config', adminState.config);
       saveBtn.textContent = '✓ ¡Configuración Guardada!';
       setTimeout(() => {
         saveBtn.disabled = false;
@@ -1349,6 +1405,7 @@ function setupMobileMenu() {
 async function initAdmin() {
   await fetchConfig();
   initFirebaseClient();
+  await syncFromFirestore();
 
   setupTabNavigation();
   setupMobileMenu();
@@ -1444,34 +1501,43 @@ async function initAdmin() {
     const imagen = document.getElementById('edit-evento-imagen').value.trim();
     const whatsappContacto = document.getElementById('edit-evento-whatsapp').value.trim();
 
+    const payload = {
+      titulo,
+      categoria,
+      estado,
+      fecha,
+      horario,
+      premio,
+      descripcion,
+      imagen,
+      whatsappContacto
+    };
+
     try {
-      const res = await fetch(`/api/eventos/${id}`, {
-        method: 'PUT',
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/eventos/${id}` : '/api/eventos';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          titulo,
-          categoria,
-          estado,
-          fecha,
-          horario,
-          premio,
-          descripcion,
-          imagen,
-          whatsappContacto
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
-        const idx = adminState.eventos.findIndex(x => x.id === id);
-        if (idx !== -1) adminState.eventos[idx] = data.evento;
+        if (id) {
+          const idx = adminState.eventos.findIndex(x => x.id === id);
+          if (idx !== -1) adminState.eventos[idx] = data.evento;
+        } else {
+          adminState.eventos.unshift(data.evento);
+        }
         closeEditEventoModal();
         renderEventosTab();
-        alert('✓ Evento actualizado exitosamente.');
+        saveToFirestore('eventos', { list: adminState.eventos });
+        alert(id ? '✓ Evento actualizado exitosamente.' : '✓ Evento creado exitosamente.');
       } else {
-        alert(data.message || 'Error al actualizar evento.');
+        alert(data.message || 'Error al guardar evento.');
       }
     } catch (err) {
-      alert('Error de conexión al actualizar evento.');
+      alert('Error de conexión al guardar evento.');
     }
   });
 
@@ -1482,33 +1548,51 @@ async function initAdmin() {
     if (e.target.id === 'modal-edit-servicio') closeEditServicioModal();
   });
 
+  document.getElementById('edit-servicio-imagen')?.addEventListener('input', (e) => {
+    updateServicioImagePreview(e.target.value);
+  });
+  document.getElementById('edit-servicio-imagen')?.addEventListener('change', (e) => {
+    updateServicioImagePreview(e.target.value);
+  });
+
   document.getElementById('form-edit-servicio')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('edit-servicio-id').value;
     const titulo = document.getElementById('edit-servicio-titulo').value.trim();
     const icono = document.getElementById('edit-servicio-icono').value;
+    const categoria = document.getElementById('edit-servicio-categoria').value.trim() || 'COMODIDADES';
+    const imagen = document.getElementById('edit-servicio-imagen').value.trim();
     const descripcion = document.getElementById('edit-servicio-descripcion').value.trim();
     const tagsStr = document.getElementById('edit-servicio-tags').value.trim();
     const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
 
+    const payload = { titulo, icono, categoria, imagen, descripcion, tags };
+
     try {
-      const res = await fetch(`/api/servicios/${id}`, {
-        method: 'PUT',
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/servicios/${id}` : '/api/servicios';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ titulo, icono, descripcion, tags })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
-        const idx = adminState.servicios.findIndex(x => x.id === id);
-        if (idx !== -1) adminState.servicios[idx] = data.servicio;
+        if (id) {
+          const idx = adminState.servicios.findIndex(x => x.id === id);
+          if (idx !== -1) adminState.servicios[idx] = data.servicio;
+        } else {
+          adminState.servicios.push(data.servicio);
+        }
         closeEditServicioModal();
         renderServiciosTab();
-        alert('✓ Servicio actualizado exitosamente.');
+        saveToFirestore('servicios', { list: adminState.servicios });
+        alert(id ? '✓ Servicio actualizado exitosamente.' : '✓ Servicio creado exitosamente.');
       } else {
-        alert(data.message || 'Error al actualizar servicio.');
+        alert(data.message || 'Error al guardar servicio.');
       }
     } catch (err) {
-      alert('Error de conexión al actualizar servicio.');
+      alert('Error de conexión al guardar servicio.');
     }
   });
 

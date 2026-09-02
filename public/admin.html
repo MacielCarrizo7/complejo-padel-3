@@ -44,9 +44,10 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Firebase App, Auth & Analytics SDK (Compat) -->
+  <!-- Firebase App, Auth, Firestore & Analytics SDK (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 
   <!-- Custom CSS Styles -->
@@ -793,7 +794,7 @@
 
   <!-- ================= MODAL DE EDICIÓN DE SERVICIOS ================= -->
   <div id="modal-edit-servicio" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="glass-card max-w-lg w-full p-6 sm:p-8 space-y-6 border border-[#00E676]/40 shadow-[0_0_50px_rgba(0,230,118,0.2)]">
+    <div class="glass-card max-w-lg w-full p-6 sm:p-8 space-y-6 border border-[#00E676]/40 shadow-[0_0_50px_rgba(0,230,118,0.2)] max-h-[90vh] overflow-y-auto">
       
       <div class="flex items-center justify-between pb-4 border-b border-slate-800">
         <div class="flex items-center gap-3">
@@ -802,7 +803,7 @@
           </div>
           <div>
             <h3 class="font-sports text-xl font-bold text-white uppercase leading-none">Editar Servicio</h3>
-            <span class="text-xs text-slate-400">Modificá nombre, descripción e icono</span>
+            <span class="text-xs text-slate-400">Modificá nombre, icono, foto, descripción y etiquetas</span>
           </div>
         </div>
         <button id="btn-close-edit-servicio" type="button" class="text-slate-400 hover:text-white p-1">
@@ -815,32 +816,58 @@
 
         <div>
           <label for="edit-servicio-titulo" class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre del Servicio *</label>
-          <input id="edit-servicio-titulo" type="text" required class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          <input id="edit-servicio-titulo" type="text" required placeholder="Ej: VESTUARIOS Y DUCHAS" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="edit-servicio-icono" class="block text-xs font-bold text-slate-300 uppercase mb-1">Selector de Icono *</label>
+            <select id="edit-servicio-icono" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+              <option value="Trophy">Trophy (Trofeo / Canchas)</option>
+              <option value="Flame">Flame (Fuego / Fútbol)</option>
+              <option value="Utensils">Utensils (Buffet / Restaurante)</option>
+              <option value="ShieldCheck">ShieldCheck (Vestuarios / Higiene)</option>
+              <option value="Car">Car (Estacionamiento)</option>
+              <option value="HeartPulse">HeartPulse (Ayuda Médica / Salud)</option>
+              <option value="Sparkles">Sparkles (Paletas / Accesorios)</option>
+              <option value="Gift">Gift (Cumpleaños / Pelotero)</option>
+              <option value="Wifi">Wifi (Internet WiFi)</option>
+              <option value="Tv">Tv (Pantallas HD)</option>
+              <option value="Medal">Medal (Medalla / Torneos)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="edit-servicio-categoria" class="block text-xs font-bold text-slate-300 uppercase mb-1">Categoría / Badge</label>
+            <input id="edit-servicio-categoria" type="text" placeholder="Ej: COMODIDADES, SALUD, etc." class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          </div>
         </div>
 
         <div>
-          <label for="edit-servicio-icono" class="block text-xs font-bold text-slate-300 uppercase mb-1">Icono</label>
-          <select id="edit-servicio-icono" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
-            <option value="Trophy">Trophy (Trofeo)</option>
-            <option value="Flame">Flame (Fuego / Fútbol)</option>
-            <option value="Utensils">Utensils (Buffet / Restaurante)</option>
-            <option value="ShieldCheck">ShieldCheck (Vestuarios / Higiene)</option>
-            <option value="Car">Car (Estacionamiento)</option>
-            <option value="Sparkles">Sparkles (Paletas / Accesorios)</option>
-            <option value="Gift">Gift (Cumpleaños / Pelotero)</option>
-            <option value="Wifi">Wifi (Internet)</option>
-            <option value="Tv">Tv (Pantallas HD)</option>
-          </select>
+          <label for="edit-servicio-imagen" class="block text-xs font-bold text-slate-300 uppercase mb-1">URL de Imagen del Servicio</label>
+          <input id="edit-servicio-imagen" type="url" placeholder="https://images.unsplash.com/photo-..." class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+        </div>
+
+        <!-- Previsualización en Vivo de la Imagen -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Previsualización en Vivo</label>
+          <div class="relative h-40 w-full overflow-hidden rounded-xl bg-[#0B0F19] border border-slate-700 flex items-center justify-center">
+            <img id="edit-servicio-imagen-preview" src="" alt="Previsualización del Servicio" class="w-full h-full object-cover hidden">
+            <div id="edit-servicio-imagen-placeholder" class="text-xs text-slate-500 flex items-center gap-1.5 p-4 text-center">
+              <i data-lucide="image" class="w-4 h-4"></i>
+              <span>Sin previsualización de imagen (se usará imagen por defecto)</span>
+            </div>
+          </div>
         </div>
 
         <div>
-          <label for="edit-servicio-descripcion" class="block text-xs font-bold text-slate-300 uppercase mb-1">Descripción del Servicio</label>
-          <textarea id="edit-servicio-descripcion" rows="3" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]"></textarea>
+          <label for="edit-servicio-descripcion" class="block text-xs font-bold text-slate-300 uppercase mb-1">Descripción Breve</label>
+          <textarea id="edit-servicio-descripcion" rows="3" placeholder="Descripción clara del servicio para los clientes..." class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]"></textarea>
         </div>
 
         <div>
-          <label for="edit-servicio-tags" class="block text-xs font-bold text-slate-300 uppercase mb-1">Badges / Etiquetas (separadas por comas)</label>
-          <input id="edit-servicio-tags" type="text" placeholder="Ej: Pelotero Techado, Castillo Inflable, Vajilla" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
+          <label for="edit-servicio-tags" class="block text-xs font-bold text-slate-300 uppercase mb-1">Badges / Etiquetas Inferiores (separadas por comas)</label>
+          <input id="edit-servicio-tags" type="text" placeholder="Ej: Agua Caliente, Lockers, Higiene Pro" class="w-full px-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#00E676]">
         </div>
 
         <div class="pt-3 flex justify-end gap-3 border-t border-slate-800">
@@ -849,7 +876,7 @@
           </button>
           <button type="submit" id="btn-submit-edit-servicio" class="btn-neon-pill px-6 py-2.5 text-xs font-bold">
             <i data-lucide="save" class="w-4 h-4 text-black"></i>
-            <span>Guardar Cambios del Servicio</span>
+            <span>GUARDAR CAMBIOS DEL SERVICIO</span>
           </button>
         </div>
       </form>

@@ -41,8 +41,9 @@
     }
   </script>
 
-  <!-- Firebase App & Analytics SDK (Compat) -->
+  <!-- Firebase App, Firestore & Analytics SDK (Compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
   <script>
     const firebaseConfig = {
@@ -93,19 +94,10 @@
         </a>
 
         <!-- Desktop Navigation Links -->
-        <nav class="hidden md:flex items-center gap-7">
+        <nav class="hidden md:flex items-center gap-8">
           <a href="#inicio" class="text-sm font-semibold text-white hover:text-[#00E676] transition-colors relative py-1 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#00E676] after:shadow-[0_0_8px_#00E676]">Inicio</a>
-          <a href="reservas.html" class="text-sm font-bold text-[#00E676] hover:text-[#00C853] transition-colors flex items-center gap-1.5 bg-[#00E676]/10 px-3 py-1 rounded-full border border-[#00E676]/30 shadow-[0_0_10px_rgba(0,230,118,0.15)]">
-            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-            <span>Reservar Turnos</span>
-          </a>
-          <a href="#canchas" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Canchas</a>
           <a href="#servicios" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Servicios</a>
-          <a href="#eventos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors flex items-center gap-1.5">
-            Eventos & Torneos
-            <span class="bg-[#00E676]/10 text-[#00E676] text-[10px] px-1.5 py-0.5 rounded-full font-bold border border-[#00E676]/30">Nuevo</span>
-          </a>
-          <a href="#porque-elegirnos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Nosotros</a>
+          <a href="#eventos" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Eventos</a>
           <a href="#ubicacion" class="text-sm font-semibold text-slate-300 hover:text-[#00E676] transition-colors">Contacto</a>
         </nav>
 
@@ -113,13 +105,14 @@
         <div class="hidden md:flex items-center gap-4">
           <a href="reservas.html" class="btn-neon-pill">
             <i data-lucide="calendar" class="w-4 h-4 text-black"></i>
-            <span>Reservar Turno</span>
+            <span>RESERVAR CANCHA</span>
           </a>
         </div>
 
         <!-- Mobile Menu Toggle Button -->
         <div class="flex md:hidden items-center gap-3">
           <a href="reservas.html" class="btn-neon-pill text-xs py-2 px-3">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-black"></i>
             <span>Reservar</span>
           </a>
           <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="p-2 text-white md:hidden focus:outline-none z-50 rounded-lg bg-[#161F30] border border-slate-700 hover:text-[#00E676] transition-colors" aria-label="Abrir menú">
@@ -135,19 +128,13 @@
     <!-- Mobile Slide Down Menu -->
     <div id="mobile-menu" class="hidden md:hidden fixed top-20 left-0 w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800 p-6 flex flex-col space-y-4 shadow-2xl z-50">
       <a href="#inicio" class="mobile-nav-link block text-base font-semibold text-white hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Inicio</a>
-      <a href="reservas.html" class="mobile-nav-link block text-base font-bold text-[#00E676] hover:text-[#00C853] flex items-center gap-2 py-1.5 border-b border-slate-800/60">
-        <i data-lucide="calendar" class="w-4 h-4"></i>
-        <span>Reservar Turnos Online</span>
-      </a>
-      <a href="#canchas" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Canchas & Precios</a>
-      <a href="#servicios" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Servicios del Complejo</a>
-      <a href="#eventos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Eventos y Torneos</a>
-      <a href="#porque-elegirnos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">¿Por qué elegirnos?</a>
-      <a href="#ubicacion" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5">Ubicación & Contacto</a>
+      <a href="#servicios" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Servicios</a>
+      <a href="#eventos" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5 border-b border-slate-800/60">Eventos</a>
+      <a href="#ubicacion" class="mobile-nav-link block text-base font-semibold text-slate-300 hover:text-[#00E676] py-1.5">Contacto</a>
       <div class="pt-3">
         <a href="reservas.html" class="btn-neon-pill w-full justify-center py-3">
           <i data-lucide="calendar" class="w-4 h-4 text-black"></i>
-          <span>Reservar Turno Online</span>
+          <span>RESERVAR CANCHA</span>
         </a>
       </div>
     </div>
@@ -177,8 +164,8 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         
-        <!-- Left Content -->
-        <div class="lg:col-span-8 space-y-6 text-left">
+        <!-- Main Content -->
+        <div class="lg:col-span-12 space-y-6 text-left">
           
           <!-- Pill Tag -->
           <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#161F30]/90 backdrop-blur-md border border-[rgba(0,230,118,0.4)] shadow-[0_0_20px_rgba(0,230,118,0.2)]">
@@ -199,9 +186,9 @@
 
           <!-- CTA Button -->
           <div class="pt-3 flex flex-wrap items-center gap-4">
-            <a href="#reservar" class="btn-neon-pill text-base px-9 py-4 shadow-[0_0_30px_rgba(0,230,118,0.6)] font-bold">
+            <a href="reservas.html" class="btn-neon-pill text-base px-9 py-4 shadow-[0_0_30px_rgba(0,230,118,0.6)] font-bold">
               <i data-lucide="calendar" class="w-5 h-5 text-black"></i>
-              <span>Reservar mi turno</span>
+              <span>RESERVAR CANCHA</span>
               <i data-lucide="arrow-right" class="w-5 h-5 text-black ml-1"></i>
             </a>
             <a href="#canchas" class="inline-flex items-center gap-2 px-7 py-4 rounded-full bg-[#161F30]/90 hover:bg-[#1E293B] backdrop-blur-md border border-slate-700 text-slate-200 hover:text-white font-semibold text-sm transition-all shadow-lg">
@@ -232,31 +219,6 @@
             </div>
           </div>
 
-        </div>
-
-        <!-- Right Side Floating Live Status Card -->
-        <div class="lg:col-span-4 hidden lg:flex flex-col items-end justify-center">
-          <div class="p-6 rounded-3xl bg-[#0B0F19]/85 backdrop-blur-xl border border-[rgba(0,230,118,0.3)] shadow-[0_20px_50px_rgba(0,0,0,0.8)] space-y-4 max-w-sm w-full">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-[#161F30] p-1.5 border border-[#00E676]/40 flex items-center justify-center shadow-[0_0_15px_rgba(0,230,118,0.2)]">
-                <img src="assets/logo.png" alt="Logo" class="w-full h-full object-contain">
-              </div>
-              <div>
-                <div class="font-sports text-xl font-bold text-white tracking-wide">COMPLEJO PADEL 3</div>
-                <div class="text-xs text-[#00E676] font-semibold flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-[#00E676] animate-pulse"></span>
-                  Turnos disponibles en tiempo real
-                </div>
-              </div>
-            </div>
-            <p class="text-xs text-slate-300 leading-relaxed">
-              Seleccioná tu horario preferido y confirmá al instante a través de WhatsApp sin intermediarios.
-            </p>
-            <a href="#reservar" class="w-full py-3 rounded-xl bg-[#00E676] text-black font-bold text-xs flex items-center justify-center gap-2 hover:bg-[#00C853] transition-all shadow-[0_0_15px_rgba(0,230,118,0.3)]">
-              <i data-lucide="calendar" class="w-4 h-4"></i>
-              <span>Ver Grilla de Horarios</span>
-            </a>
-          </div>
         </div>
 
       </div>
