@@ -169,6 +169,7 @@ function initFirebaseClient() {
                 return;
               } catch (e) {}
             }
+            onAuthSignedOut();
           }
         });
       }
@@ -205,16 +206,6 @@ async function syncFromFirestore() {
     if (docTur.exists && Array.isArray(docTur.data().list)) adminState.turnos = docTur.data().list;
   } catch (err) {
     console.warn('Error al sincronizar datos desde Firestore:', err);
-  }
-}
-          onAuthSignedOut();
-        }
-      });
-    } else if (window.firebase && firebase.apps.length) {
-      firebaseAuth = firebase.auth();
-    }
-  } catch (e) {
-    console.warn('Firebase init warning:', e);
   }
 }
 
@@ -1247,7 +1238,6 @@ function closeEditServicioModal() {
 
 function createNewServicio() {
   openEditServicioModal(null);
-}
 }
 
 // ================= TAB 5: CONFIGURACIÓN & TEXTOS =================
