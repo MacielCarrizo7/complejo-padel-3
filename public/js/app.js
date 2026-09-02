@@ -974,7 +974,17 @@ function setupFirestoreListeners() {
   dbFs.collection('servicios').onSnapshot(snapshot => {
     if (!snapshot.empty) {
       const list = [];
-      snapshot.forEach(doc => list.push(doc.data()));
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        list.push({
+          id: doc.id,
+          ...d,
+          titulo: d.titulo || d.nombre || '',
+          nombre: d.nombre || d.titulo || '',
+          tags: d.tags || d.badges || [],
+          badges: d.badges || d.tags || []
+        });
+      });
       window.state.servicios = list;
       renderServicios();
     } else {

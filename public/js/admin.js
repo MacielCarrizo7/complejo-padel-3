@@ -154,7 +154,10 @@ function initFirebaseClient() {
         firebaseApp = firebase.app();
       }
       if (firebase.auth) firebaseAuth = firebase.auth();
-      if (firebase.firestore) firebaseFirestore = firebase.firestore();
+      if (firebase.firestore) {
+        firebaseFirestore = firebase.firestore();
+        setupAdminFirestoreListeners();
+      }
 
       if (firebaseAuth) {
         firebaseAuth.onAuthStateChanged(user => {
@@ -177,6 +180,32 @@ function initFirebaseClient() {
   } catch (e) {
     console.warn('Error inicializando Firebase SDK:', e);
   }
+}
+
+function setupAdminFirestoreListeners() {
+  if (!firebaseFirestore) return;
+
+  // Escucha reactiva en tiempo real de la colección 'servicios'
+  firebaseFirestore.collection('servicios').onSnapshot(snapshot => {
+    if (!snapshot.empty) {
+      const list = [];
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        list.push({
+          id: doc.id,
+          ...d,
+          titulo: d.titulo || d.nombre || '',
+          nombre: d.nombre || d.titulo || '',
+          tags: d.tags || d.badges || [],
+          badges: d.badges || d.tags || []
+        });
+      });
+      adminState.servicios = list;
+      if (adminState.currentTab === 'servicios') {
+        renderServiciosTab();
+      }
+    }
+  }, err => console.warn('Admin Firestore servicios onSnapshot error:', err));
 }
 
 async function saveToFirestore(docId, data) {
@@ -1272,22 +1301,20 @@ function renderServiciosTab() {
       const srv = adminState.servicios.find(x => x.id === id);
       if (!srv) return;
 
-      if (confirm(`¿Eliminar el servicio "${srv.titulo}"?`)) {
+      if (confirm(`¿Eliminar el servicio "${srv.titulo || srv.nombre}"?`)) {
         try {
-          // 1. Eliminar directamente del documento en Firestore
-          await deleteServiceFromFirestore(id);
+          // Eliminación DIRECTA en Cloud Firestore sin pasar por endpoints de Render
+          if (firebaseFirestore) {
+            await firebaseFirestore.collection('servicios').doc(id).delete();
+            console.log(`✓ Documento ${id} eliminado directamente en Firestore`);
+          }
 
-          // 2. Enviar petición DELETE al backend
-          await fetch(`/api/servicios/${id}`, { method: 'DELETE' }).catch(() => null);
-
-          // 3. Remover de memoria local y de complejo_data/servicios
+          // Actualizar estado local inmediatamente
           adminState.servicios = adminState.servicios.filter(x => x.id !== id);
           saveToFirestore('servicios', { list: adminState.servicios });
-
-          // 4. Re-renderizar lista inmediatamente
           renderServiciosTab();
         } catch (e) {
-          console.error('Error al eliminar servicio:', e);
+          console.error('Error al eliminar servicio en Firestore:', e);
           adminState.servicios = adminState.servicios.filter(x => x.id !== id);
           renderServiciosTab();
         }
@@ -1663,7 +1690,7 @@ async function initAdmin() {
 
   document.getElementById('form-edit-servicio')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('edit-servicio-id').value;
+    const id = document.getElementById('edit-servicio-id').value.trim();
     const titulo = document.getElementById('edit-servicio-titulo').value.trim();
     const icono = document.getElementById('edit-servicio-icono').value;
     const categoria = document.getElementById('edit-servicio-categoria').value.trim() || 'COMODIDADES';
@@ -1672,34 +1699,45 @@ async function initAdmin() {
     const tagsStr = document.getElementById('edit-servicio-tags').value.trim();
     const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
 
-    const payload = { titulo, icono, categoria, imagen, descripcion, tags };
+    // Generar ID único si es nuevo servicio
+    const serviceId = id || (firebaseFirestore ? firebaseFirestore.collection('servicios').doc().id : `srv_${Date.now()}`);
+
+    const payload = {
+      id: serviceId,
+      titulo,
+      nombre: titulo,
+      icono: icono || 'Sparkles',
+      categoria,
+      imagen: imagen || 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
+      descripcion,
+      tags,
+      badges: tags,
+      activo: true,
+      updatedAt: new Date()
+    };
 
     try {
-      const method = id ? 'PUT' : 'POST';
-      const url = id ? `/api/servicios/${id}` : '/api/servicios';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        if (id) {
-          const idx = adminState.servicios.findIndex(x => x.id === id);
-          if (idx !== -1) adminState.servicios[idx] = data.servicio;
-        } else {
-          adminState.servicios.push(data.servicio);
-        }
-        closeEditServicioModal();
-        renderServiciosTab();
-        await saveServiceToFirestore(data.servicio);
-        saveToFirestore('servicios', { list: adminState.servicios });
-        alert(id ? '✓ Servicio actualizado exitosamente.' : '✓ Servicio creado exitosamente.');
-      } else {
-        alert(data.message || 'Error al guardar servicio.');
+      // Guardado DIRECTO en Cloud Firestore con { merge: true } (sin endpoints locales efímeros)
+      if (firebaseFirestore) {
+        await firebaseFirestore.collection('servicios').doc(serviceId).set(payload, { merge: true });
+        console.log(`✓ Servicio guardado directamente en Firestore con { merge: true }:`, serviceId);
       }
+
+      // Actualizar estado en memoria de la app
+      const idx = adminState.servicios.findIndex(x => x.id === serviceId);
+      if (idx !== -1) {
+        adminState.servicios[idx] = { ...adminState.servicios[idx], ...payload };
+      } else {
+        adminState.servicios.push(payload);
+      }
+
+      saveToFirestore('servicios', { list: adminState.servicios });
+      closeEditServicioModal();
+      renderServiciosTab();
+      alert(id ? '✓ Servicio actualizado exitosamente en Firestore.' : '✓ Servicio creado exitosamente en Firestore.');
     } catch (err) {
-      alert('Error de conexión al guardar servicio.');
+      console.error('Error al guardar servicio en Firestore:', err);
+      alert('Error al guardar servicio en Firestore: ' + (err.message || ''));
     }
   });
 
