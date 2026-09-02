@@ -419,7 +419,7 @@
   </div>
 
   <!-- ================= FOOTER ================= -->
-  <footer class="bg-[#070A10] border-t border-slate-800/80 py-10">
+  <footer class="bg-[#070A10] border-t border-slate-800/80 py-8 md:py-10 pb-24 md:pb-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <img src="assets/logo.png" alt="Logo" class="w-8 h-8 object-contain">
@@ -431,8 +431,25 @@
     </div>
   </footer>
 
+  <!-- ================= BARRA INFERIOR FLOTANTE (BOTTOM NAV MOBILE) ================= -->
+  <nav class="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-slate-950/90 backdrop-blur-md border-t border-slate-800/80 py-2.5 px-6 flex justify-around items-center">
+    <a href="index.html#inicio" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#00E676] transition-colors">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px] font-semibold">Inicio</span>
+    </a>
+    <a href="#reservar" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#00E676] transition-colors">
+      <i data-lucide="calendar" class="w-5 h-5 text-[#00E676]"></i>
+      <span class="text-[10px] font-semibold text-[#00E676]">Reservar</span>
+    </a>
+    <a id="bottom-nav-wa" href="https://wa.me/5491112345678" target="_blank" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#25D366] transition-colors">
+      <i data-lucide="message-circle" class="w-5 h-5 text-[#25D366]"></i>
+      <span class="text-[10px] font-semibold">WhatsApp</span>
+    </a>
+  </nav>
+
   <!-- Scripts -->
   <script src="js/app.js"></script>
+  <script src="js/main.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) {

@@ -319,26 +319,26 @@
             
             <div>
               <label for="admin-search-query" class="block text-xs font-bold text-slate-400 uppercase mb-1">
-                Buscador Rápido (Nombre, WhatsApp o Equipo):
+                Buscador Rápido (Nombre, Teléfono o Equipo):
               </label>
               <div class="relative">
                 <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input id="admin-search-query" type="text" placeholder="Buscar por nombre de cliente, teléfono..." class="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#00E676]">
+                <input id="admin-search-query" type="text" placeholder="Buscar por nombre, teléfono, equipo..." class="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#1E293B] border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#00E676]">
               </div>
             </div>
 
             <!-- Multi Filter Row -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-slate-800">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-800">
               
               <div>
-                <label for="filter-agenda-cancha" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">🏟️ Cancha</label>
+                <label for="filter-agenda-cancha" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">🏪 CANCHA</label>
                 <select id="filter-agenda-cancha" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
                   <option value="todas">Todas las canchas</option>
                 </select>
               </div>
 
               <div>
-                <label for="filter-agenda-fecha-preset" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">📅 Rango de Fecha</label>
+                <label for="filter-agenda-fecha-preset" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">🗓️ RANGO DE FECHA</label>
                 <select id="filter-agenda-fecha-preset" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
                   <option value="todos">Todos los turnos futuros</option>
                   <option value="hoy">Hoy</option>
@@ -349,20 +349,11 @@
               </div>
 
               <div>
-                <label for="filter-agenda-deporte" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">🎯 Deporte</label>
-                <select id="filter-agenda-deporte" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
-                  <option value="todos">Todos los deportes</option>
-                  <option value="padel">🎾 Pádel</option>
-                  <option value="futbol">⚽ Fútbol</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="filter-agenda-estado" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">⚡ Estado</label>
+                <label for="filter-agenda-estado" class="block text-[11px] font-bold text-slate-400 uppercase mb-1">⚡ ESTADO</label>
                 <select id="filter-agenda-estado" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
                   <option value="todos">Todos los estados</option>
-                  <option value="confirmados">WhatsApp Confirmado ✓</option>
-                  <option value="pendientes">Pendiente de confirmación ⏳</option>
+                  <option value="confirmados">Confirmado ✓</option>
+                  <option value="pendientes">Pendiente ⏳</option>
                 </select>
               </div>
 

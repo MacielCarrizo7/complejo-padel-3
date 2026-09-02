@@ -240,6 +240,12 @@ function renderHeader() {
     const cleanPhone = String(cfg.whatsapp).replace(/\D/g, '');
     waLink.href = `https://wa.me/${cleanPhone}`;
   }
+
+  const bottomWa = document.getElementById('bottom-nav-wa');
+  if (bottomWa && cfg.whatsapp) {
+    const cleanPhone = String(cfg.whatsapp).replace(/\D/g, '');
+    bottomWa.href = `https://wa.me/${cleanPhone}`;
+  }
 }
 
 function renderCanchas() {
@@ -458,39 +464,39 @@ function renderServicios() {
 
   servicios.filter(s => s.activo !== false).forEach(srv => {
     const card = document.createElement('div');
-    card.className = 'glass-card group overflow-hidden flex flex-col justify-between transition-all duration-300 hover:border-[#00E676]/40 hover:shadow-[0_0_30px_rgba(0,230,118,0.15)]';
+    card.className = 'flex-shrink-0 w-[82vw] max-w-[320px] md:w-auto snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-3 shadow-lg flex flex-col justify-between group overflow-hidden transition-all duration-300 hover:border-[#00E676]/40 hover:shadow-[0_0_30px_rgba(0,230,118,0.15)]';
 
     const lucideName = iconMap[srv.icono] || 'check-circle-2';
-    const tagsHtml = (srv.tags || []).map(t => `<span class="text-xs bg-[#1E293B] border border-slate-700/80 text-slate-300 px-2.5 py-1 rounded-lg font-medium">${escapeHtml(t)}</span>`).join('');
+    const tagsHtml = (srv.tags || []).map(t => `<span class="text-[10px] bg-[#1E293B] border border-slate-700/80 text-slate-300 px-2 py-0.5 rounded-md font-medium">${escapeHtml(t)}</span>`).join('');
     const defaultImg = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
     const imgUrl = srv.imagen || defaultImg;
     const catBadge = srv.categoria || 'SERVICIO';
 
     card.innerHTML = `
       <div>
-        <div class="relative h-48 w-full overflow-hidden rounded-t-2xl">
+        <div class="relative h-36 w-full overflow-hidden rounded-xl mb-2">
           <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(srv.titulo)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-          <div class="absolute inset-0 bg-gradient-to-t from-[#161F30] via-transparent to-transparent"></div>
-          <div class="absolute top-3 left-3">
-            <span class="badge-neon font-bold text-[11px] backdrop-blur-md shadow-md uppercase tracking-wider">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0e1626] via-transparent to-transparent"></div>
+          <div class="absolute top-2 left-2">
+            <span class="badge-neon font-bold text-[10px] py-0.5 px-2 backdrop-blur-md shadow-md uppercase tracking-wider">
               ${escapeHtml(catBadge)}
             </span>
           </div>
         </div>
 
-        <div class="p-6 space-y-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#1E293B] border border-[#00E676]/30 group-hover:border-[#00E676] group-hover:scale-105 flex items-center justify-center text-[#00E676] transition-all shrink-0 shadow-[0_0_15px_rgba(0,230,118,0.1)]">
-              <i data-lucide="${lucideName}" class="w-5 h-5"></i>
+        <div class="p-1 space-y-1">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-lg bg-[#1E293B] border border-[#00E676]/30 group-hover:border-[#00E676] flex items-center justify-center text-[#00E676] shrink-0 shadow-[0_0_10px_rgba(0,230,118,0.1)]">
+              <i data-lucide="${lucideName}" class="w-3.5 h-3.5"></i>
             </div>
-            <h3 class="text-xl font-sports font-bold text-white tracking-wide uppercase leading-tight">${escapeHtml(srv.titulo)}</h3>
+            <h3 class="text-sm font-sports font-bold text-white tracking-wide uppercase leading-tight truncate">${escapeHtml(srv.titulo)}</h3>
           </div>
-          <p class="text-slate-300 text-sm leading-relaxed">${escapeHtml(srv.descripcion)}</p>
+          <p class="line-clamp-2 text-xs text-slate-400 leading-snug">${escapeHtml(srv.descripcion)}</p>
         </div>
       </div>
 
-      <div class="p-6 pt-0">
-        <div class="flex flex-wrap gap-2 pt-4 border-t border-slate-800/80">
+      <div class="pt-2 mt-2 border-t border-slate-800/80">
+        <div class="flex flex-wrap gap-1">
           ${tagsHtml}
         </div>
       </div>
@@ -517,7 +523,7 @@ function renderEventos() {
 
   eventos.filter(e => e.activo !== false).forEach(ev => {
     const card = document.createElement('div');
-    card.className = 'glass-card overflow-hidden flex flex-col justify-between group';
+    card.className = 'flex-shrink-0 w-[82vw] max-w-[320px] md:w-auto snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-3 shadow-lg flex flex-col justify-between group overflow-hidden transition-all duration-300';
 
     const cleanWa = ev.whatsappContacto ? String(ev.whatsappContacto).replace(/\D/g, '') : (cfg.whatsapp ? String(cfg.whatsapp).replace(/\D/g, '') : '');
     const waMsg = `Hola! Quiero inscribirme / consultar información sobre el evento: *${ev.titulo}* (${ev.fecha})`;
@@ -528,44 +534,41 @@ function renderEventos() {
 
     card.innerHTML = `
       <div>
-        <div class="relative h-48 overflow-hidden">
+        <div class="relative h-36 w-full overflow-hidden rounded-xl mb-2">
           <img src="${escapeHtml(ev.imagen || 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80')}" alt="${escapeHtml(ev.titulo)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-          <div class="absolute inset-0 bg-gradient-to-t from-[#161F30] via-transparent to-transparent"></div>
-          <div class="absolute top-3 left-3">
-            <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${statusBadgeClass} backdrop-blur-md">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0e1626] via-transparent to-transparent"></div>
+          <div class="absolute top-2 left-2">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadgeClass} backdrop-blur-md">
               ${escapeHtml(ev.estado)}
             </span>
           </div>
-          <div class="absolute top-3 right-3">
-            <span class="badge-neon text-[11px] backdrop-blur-md">
+          <div class="absolute top-2 right-2">
+            <span class="badge-neon text-[10px] py-0.5 px-2 backdrop-blur-md">
               ${escapeHtml(ev.categoria || 'Torneo')}
             </span>
           </div>
         </div>
 
-        <div class="p-6 space-y-4">
-          <div>
-            <div class="text-xs text-[#00E676] font-semibold uppercase tracking-wider flex items-center gap-1.5 mb-1">
-              <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-              <span>${escapeHtml(ev.fecha)} · ${escapeHtml(ev.horario || '')}</span>
-            </div>
-            <h3 class="text-2xl font-sports font-bold text-white tracking-wide leading-tight">${escapeHtml(ev.titulo)}</h3>
+        <div class="p-1 space-y-1">
+          <div class="text-[10px] text-[#00E676] font-semibold uppercase tracking-wider flex items-center gap-1">
+            <i data-lucide="calendar" class="w-3 h-3"></i>
+            <span>${escapeHtml(ev.fecha)} · ${escapeHtml(ev.horario || '')}</span>
           </div>
-
-          <p class="text-slate-300 text-sm leading-relaxed">${escapeHtml(ev.descripcion)}</p>
+          <h3 class="text-sm font-sports font-bold text-white tracking-wide uppercase leading-tight truncate">${escapeHtml(ev.titulo)}</h3>
+          <p class="line-clamp-2 text-xs text-slate-400 leading-snug">${escapeHtml(ev.descripcion)}</p>
 
           ${ev.premio ? `
-          <div class="p-3 rounded-xl bg-[#0B0F19] border border-amber-500/30 flex items-center gap-2.5">
-            <i data-lucide="award" class="w-5 h-5 text-[#FFD600] shrink-0"></i>
-            <span class="text-xs font-bold text-amber-300">${escapeHtml(ev.premio)}</span>
+          <div class="p-1.5 rounded-lg bg-[#0B0F19] border border-amber-500/30 flex items-center gap-2 mt-1">
+            <i data-lucide="award" class="w-3.5 h-3.5 text-[#FFD600] shrink-0"></i>
+            <span class="text-[10px] font-bold text-amber-300 truncate">${escapeHtml(ev.premio)}</span>
           </div>` : ''}
         </div>
       </div>
 
-      <div class="p-6 pt-0">
-        <a href="${waUrl}" target="_blank" class="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md">
-          <i data-lucide="message-circle" class="w-4 h-4"></i>
-          <span>Inscribirme / Consultar por WhatsApp</span>
+      <div class="pt-2 mt-2 border-t border-slate-800/80">
+        <a href="${waUrl}" target="_blank" class="w-full py-2 px-3 rounded-lg bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md">
+          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+          <span>Inscribirme por WhatsApp</span>
         </a>
       </div>
     `;

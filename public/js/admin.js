@@ -660,8 +660,9 @@ function populateAgendaFilters() {
   const selectCancha = document.getElementById('filter-agenda-cancha');
   if (selectCancha) {
     const current = adminState.filters.cancha;
-    let html = '<option value="todas">🏟️ Todas las canchas</option>';
-    (adminState.config?.canchas || []).forEach(c => {
+    const canchasList = adminState.config?.canchas || [];
+    let html = `<option value="todas">🏪 Todas las canchas (${canchasList.length})</option>`;
+    canchasList.forEach(c => {
       const sportEmoji = c.deporte === 'padel' ? '🎾' : '⚽';
       const locEmoji = c.ubicacion === 'interior' ? '🏠' : '☀️';
       html += `<option value="${c.id}" ${c.id === current ? 'selected' : ''}>${sportEmoji} ${escapeHtml(c.nombre)} (${locEmoji})</option>`;
@@ -779,52 +780,80 @@ function renderAgendaListItems() {
     }
 
     const card = document.createElement('div');
-    card.className = 'glass-card p-5 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group';
+    card.className = 'glass-card p-4 sm:p-5 border border-slate-800/90 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 hover:border-slate-700/80 group';
     card.setAttribute('data-turno-card', t.id);
 
-    const isPadel = t.deporte === 'padel';
+    const isPadel = (t.deporte || '').toLowerCase() === 'padel';
     const dur = Number(t.duracion) || 1;
-    const [hStr, mStr] = t.hora.split(':').map(Number);
+    const [hStr, mStr] = (t.hora || '00:00').split(':').map(Number);
     const nextH = (hStr + dur) % 24;
-    const horaFin = t.horaFin || `${pad2(nextH)}:${pad2(mStr)}`;
+    const horaFin = t.horaFin || `${pad2(nextH)}:${pad2(mStr || 0)}`;
     const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
 
+    // Formato de nombre de cancha con deporte y superficie (ej: CANCHA 1 (FÚTBOL 5 - CÉSPED SINTÉTICO) o PISTA 1 - CRISTAL PRO)
+    const courtObj = (adminState.config?.canchas || []).find(c => c.id === t.canchaId);
+    let courtDisplayTitle = String(t.canchaNombre || 'CANCHA').toUpperCase();
+    if (courtObj) {
+      const sportInfo = courtObj.deporte === 'padel' ? 'PÁDEL' : `FÚTBOL ${courtObj.jugadores || 5}`;
+      const supInfo = courtObj.superficie ? ` - ${courtObj.superficie.toUpperCase()}` : '';
+      if (!courtDisplayTitle.includes('(') && !courtDisplayTitle.includes(sportInfo)) {
+        courtDisplayTitle = `${courtObj.nombre.toUpperCase()} (${sportInfo}${supInfo})`;
+      }
+    }
+
     card.innerHTML = `
-      <div class="flex items-start gap-4">
-        <div class="w-14 h-14 rounded-xl bg-[#0B0F19] border border-slate-700 flex flex-col items-center justify-center shrink-0">
-          <span class="font-sports text-lg font-bold text-white leading-none">${t.hora}</span>
-          <span class="text-[10px] text-slate-400 font-semibold">${dur}h</span>
+      <div class="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+        <!-- Ícono del deporte en recuadro redondeado oscuro con borde sutil -->
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#0B0F19] border border-slate-700/60 flex items-center justify-center shrink-0 shadow-inner">
+          <span class="text-2xl sm:text-3xl select-none leading-none">${isPadel ? '🎾' : '⚽'}</span>
         </div>
 
-        <div class="space-y-1">
+        <div class="space-y-1.5 flex-1 min-w-0">
+          <!-- Encabezado del turno: Cancha + Badges de fecha y hora -->
           <div class="flex flex-wrap items-center gap-2">
-            <span class="font-bold text-white text-base">${escapeHtml(t.nombre)}</span>
-            ${t.equipo ? `<span class="text-xs text-[#00E5FF] font-semibold">(${escapeHtml(t.equipo)})</span>` : ''}
-            <span id="badge-turno-${t.id}" class="px-2 py-0.5 rounded text-[11px] font-bold ${isConfirmed ? 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}">
-              ${isConfirmed ? '✓ Confirmado' : '⏳ Pendiente'}
+            <h3 class="font-sports font-bold text-white text-base sm:text-lg tracking-wide uppercase truncate">
+              ${escapeHtml(courtDisplayTitle)}
+            </h3>
+            <span class="px-2.5 py-0.5 rounded-lg bg-[#162032] border border-slate-700/80 text-slate-300 text-xs font-semibold">
+              ${formatFechaLarga(t.fecha)}
+            </span>
+            <span class="px-2.5 py-0.5 rounded-lg bg-[#00E676]/10 border border-[#00E676]/30 text-[#00E676] text-xs font-mono font-bold">
+              ⏰ ${t.hora} a ${horaFin} hs (${dur}h)
             </span>
           </div>
 
-          <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-            <span>🏟️ <strong>${escapeHtml(t.canchaNombre)}</strong></span>
-            <span>⏰ ${t.hora} a ${horaFin} hs</span>
-            <span>📞 ${escapeHtml(t.whatsapp || 'Sin teléfono')}</span>
+          <!-- Datos del cliente -->
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
+            <div class="flex items-center gap-1.5 font-bold text-slate-100">
+              <span class="text-sm">👤</span>
+              <span class="uppercase tracking-wide">${escapeHtml(t.nombre || 'CLIENTE')}</span>
+            </div>
+            ${t.whatsapp ? `
+            <div class="flex items-center gap-1.5 text-slate-300">
+              <span class="text-sm">📱</span>
+              <span class="font-mono">${escapeHtml(t.whatsapp)}</span>
+            </div>` : ''}
+            <div class="flex items-center gap-1 font-bold text-[#00E676]">
+              <span>💰</span>
+              <span>${formatCurrency(t.precio)}</span>
+            </div>
+            <div id="badge-status-${t.id}" class="flex items-center gap-1 font-bold ${isConfirmed ? 'text-[#00E676]' : 'text-amber-400'}">
+              <span>${isConfirmed ? '✓ Confirmado' : '⏳ Pendiente'}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-3 self-end md:self-center">
-        <div class="text-right">
-          <div class="font-bebas text-2xl text-[#00E676]">${formatCurrency(t.precio)}</div>
-          <div class="text-[10px] text-slate-400 font-semibold">${dur === 2 ? 'Turno Doble' : '1 Hora'}</div>
-        </div>
-
-        <button id="btn-confirm-${t.id}" class="btn-toggle-confirm p-2.5 rounded-xl transition-all ${isConfirmed ? 'bg-[#00E676] text-black hover:bg-[#00E676]/80 shadow-[0_0_12px_rgba(0,230,118,0.35)]' : 'bg-[#1E293B] hover:bg-[#00E676] text-slate-300 hover:text-black border border-slate-700'}" data-id="${t.id}" title="${isConfirmed ? 'Confirmado - Clic para marcar como pendiente' : 'Pendiente - Clic para confirmar turno'}">
-          <i data-lucide="${isConfirmed ? 'check-circle-2' : 'clock'}" class="w-4 h-4 ${isConfirmed ? 'text-black' : 'text-amber-400'}"></i>
+      <!-- Acciones a la derecha -->
+      <div class="flex items-center gap-2.5 shrink-0 self-end md:self-center pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 w-full md:w-auto justify-end">
+        <button id="btn-confirm-${t.id}" class="btn-confirm-turno px-4 py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00E676]/90 text-black font-sports font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(0,230,118,0.25)] flex items-center gap-1.5 ${isConfirmed ? 'hidden' : ''}" data-id="${t.id}">
+          <i data-lucide="check" class="w-4 h-4 stroke-[3] text-black"></i>
+          <span>Confirmar</span>
         </button>
 
-        <button class="btn-cancel-turno p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${t.id}" title="Cancelar turno y liberar cancha">
+        <button class="btn-liberar-cancha px-4 py-2.5 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${t.id}" title="Liberar Cancha">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
+          <span>Liberar Cancha</span>
         </button>
       </div>
     `;
@@ -832,84 +861,86 @@ function renderAgendaListItems() {
     container.appendChild(card);
   });
 
-  // Attach event handlers
-  container.querySelectorAll('.btn-cancel-turno').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      const turno = adminState.turnos.find(t => t.id === id);
-      if (!turno) return;
-
-      if (confirm(`¿Cancelar el turno de ${turno.nombre} (${turno.canchaNombre} - ${formatFechaLarga(turno.fecha)} ${turno.hora} hs)?\nLa cancha quedará liberada al instante.`)) {
-        try {
-          adminState.turnos = adminState.turnos.filter(t => t.id !== id);
-          await deleteTurnoFromFirestore(id);
-          saveToFirestore('turnos', { list: adminState.turnos });
-          fetch(`/api/turnos/${id}`, { method: 'DELETE' }).catch(() => null);
-          await fetchMetrics();
-          renderActiveTabContent();
-        } catch (e) {
-          console.warn(e);
-        }
-      }
-    });
-  });
-
-  // Toggle Confirmación Manual: actualiza DOM de inmediato sin ocultar la tarjeta ni necesitar F5
-  container.querySelectorAll('.btn-toggle-confirm').forEach(btn => {
+  // Botón "Confirmar": actualiza Firestore de inmediato, cambia el badge a '✓ Confirmado' y oculta el botón
+  container.querySelectorAll('.btn-confirm-turno').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       const t = adminState.turnos.find(x => x.id === id);
       if (!t) return;
 
-      const currentConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
-      const willBeConfirmed = !currentConfirmed;
-      const nuevoEstado = willBeConfirmed ? 'confirmado' : 'pendiente';
+      t.confirmado = true;
+      t.estado = 'confirmado';
 
-      t.confirmado = willBeConfirmed;
-      t.estado = nuevoEstado;
-
-      // Actualizar el DOM de ESTA tarjeta inmediatamente
-      const badge = document.getElementById(`badge-turno-${id}`);
-      if (badge) {
-        if (willBeConfirmed) {
-          badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40';
-          badge.innerHTML = '✓ Confirmado';
-        } else {
-          badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
-          badge.innerHTML = '⏳ Pendiente';
-        }
+      // 1. Actualizar el DOM inmediatamente: cambia texto de estado y oculta el botón "Confirmar"
+      const statusBadge = document.getElementById(`badge-status-${id}`);
+      if (statusBadge) {
+        statusBadge.className = 'flex items-center gap-1 font-bold text-[#00E676]';
+        statusBadge.innerHTML = '<span>✓ Confirmado</span>';
       }
+      btn.classList.add('hidden');
 
-      if (willBeConfirmed) {
-        btn.className = 'btn-toggle-confirm p-2.5 rounded-xl bg-[#00E676] text-black hover:bg-[#00E676]/80 transition-all shadow-[0_0_12px_rgba(0,230,118,0.35)]';
-        btn.title = 'Confirmado - Clic para marcar como pendiente';
-        btn.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-black"></i>';
-      } else {
-        btn.className = 'btn-toggle-confirm p-2.5 rounded-xl bg-[#1E293B] hover:bg-[#00E676] text-slate-300 hover:text-black transition-all border border-slate-700';
-        btn.title = 'Pendiente - Clic para confirmar turno';
-        btn.innerHTML = '<i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>';
-      }
-      if (window.lucide) window.lucide.createIcons();
-
-      // Guardar en Firestore directo en 'turnos' y 'reservas'
+      // 2. Actualizar Firestore inmediatamente
       try {
         if (firebaseFirestore) {
           const updateData = {
-            confirmado: willBeConfirmed,
-            estado: nuevoEstado,
+            estado: 'confirmado',
+            confirmado: true,
+            confirmedAt: new Date(),
             updatedAt: new Date()
           };
-          if (willBeConfirmed) updateData.confirmedAt = new Date();
-
-          await firebaseFirestore.collection('turnos').doc(id).set(updateData, { merge: true });
           await firebaseFirestore.collection('reservas').doc(id).set(updateData, { merge: true });
-          console.log(`✓ Turno ${id} actualizado a ${nuevoEstado} en Firestore`);
+          await firebaseFirestore.collection('turnos').doc(id).set(updateData, { merge: true });
+          console.log(`✓ Turno ${id} confirmado en Firestore`);
         }
         fetch(`/api/turnos/${id}/confirmar`, { method: 'PATCH' }).catch(() => null);
         saveToFirestore('turnos', { list: adminState.turnos });
         fetchMetrics().then(() => renderMetricsKpis());
       } catch (err) {
-        console.warn('Error al guardar estado de turno en Firestore:', err);
+        console.warn('Error al confirmar turno en Firestore:', err);
+      }
+    });
+  });
+
+  // Botón "Liberar Cancha": confirmación rápida, deleteDoc en Firestore y remoción suave del DOM
+  container.querySelectorAll('.btn-liberar-cancha').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const t = adminState.turnos.find(x => x.id === id);
+      if (!t) return;
+
+      if (confirm('¿Deseas liberar este turno?')) {
+        try {
+          // 1. Animación suave de remoción en el DOM
+          const card = container.querySelector(`[data-turno-card="${id}"]`);
+          if (card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              card.remove();
+              if (container.querySelectorAll('[data-turno-card]').length === 0) {
+                emptyEl.classList.remove('hidden');
+              }
+            }, 300);
+          }
+
+          // 2. Eliminar de memoria
+          adminState.turnos = adminState.turnos.filter(x => x.id !== id);
+
+          // 3. Eliminar de Firebase Firestore
+          if (firebaseFirestore) {
+            await firebaseFirestore.collection('reservas').doc(id).delete();
+            await firebaseFirestore.collection('turnos').doc(id).delete();
+            console.log(`✓ Turno ${id} eliminado de Firestore`);
+          }
+
+          // 4. Sincronización en segundo plano y actualización de métricas
+          fetch(`/api/turnos/${id}`, { method: 'DELETE' }).catch(() => null);
+          saveToFirestore('turnos', { list: adminState.turnos });
+          fetchMetrics().then(() => renderMetricsKpis());
+        } catch (err) {
+          console.warn('Error al liberar cancha en Firestore:', err);
+        }
       }
     });
   });
