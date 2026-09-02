@@ -1105,7 +1105,7 @@ function renderReservasPage() {
 
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `flex flex-col items-center justify-center min-w-[70px] py-3 px-4 rounded-2xl border transition-all ${
+      btn.className = `flex flex-col items-center justify-center min-w-[70px] py-3 px-4 rounded-2xl border transition-all flex-shrink-0 snap-center ${
         isSelected
           ? 'bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.4)] scale-105'
           : 'bg-[#161F30] text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
@@ -1148,7 +1148,7 @@ function renderReservasPage() {
     const disponiblesCount = slots.filter(s => !s.ocupado).length;
 
     const card = document.createElement('div');
-    card.className = 'glass-card p-6 flex flex-col justify-between border border-slate-800 hover:border-slate-600 transition-all rounded-3xl group shadow-xl';
+    card.className = 'flex-shrink-0 w-[88vw] max-w-[340px] md:w-auto snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-4 shadow-xl flex flex-col justify-between group overflow-hidden transition-all duration-300 hover:border-slate-600';
 
     const sportBadgeClass = isPadel ? 'badge-neon' : 'badge-location-interior';
     const sportBadgeLabel = isPadel ? '🎾 Pádel' : `⚽ Fútbol ${cancha.jugadores || 5}`;

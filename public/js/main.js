@@ -16,8 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 2. Ensure Lucide icons are initialized on dynamic DOM changes
+  // 2. Touch helper for horizontal scroll containers (.no-scrollbar)
+  const noScrollbarElems = document.querySelectorAll('.no-scrollbar');
+  noScrollbarElems.forEach(slider => {
+    slider.style.webkitOverflowScrolling = 'touch';
+  });
+
+  // 3. Ensure Lucide icons are initialized on dynamic DOM changes
   if (window.lucide) {
     window.lucide.createIcons();
   }
 });
+
