@@ -16,7 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 2. Touch helper for horizontal scroll containers (.no-scrollbar)
+  // 2. Touch helper for horizontal scroll sliders (#servicios-slider, .no-scrollbar)
+  const serviciosSlider = document.getElementById('servicios-slider');
+  if (serviciosSlider) {
+    serviciosSlider.style.webkitOverflowScrolling = 'touch';
+  }
+
   const noScrollbarElems = document.querySelectorAll('.no-scrollbar');
   noScrollbarElems.forEach(slider => {
     slider.style.webkitOverflowScrolling = 'touch';
