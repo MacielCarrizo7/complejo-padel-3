@@ -180,6 +180,74 @@ function getHorasOcupadas(reserva) {
   return [String(reserva.horario || reserva.hora || '')].filter(Boolean);
 }
 
+function extractDiaNum(f) {
+  if (!f) return null;
+  const str = String(f).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return parseInt(str.split('-')[2], 10);
+  }
+  if (/^\d{1,2}\/\d{1,2}/.test(str)) {
+    return parseInt(str.split('/')[0], 10);
+  }
+  const m = str.match(/\b\d{1,2}\b/);
+  return m ? parseInt(m[0], 10) : null;
+}
+
+function extractMesNum(f) {
+  if (!f) return null;
+  const str = String(f).trim().toLowerCase();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return parseInt(str.split('-')[1], 10);
+  }
+  if (/^\d{1,2}\/\d{1,2}/.test(str)) {
+    return parseInt(str.split('/')[1], 10);
+  }
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  for (let i = 0; i < meses.length; i++) {
+    if (str.includes(meses[i])) return i + 1;
+  }
+  return null;
+}
+
+function fechasCoinciden(f1, f2) {
+  if (!f1 || !f2) return false;
+  const s1 = String(f1).trim();
+  const s2 = String(f2).trim();
+  if (s1 === s2) return true;
+
+  // Si ambos son formato ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s1) && /^\d{4}-\d{2}-\d{2}$/.test(s2)) {
+    return s1 === s2;
+  }
+
+  const d1 = extractDiaNum(s1);
+  const d2 = extractDiaNum(s2);
+  if (d1 === null || d2 === null || d1 !== d2) return false;
+
+  const m1 = extractMesNum(s1);
+  const m2 = extractMesNum(s2);
+  if (m1 !== null && m2 !== null) {
+    return m1 === m2;
+  }
+
+  return true;
+}
+
+function coincideCancha(rCancha, canchaNombre) {
+  if (!rCancha || !canchaNombre) return false;
+  if (typeof rCancha === 'object') {
+    return matchCancha(rCancha, canchaNombre);
+  }
+  const s1 = String(rCancha).toLowerCase().trim();
+  const s2 = String(canchaNombre).toLowerCase().trim();
+  if (s1 === s2) return true;
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+  const clean1 = s1.replace(/[^a-z0-9]/g, '');
+  const clean2 = s2.replace(/[^a-z0-9]/g, '');
+  if (clean1 && clean2 && (clean1.includes(clean2) || clean2.includes(clean1))) return true;
+  return false;
+}
+
 // ================= FIREBASE AUTH INITIALIZATION =================
 
 let firebaseApp = null;
@@ -759,7 +827,11 @@ function getFilteredTurnos() {
   const canchaFilter = String(cancha || 'todas').toLowerCase().trim();
   const fechaFilt = String(fechaPreset || 'todos').toLowerCase().trim();
 
-  return (adminState.turnos || []).filter(t => {
+  const allTurnos = (adminState.turnos && adminState.turnos.length > 0)
+    ? adminState.turnos
+    : (window.turnosData || window.todasLasReservas || []);
+
+  return allTurnos.filter(t => {
     // 1. Filtro Deporte
     if (depFilter !== 'todos') {
       const tDep = String(t.deporte || '').toLowerCase().trim();
@@ -786,21 +858,21 @@ function getFilteredTurnos() {
       }
     }
 
-    // 4. Filtro de Fechas (formato local YYYY-MM-DD sin desfase UTC)
+    // 4. Filtro de Fechas (formato local YYYY-MM-DD sin desfase UTC y match tolerante con texto)
     const turnoFecha = String(t.fecha || '').trim();
     if (fechaFilt === 'hoy') {
-      if (turnoFecha !== hoy) return false;
+      if (!fechasCoinciden(turnoFecha, hoy)) return false;
     } else if (fechaFilt === 'manana') {
       const tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
       const manana = `${tom.getFullYear()}-${pad2(tom.getMonth() + 1)}-${pad2(tom.getDate())}`;
-      if (turnoFecha !== manana) return false;
+      if (!fechasCoinciden(turnoFecha, manana)) return false;
     } else if (fechaFilt === 'semana') {
       const sem = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
       const en7dias = `${sem.getFullYear()}-${pad2(sem.getMonth() + 1)}-${pad2(sem.getDate())}`;
-      if (turnoFecha < hoy || turnoFecha > en7dias) return false;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(turnoFecha) && (turnoFecha < hoy || turnoFecha > en7dias)) return false;
     } else if (fechaFilt === 'todos') {
       // Todos los turnos futuros
-      if (turnoFecha < hoy) return false;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(turnoFecha) && turnoFecha < hoy) return false;
     }
     // Si es 'todos_historicos' o cualquier otro, muestra todo el historial
 
@@ -818,12 +890,24 @@ function getFilteredTurnos() {
   });
 }
 
-function renderTurnos() {
+function renderTurnosList() {
   renderAgendaListItems();
 }
 
+function renderTurnos() {
+  renderTurnosList();
+}
+
+function aplicarFiltros() {
+  renderTurnosList();
+}
+
 function renderSiluetas(diaActivo) {
-  renderTacticalPitchesView(diaActivo);
+  renderSiluetasPorDia(diaActivo);
+}
+
+function renderTacticalPitchesView(diaActivo) {
+  renderSiluetasPorDia(diaActivo);
 }
 
 function renderAgendaTab() {
@@ -1132,43 +1216,30 @@ function renderSiluetasPorDia(fecha) {
       const pitchSvg = getCourtSvgHtml(cancha);
 
       let slotsHtml = '';
-      slots.forEach(h => {
-        const turno = allTurnos.find(t => {
-          if (t.fecha !== fecha) return false;
-          if (!matchCancha(t, cancha)) return false;
-          const estado = String(t.estado || '').toLowerCase().trim();
-          if (['cancelado', 'liberado', 'anulado'].includes(estado)) return false;
-          const ocupadas = getHorasOcupadas(t);
-          return ocupadas.includes(h);
+      slots.forEach(horaSlot => {
+        const turno = allTurnos.find(r => {
+          const mismaCancha = coincideCancha(r.cancha || r.canchaNombre || r.canchaId, cancha.nombre || cancha.id);
+          const mismaFecha = fechasCoinciden(r.fecha, fecha);
+          const horario = String(r.horario || r.hora || '');
+          const ocupadas = typeof getHorasOcupadas === 'function' ? getHorasOcupadas(r) : [];
+          const mismaHora = horario.startsWith(horaSlot) || horario.includes(horaSlot) || ocupadas.includes(horaSlot);
+          const estado = String(r.estado || '').toLowerCase().trim();
+          const activo = estado !== 'cancelado' && estado !== 'liberado' && estado !== 'anulado';
+          return mismaCancha && mismaFecha && mismaHora && activo;
         });
 
         if (turno) {
-          const isConfirmed = Boolean(turno.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(turno.estado || '').toLowerCase().trim());
-          const pasado = isTurnoPasado(turno);
-          let badgeStyle = '';
-          let iconTxt = '';
-
-          if (pasado) {
-            badgeStyle = 'bg-slate-800/80 border-slate-700 text-slate-400';
-            iconTxt = '🏁';
-          } else if (isConfirmed) {
-            badgeStyle = 'bg-[#00E676]/20 border-[#00E676]/40 text-[#00E676]';
-            iconTxt = '🟢';
-          } else {
-            badgeStyle = 'bg-amber-500/20 border-amber-500/40 text-amber-300';
-            iconTxt = '⏳';
-          }
-
+          const clienteNombre = turno.nombre || turno.cliente || 'Ocupado';
           slotsHtml += `
-            <div class="px-2.5 py-1.5 rounded-lg border ${badgeStyle} text-xs font-bold flex items-center justify-between" title="${pasado ? 'Finalizado' : (isConfirmed ? 'Confirmado' : 'Pendiente')} - ${escapeHtml(turno.nombre || 'Reservado')}">
-              <span>${iconTxt} ${h}</span>
-              <span class="text-[10px] text-white font-normal truncate max-w-[80px]">${escapeHtml(turno.nombre || 'Reservado')}</span>
+            <div class="px-2.5 py-1.5 rounded-lg border bg-rose-950/40 text-rose-400 border-rose-800 text-xs font-bold flex items-center justify-between" title="Ocupado - ${escapeHtml(clienteNombre)}">
+              <span>🔴 ${horaSlot} OCUPADO</span>
+              <span class="text-[10px] text-rose-300 font-medium truncate max-w-[90px]">(${escapeHtml(clienteNombre)})</span>
             </div>
           `;
         } else {
           slotsHtml += `
             <div class="px-2.5 py-1.5 rounded-lg bg-[#1E293B]/60 border border-slate-800 text-slate-400 text-xs flex items-center justify-between hover:border-emerald-500/30 transition-colors">
-              <span class="text-emerald-400/90 font-medium">⚪ ${h}</span>
+              <span class="text-emerald-400/90 font-medium">⚪ ${horaSlot}</span>
               <span class="text-[10px] text-emerald-400/80 font-bold uppercase tracking-wider">Libre</span>
             </div>
           `;
@@ -1213,8 +1284,9 @@ function renderTacticalPitchesView(diaActivo) {
 window.renderSiluetasPorDia = renderSiluetasPorDia;
 window.renderSiluetas = renderSiluetasPorDia;
 window.renderTacticalPitchesView = renderSiluetasPorDia;
-window.renderTurnos = renderAgendaListItems;
-window.aplicarFiltros = renderAgendaListItems;
+window.renderTurnosList = renderTurnosList;
+window.renderTurnos = renderTurnosList;
+window.aplicarFiltros = renderTurnosList;
 
 // ================= TAB 2: GESTIÓN DE CANCHAS =================
 
@@ -1891,13 +1963,7 @@ async function initAdmin() {
       if (containerLista) containerLista.classList.remove('hidden');
 
       // Volver a renderizar la lista completa sin perder los datos
-      if (typeof renderTurnos === 'function') {
-        renderTurnos();
-      } else if (typeof aplicarFiltros === 'function') {
-        aplicarFiltros();
-      } else {
-        renderAgendaListItems();
-      }
+      renderTurnosList();
       if (window.lucide) window.lucide.createIcons();
     } catch (err) {
       console.error('Error al cambiar a vista lista:', err);
