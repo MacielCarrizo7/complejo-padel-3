@@ -498,12 +498,12 @@ function actualizarBannerContacto(conf) {
 
   const btnIg = document.getElementById('btn-instagram-contacto');
   if (btnIg) {
-    if (conf.instagram && String(conf.instagram).trim().length > 0) {
-      btnIg.href = String(conf.instagram).trim();
+    if (conf.instagram && conf.instagram.trim() !== '') {
+      btnIg.href = conf.instagram.trim();
       btnIg.classList.remove('hidden');
     } else {
       btnIg.href = '#';
-      btnIg.classList.add('hidden');
+      btnIg.classList.add('hidden'); // Ocultar si el admin no configuró link
     }
   }
 }
