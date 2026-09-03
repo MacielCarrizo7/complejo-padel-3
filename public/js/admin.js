@@ -780,7 +780,7 @@ function renderAgendaListItems() {
     }
 
     const card = document.createElement('div');
-    card.className = 'glass-card p-4 sm:p-5 border border-slate-800/90 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 hover:border-slate-700/80 group';
+    card.className = 'glass-card reserva-card p-4 sm:p-5 border border-slate-800/90 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 hover:border-slate-700/80 group';
     card.setAttribute('data-turno-card', t.id);
 
     const isPadel = (t.deporte || '').toLowerCase() === 'padel';
@@ -837,7 +837,7 @@ function renderAgendaListItems() {
               <span>💰</span>
               <span>${formatCurrency(t.precio)}</span>
             </div>
-            <div id="badge-status-${t.id}" class="flex items-center gap-1 font-bold ${isConfirmed ? 'text-[#00E676]' : 'text-amber-400'}">
+            <div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold ${isConfirmed ? 'text-[#00E676]' : 'text-amber-400'}">
               <span>${isConfirmed ? '✓ Confirmado' : '⏳ Pendiente'}</span>
             </div>
           </div>
@@ -846,9 +846,9 @@ function renderAgendaListItems() {
 
       <!-- Acciones a la derecha -->
       <div class="flex items-center gap-2.5 shrink-0 self-end md:self-center pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 w-full md:w-auto justify-end">
-        <button id="btn-confirm-${t.id}" class="btn-confirm-turno px-4 py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00E676]/90 text-black font-sports font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(0,230,118,0.25)] flex items-center gap-1.5 ${isConfirmed ? 'hidden' : ''}" data-id="${t.id}">
+        <button id="btn-confirm-${t.id}" class="btn-confirmar btn-confirm-turno px-4 py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00E676]/90 text-black font-sports font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(0,230,118,0.25)] flex items-center gap-1.5 ${isConfirmed ? 'hidden' : ''}" data-id="${t.id}">
           <i data-lucide="check" class="w-4 h-4 stroke-[3] text-black"></i>
-          <span>Confirmar</span>
+          <span>✓ CONFIRMAR</span>
         </button>
 
         <button class="btn-liberar-cancha px-4 py-2.5 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${t.id}" title="Liberar Cancha">
@@ -859,90 +859,6 @@ function renderAgendaListItems() {
     `;
 
     container.appendChild(card);
-  });
-
-  // Botón "Confirmar": actualiza Firestore de inmediato, cambia el badge a '✓ Confirmado' y oculta el botón
-  container.querySelectorAll('.btn-confirm-turno').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      const t = adminState.turnos.find(x => x.id === id);
-      if (!t) return;
-
-      t.confirmado = true;
-      t.estado = 'confirmado';
-
-      // 1. Actualizar el DOM inmediatamente: cambia texto de estado y oculta el botón "Confirmar"
-      const statusBadge = document.getElementById(`badge-status-${id}`);
-      if (statusBadge) {
-        statusBadge.className = 'flex items-center gap-1 font-bold text-[#00E676]';
-        statusBadge.innerHTML = '<span>✓ Confirmado</span>';
-      }
-      btn.classList.add('hidden');
-
-      // 2. Actualizar Firestore inmediatamente
-      try {
-        if (firebaseFirestore) {
-          const updateData = {
-            estado: 'confirmado',
-            confirmado: true,
-            confirmedAt: new Date(),
-            updatedAt: new Date()
-          };
-          await firebaseFirestore.collection('reservas').doc(id).set(updateData, { merge: true });
-          await firebaseFirestore.collection('turnos').doc(id).set(updateData, { merge: true });
-          console.log(`✓ Turno ${id} confirmado en Firestore`);
-        }
-        fetch(`/api/turnos/${id}/confirmar`, { method: 'PATCH' }).catch(() => null);
-        saveToFirestore('turnos', { list: adminState.turnos });
-        fetchMetrics().then(() => renderMetricsKpis());
-      } catch (err) {
-        console.warn('Error al confirmar turno en Firestore:', err);
-      }
-    });
-  });
-
-  // Botón "Liberar Cancha": confirmación rápida, deleteDoc en Firestore y remoción suave del DOM
-  container.querySelectorAll('.btn-liberar-cancha').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      const t = adminState.turnos.find(x => x.id === id);
-      if (!t) return;
-
-      if (confirm('¿Deseas liberar este turno?')) {
-        try {
-          // 1. Animación suave de remoción en el DOM
-          const card = container.querySelector(`[data-turno-card="${id}"]`);
-          if (card) {
-            card.style.transition = 'all 0.3s ease';
-            card.style.opacity = '0';
-            card.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-              card.remove();
-              if (container.querySelectorAll('[data-turno-card]').length === 0) {
-                emptyEl.classList.remove('hidden');
-              }
-            }, 300);
-          }
-
-          // 2. Eliminar de memoria
-          adminState.turnos = adminState.turnos.filter(x => x.id !== id);
-
-          // 3. Eliminar de Firebase Firestore
-          if (firebaseFirestore) {
-            await firebaseFirestore.collection('reservas').doc(id).delete();
-            await firebaseFirestore.collection('turnos').doc(id).delete();
-            console.log(`✓ Turno ${id} eliminado de Firestore`);
-          }
-
-          // 4. Sincronización en segundo plano y actualización de métricas
-          fetch(`/api/turnos/${id}`, { method: 'DELETE' }).catch(() => null);
-          saveToFirestore('turnos', { list: adminState.turnos });
-          fetchMetrics().then(() => renderMetricsKpis());
-        } catch (err) {
-          console.warn('Error al liberar cancha en Firestore:', err);
-        }
-      }
-    });
   });
 }
 
@@ -1716,6 +1632,100 @@ async function initAdmin() {
     document.getElementById('btn-subview-tactica').className = 'px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all';
     document.getElementById('btn-subview-lista').className = 'px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
     renderAgendaTab();
+  });
+
+  // Global Event Delegation for Turnos & Reservas actions (Confirmar y Liberar)
+  document.addEventListener('click', async (e) => {
+    // 1. Botón Confirmar
+    const btnConfirmar = e.target.closest('.btn-confirmar, .btn-confirm-turno');
+    if (btnConfirmar) {
+      const id = btnConfirmar.getAttribute('data-id');
+      if (!id) return console.error('No se encontró el ID de la reserva');
+
+      btnConfirmar.disabled = true;
+      btnConfirmar.textContent = 'Actualizando...';
+
+      try {
+        const t = adminState.turnos.find(x => x.id === id);
+        if (t) {
+          t.confirmado = true;
+          t.estado = 'confirmado';
+        }
+
+        if (firebaseFirestore) {
+          const updateData = {
+            estado: 'confirmado',
+            confirmado: true,
+            confirmedAt: new Date(),
+            updatedAt: new Date()
+          };
+          await firebaseFirestore.collection('reservas').doc(id).set(updateData, { merge: true }).catch(() => null);
+          await firebaseFirestore.collection('turnos').doc(id).set(updateData, { merge: true }).catch(() => null);
+          console.log(`✓ Reserva ${id} confirmada en Firestore`);
+        }
+
+        fetch(`/api/turnos/${id}/confirmar`, { method: 'PATCH' }).catch(() => null);
+        saveToFirestore('turnos', { list: adminState.turnos });
+
+        // Actualizar UI localmente de inmediato:
+        const card = btnConfirmar.closest('.reserva-card, .glass-card') || btnConfirmar.parentElement;
+        const badgePendiente = card?.querySelector('.estado-badge') || document.getElementById(`badge-status-${id}`);
+        if (badgePendiente) {
+          badgePendiente.className = "estado-badge flex items-center gap-1 font-bold text-[#00E676]";
+          badgePendiente.innerHTML = "<span>✓ Confirmado</span>";
+        }
+        btnConfirmar.remove(); // Remueve el botón Confirmar dejando solo Liberar Cancha
+        fetchMetrics().then(() => renderMetricsKpis());
+      } catch (err) {
+        console.error('Error al confirmar reserva en Firestore:', err);
+        alert('Error al confirmar: ' + err.message);
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = '<i data-lucide="check" class="w-4 h-4 stroke-[3] text-black"></i><span>✓ CONFIRMAR</span>';
+        if (window.lucide) window.lucide.createIcons();
+      }
+      return;
+    }
+
+    // 2. Botón Liberar Cancha
+    const btnLiberar = e.target.closest('.btn-liberar-cancha');
+    if (btnLiberar) {
+      const id = btnLiberar.getAttribute('data-id');
+      if (!id) return;
+      const t = adminState.turnos.find(x => x.id === id);
+
+      if (confirm('¿Deseas liberar este turno?')) {
+        try {
+          const container = document.getElementById('admin-agenda-list-container') || document.getElementById('turnos-list-container');
+          const emptyEl = document.getElementById('admin-agenda-empty');
+          const card = container ? container.querySelector(`[data-turno-card="${id}"]`) : btnLiberar.closest('.reserva-card, .glass-card');
+          if (card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              card.remove();
+              if (container && container.querySelectorAll('[data-turno-card]').length === 0 && emptyEl) {
+                emptyEl.classList.remove('hidden');
+              }
+            }, 300);
+          }
+
+          adminState.turnos = adminState.turnos.filter(x => x.id !== id);
+
+          if (firebaseFirestore) {
+            await firebaseFirestore.collection('reservas').doc(id).delete().catch(() => null);
+            await firebaseFirestore.collection('turnos').doc(id).delete().catch(() => null);
+            console.log(`✓ Turno ${id} eliminado de Firestore`);
+          }
+
+          fetch(`/api/turnos/${id}`, { method: 'DELETE' }).catch(() => null);
+          saveToFirestore('turnos', { list: adminState.turnos });
+          fetchMetrics().then(() => renderMetricsKpis());
+        } catch (err) {
+          console.warn('Error al liberar cancha en Firestore:', err);
+        }
+      }
+    }
   });
 
   // Export listeners

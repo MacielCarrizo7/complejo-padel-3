@@ -127,11 +127,65 @@ function setupCanchasNav() {
   updateCanchasNav();
 }
 
+function matchCancha(reserva, cancha) {
+  if (!reserva || !cancha) return false;
+  const resCanchaId = String(reserva.canchaId || '').toLowerCase().trim();
+  const targetId = String(cancha.id || '').toLowerCase().trim();
+  if (resCanchaId && targetId && resCanchaId === targetId) {
+    return true;
+  }
+  const nombreReserva = String(reserva.canchaNombre || reserva.cancha || reserva.nombreCancha || '').toLowerCase().trim();
+  const nombreCancha = String(cancha.nombre || '').toLowerCase().trim();
+  if (nombreReserva && nombreCancha) {
+    if (nombreReserva === nombreCancha) return true;
+    if (nombreReserva.includes(nombreCancha) || nombreCancha.includes(nombreReserva)) return true;
+    const cleanRes = nombreReserva.replace(/[^a-z0-9]/g, '');
+    const cleanCan = nombreCancha.replace(/[^a-z0-9]/g, '');
+    if (cleanRes && cleanCan && (cleanRes.includes(cleanCan) || cleanCan.includes(cleanRes))) return true;
+  }
+  return false;
+}
+
+function getHorasOcupadas(reserva) {
+  if (!reserva) return [];
+
+  // 1. Detectar formato "14:00 a 16:00", "14:00 - 16:00" o similar
+  const str = `${reserva.horario || ''} ${reserva.hora || ''} ${reserva.horaFin || ''}`;
+  const match = str.match(/(\d{1,2}):(\d{2})/g);
+
+  if (match && match.length >= 2) {
+    const inicio = parseInt(match[0].split(':')[0]);
+    const fin = parseInt(match[1].split(':')[0]);
+    if (fin > inicio) {
+      const ocupados = [];
+      for (let h = inicio; h < fin; h++) {
+        ocupados.push(`${String(h).padStart(2, '0')}:00`);
+      }
+      return ocupados;
+    }
+  }
+
+  const dur = Number(reserva.duracion) || 1;
+  if (reserva.hora) {
+    const [hStr, mStr] = String(reserva.hora).split(':').map(Number);
+    const ocupados = [];
+    for (let i = 0; i < dur; i++) {
+      const hh = (hStr + i) % 24;
+      ocupados.push(`${String(hh).padStart(2, '0')}:${String(mStr || 0).padStart(2, '0')}`);
+    }
+    return ocupados;
+  }
+
+  return [String(reserva.horario || reserva.hora || '')].filter(Boolean);
+}
+
 window.getScrollStep = getScrollStep;
 window.setupCarousel = setupCarousel;
 window.startAutoScroll = startAutoScroll;
 window.updateCanchasNav = updateCanchasNav;
 window.setupCanchasNav = setupCanchasNav;
+window.matchCancha = matchCancha;
+window.getHorasOcupadas = getHorasOcupadas;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Touch helper for horizontal scroll sliders

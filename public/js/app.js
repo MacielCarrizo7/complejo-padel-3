@@ -154,21 +154,82 @@ function generarHorarios() {
   return horarios;
 }
 
+function matchCancha(reserva, cancha) {
+  if (!reserva || !cancha) return false;
+  const resCanchaId = String(reserva.canchaId || '').toLowerCase().trim();
+  const targetId = String(cancha.id || '').toLowerCase().trim();
+  if (resCanchaId && targetId && resCanchaId === targetId) {
+    return true;
+  }
+  const nombreReserva = String(reserva.canchaNombre || reserva.cancha || reserva.nombreCancha || '').toLowerCase().trim();
+  const nombreCancha = String(cancha.nombre || '').toLowerCase().trim();
+  if (nombreReserva && nombreCancha) {
+    if (nombreReserva === nombreCancha) return true;
+    if (nombreReserva.includes(nombreCancha) || nombreCancha.includes(nombreReserva)) return true;
+    const cleanRes = nombreReserva.replace(/[^a-z0-9]/g, '');
+    const cleanCan = nombreCancha.replace(/[^a-z0-9]/g, '');
+    if (cleanRes && cleanCan && (cleanRes.includes(cleanCan) || cleanCan.includes(cleanRes))) return true;
+  }
+  return false;
+}
+
+function getHorasOcupadas(reserva) {
+  if (!reserva) return [];
+
+  // 1. Detectar formato "14:00 a 16:00", "14:00 - 16:00" o similar
+  const str = `${reserva.horario || ''} ${reserva.hora || ''} ${reserva.horaFin || ''}`;
+  const match = str.match(/(\d{1,2}):(\d{2})/g);
+
+  if (match && match.length >= 2) {
+    const inicio = parseInt(match[0].split(':')[0]);
+    const fin = parseInt(match[1].split(':')[0]);
+    if (fin > inicio) {
+      const ocupados = [];
+      for (let h = inicio; h < fin; h++) {
+        ocupados.push(`${String(h).padStart(2, '0')}:00`);
+      }
+      return ocupados;
+    }
+  }
+
+  const dur = Number(reserva.duracion) || 1;
+  if (reserva.hora) {
+    const [hStr, mStr] = String(reserva.hora).split(':').map(Number);
+    const ocupados = [];
+    for (let i = 0; i < dur; i++) {
+      const hh = (hStr + i) % 24;
+      ocupados.push(`${pad2(hh)}:${pad2(mStr || 0)}`);
+    }
+    return ocupados;
+  }
+
+  return [String(reserva.horario || reserva.hora || '')].filter(Boolean);
+}
+
 function horariosDisponibles(canchaId, fecha, duracion = 1) {
   const todos = generarHorarios();
   const duracionHoras = Number(duracion) === 2 ? 2 : 1;
+  const cancha = (window.state.config.canchas || []).find(c => c.id === canchaId) || { id: canchaId, nombre: '' };
 
   // Build a set of all occupied individual 1-hour slots
   const ocupados = new Set();
   (window.state.turnos || [])
-    .filter(t => t.canchaId === canchaId && t.fecha === fecha)
-    .forEach(t => {
-      const dur = Number(t.duracion) || 1;
-      const [hStr, mStr] = t.hora.split(':').map(Number);
-      for (let i = 0; i < dur; i++) {
-        const hh = (hStr + i) % 24;
-        ocupados.add(`${pad2(hh)}:${pad2(mStr || 0)}`);
+    .filter(t => {
+      if (t.fecha !== fecha) return false;
+      if (!matchCancha(t, cancha)) return false;
+
+      // Bloquear tanto "Pendientes" como "Confirmados"; solo ignorar cancelados / liberados
+      const estado = String(t.estado || '').toLowerCase().trim();
+      if (['cancelado', 'liberado', 'anulado', 'disponible'].includes(estado)) {
+        return false;
       }
+      return true;
+    })
+    .forEach(t => {
+      const horas = getHorasOcupadas(t);
+      horas.forEach(h => {
+        if (h) ocupados.add(h);
+      });
     });
 
   const esHoy = fecha === hoyISO();
@@ -202,6 +263,10 @@ function horariosDisponibles(canchaId, fecha, duracion = 1) {
     };
   });
 }
+
+window.matchCancha = matchCancha;
+window.getHorasOcupadas = getHorasOcupadas;
+window.horariosDisponibles = horariosDisponibles;
 
 // Filter canchas
 function getCanchasFiltradas() {
@@ -1026,12 +1091,24 @@ function setupFirestoreListeners() {
   }, err => console.warn('Firestore listener eventos error:', err));
 
   // 3. Escuchador de Turnos / Reservas en tiempo real desde Firestore
-  dbFs.collection('turnos').onSnapshot(snapshot => {
-    const list = [];
-    snapshot.forEach(doc => list.push(doc.data()));
-    window.state.turnos = list;
+  const updateTurnosFromSnapshot = (snapshot) => {
+    if (!snapshot) return;
+    const currentList = Array.isArray(window.state.turnos) ? [...window.state.turnos] : [];
+    snapshot.forEach(doc => {
+      const data = { id: doc.id, ...doc.data() };
+      const idx = currentList.findIndex(t => t.id === doc.id);
+      if (idx >= 0) {
+        currentList[idx] = { ...currentList[idx], ...data };
+      } else {
+        currentList.push(data);
+      }
+    });
+    window.state.turnos = currentList;
     render();
-  }, err => console.warn('Firestore listener turnos error:', err));
+  };
+
+  dbFs.collection('turnos').onSnapshot(updateTurnosFromSnapshot, err => console.warn('Firestore listener turnos error:', err));
+  dbFs.collection('reservas').onSnapshot(updateTurnosFromSnapshot, err => console.warn('Firestore listener reservas error:', err));
 
   // 4. Escuchador de Configuración General
   dbFs.collection('config').doc('general').onSnapshot(doc => {
