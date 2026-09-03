@@ -1513,49 +1513,58 @@ function renderEventosTab() {
   const eventos = adminState.eventos || [];
 
   if (eventos.length === 0) {
-    container.innerHTML = '<p class="text-slate-400 col-span-full text-center">No hay eventos ni torneos creados. Hacé clic en "Crear Nuevo Evento".</p>';
+    container.innerHTML = '<p class="text-slate-400 col-span-full text-center py-8">No hay eventos ni torneos creados. Hacé clic en "Crear Nuevo Evento".</p>';
     return;
   }
 
-  eventos.forEach(ev => {
+  const defaultImg = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+
+  eventos.forEach(evento => {
     const card = document.createElement('div');
-    card.className = 'glass-card p-6 border border-slate-800 space-y-4';
+    card.className = 'rounded-2xl bg-[#0f172a]/90 border border-slate-800/80 overflow-hidden shadow-xl flex flex-col justify-between hover:border-slate-700 transition-all group';
+
+    const imgUrl = evento.imagen || defaultImg;
 
     card.innerHTML = `
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <span class="text-xs font-bold text-[#00E676] uppercase">${escapeHtml(ev.fecha)}</span>
-          <h4 class="font-sports text-xl font-bold text-white mt-0.5">${escapeHtml(ev.titulo)}</h4>
-          <span class="text-xs text-slate-400">${escapeHtml(ev.categoria || '')} · ${escapeHtml(ev.horario || '')}</span>
-        </div>
-        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${ev.estado === 'Inscripciones Abiertas' ? 'bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'}">
-          ${escapeHtml(ev.estado)}
+      <!-- Portada con Imagen y Badges Superpuestos -->
+      <div class="relative h-44 w-full bg-slate-900 overflow-hidden">
+        <img src="${escapeHtml(imgUrl)}" 
+             alt="${escapeHtml(evento.titulo)}" 
+             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+             onerror="this.src='${defaultImg}'">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-transparent to-black/40"></div>
+        <!-- Badge Superior Izquierdo (Fecha o Estado) -->
+        <span class="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-md">
+          ${escapeHtml(evento.fecha || 'Próximamente')}
+        </span>
+        <!-- Badge Superior Derecho (Categoría o Estado de Cupo) -->
+        <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/80 text-slate-300 border border-slate-700 backdrop-blur-md">
+          ${escapeHtml(evento.estado || 'Inscripciones Abiertas')}
         </span>
       </div>
 
-      <p class="text-slate-300 text-xs leading-relaxed">${escapeHtml(ev.descripcion)}</p>
+      <!-- Cuerpo de la Tarjeta -->
+      <div class="p-5 flex-1 flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <h3 class="text-base font-bold text-white uppercase tracking-wide leading-snug">${escapeHtml(evento.titulo)}</h3>
+            <!-- Botones de Acción idénticos a Servicios -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button class="btn-editar-evento btn-edit-evento w-8 h-8 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 border border-sky-500/30 flex items-center justify-center transition-colors" data-id="${evento.id}" title="Editar evento">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              </button>
+              <button class="btn-eliminar-evento btn-del-evento w-8 h-8 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 flex items-center justify-center transition-colors" data-id="${evento.id}" title="Eliminar evento">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">${escapeHtml(evento.descripcion || '')}</p>
+        </div>
 
-      ${ev.premio ? `
-      <div class="p-2.5 rounded-lg bg-[#0B0F19] text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-2">
-        <span>🏆 Premio: ${escapeHtml(ev.premio)}</span>
-      </div>` : ''}
-
-      <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
-        <select class="select-estado-evento px-3 py-1.5 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs" data-id="${ev.id}">
-          <option value="Inscripciones Abiertas" ${ev.estado === 'Inscripciones Abiertas' ? 'selected' : ''}>Inscripciones Abiertas</option>
-          <option value="Últimos Cupos" ${ev.estado === 'Últimos Cupos' ? 'selected' : ''}>Últimos Cupos</option>
-          <option value="Cupos Agotados" ${ev.estado === 'Cupos Agotados' ? 'selected' : ''}>Cupos Agotados</option>
-          <option value="Finalizado" ${ev.estado === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
-          <option value="Consultar Disponibilidad / Reservas Abiertas" ${ev.estado === 'Consultar Disponibilidad / Reservas Abiertas' ? 'selected' : ''}>Consultar Disponibilidad / Reservas Abiertas</option>
-        </select>
-
-        <div class="flex items-center gap-2">
-          <button class="btn-edit-evento p-2 rounded-lg bg-[#00E5FF]/10 hover:bg-[#00E5FF] text-[#00E5FF] hover:text-black transition-all border border-[#00E5FF]/30" data-id="${ev.id}" title="Editar evento">
-            <i data-lucide="edit-3" class="w-4 h-4"></i>
-          </button>
-          <button class="btn-del-evento p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all border border-red-500/20" data-id="${ev.id}" title="Eliminar evento">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
+        <!-- Info Destacada (Premio / Horario) -->
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span class="text-amber-400 font-semibold flex items-center gap-1">🏆 ${escapeHtml(evento.premio || 'Ver bases')}</span>
+          <span class="text-slate-400 font-mono text-[11px]">⏰ ${escapeHtml(evento.horario || '')}</span>
         </div>
       </div>
     `;
@@ -1564,31 +1573,15 @@ function renderEventosTab() {
   });
 
   // Edit Event Button Handlers
-  container.querySelectorAll('.btn-edit-evento').forEach(btn => {
+  container.querySelectorAll('.btn-editar-evento, .btn-edit-evento').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
       openEditEventoModal(id);
     });
   });
 
-  container.querySelectorAll('.select-estado-evento').forEach(sel => {
-    sel.addEventListener('change', async (e) => {
-      const id = sel.dataset.id;
-      const nuevoEstado = e.target.value;
-      try {
-        await fetch(`/api/eventos/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estado: nuevoEstado })
-        });
-        const ev = adminState.eventos.find(x => x.id === id);
-        if (ev) ev.estado = nuevoEstado;
-        renderEventosTab();
-      } catch (err) {}
-    });
-  });
-
-  container.querySelectorAll('.btn-del-evento').forEach(btn => {
+  // Delete Event Button Handlers
+  container.querySelectorAll('.btn-eliminar-evento, .btn-del-evento').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
       const ev = adminState.eventos.find(x => x.id === id);
@@ -1616,13 +1609,26 @@ function renderEventosTab() {
   if (window.lucide) window.lucide.createIcons();
 }
 
+function updateEventoImagePreview(url) {
+  const img = document.getElementById('preview-evento-img');
+  if (!img) return;
+  const defaultImg = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+  const finalUrl = (url && url.trim()) ? url.trim() : defaultImg;
+  img.src = finalUrl;
+  img.onerror = () => {
+    img.src = defaultImg;
+  };
+}
+
 function openEditEventoModal(id) {
   const ev = (adminState.eventos || []).find(e => e.id === id);
   const modal = document.getElementById('modal-edit-evento');
   if (!modal) return;
 
+  const defaultImg = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+
   if (ev) {
-    document.getElementById('edit-evento-id').value = ev.id;
+    document.getElementById('edit-evento-id').value = ev.id || '';
     document.getElementById('edit-evento-titulo').value = ev.titulo || '';
     document.getElementById('edit-evento-categoria').value = ev.categoria || '';
     document.getElementById('edit-evento-estado').value = ev.estado || 'Inscripciones Abiertas';
@@ -1631,19 +1637,21 @@ function openEditEventoModal(id) {
     document.getElementById('edit-evento-premio').value = ev.premio || '';
     document.getElementById('edit-evento-descripcion').value = ev.descripcion || '';
     document.getElementById('edit-evento-imagen').value = ev.imagen || '';
-    document.getElementById('edit-evento-whatsapp').value = ev.whatsappContacto || '';
+    document.getElementById('edit-evento-whatsapp').value = ev.whatsappContacto || ev.whatsapp || '';
+    updateEventoImagePreview(ev.imagen || defaultImg);
   } else {
     // New Event mode
     document.getElementById('edit-evento-id').value = '';
     document.getElementById('edit-evento-titulo').value = '';
-    document.getElementById('edit-evento-categoria').value = '4ta a 7ma';
+    document.getElementById('edit-evento-categoria').value = '4ta a 7ma Caballeros';
     document.getElementById('edit-evento-estado').value = 'Inscripciones Abiertas';
     document.getElementById('edit-evento-fecha').value = 'Fin de semana';
     document.getElementById('edit-evento-horario').value = 'Desde las 18:00 hs';
-    document.getElementById('edit-evento-premio').value = '$ 200.000 en Premios + Trofeos';
-    document.getElementById('edit-evento-descripcion').value = 'Torneo con fase de grupos y eliminación directa.';
-    document.getElementById('edit-evento-imagen').value = 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80';
+    document.getElementById('edit-evento-premio').value = '$ 250.000 en Premios + Trofeos';
+    document.getElementById('edit-evento-descripcion').value = 'Torneo relámpago con fase de grupos y eliminación directa.';
+    document.getElementById('edit-evento-imagen').value = defaultImg;
     document.getElementById('edit-evento-whatsapp').value = adminState.config?.whatsapp || '';
+    updateEventoImagePreview(defaultImg);
   }
 
   modal.classList.remove('hidden');
@@ -2174,6 +2182,13 @@ async function initAdmin() {
   document.getElementById('btn-cancel-edit-evento')?.addEventListener('click', closeEditEventoModal);
   document.getElementById('modal-edit-evento')?.addEventListener('click', (e) => {
     if (e.target.id === 'modal-edit-evento') closeEditEventoModal();
+  });
+
+  document.getElementById('edit-evento-imagen')?.addEventListener('input', (e) => {
+    updateEventoImagePreview(e.target.value);
+  });
+  document.getElementById('edit-evento-imagen')?.addEventListener('change', (e) => {
+    updateEventoImagePreview(e.target.value);
   });
 
   document.getElementById('form-edit-evento')?.addEventListener('submit', async (e) => {
