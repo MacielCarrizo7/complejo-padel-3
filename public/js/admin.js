@@ -953,8 +953,14 @@ function renderAgendaListItems() {
   container.innerHTML = '';
 
   const list = getFilteredTurnos().sort((a, b) => {
-    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    return a.hora.localeCompare(b.hora);
+    const fechaA = String(a?.fecha || a?.dia || '');
+    const fechaB = String(b?.fecha || b?.dia || '');
+    const fechaComp = fechaA.localeCompare(fechaB);
+    if (fechaComp !== 0) return fechaComp;
+
+    const horaA = String(a?.horario || a?.hora || '');
+    const horaB = String(b?.horario || b?.hora || '');
+    return horaA.localeCompare(horaB);
   });
 
   if (list.length === 0) {
@@ -1218,23 +1224,36 @@ function renderSiluetasPorDia(fecha) {
       let slotsHtml = '';
       slots.forEach(horaSlot => {
         const turno = allTurnos.find(r => {
-          const mismaCancha = coincideCancha(r.cancha || r.canchaNombre || r.canchaId, cancha.nombre || cancha.id);
-          const mismaFecha = fechasCoinciden(r.fecha, fecha);
-          const horario = String(r.horario || r.hora || '');
+          if (!r) return false;
+          // Match flexible de cancha
+          const cRes = String(r.cancha || r.canchaNombre || r.nombreCancha || r.canchaId || '').toLowerCase();
+          const cAct = String(cancha.nombre || cancha.id || '').toLowerCase();
+          const mismaCancha = cRes.includes(cAct) || cAct.includes(cRes) || coincideCancha(r, cancha);
+
+          // Match flexible de fecha (soporta ISO '2026-09-03', texto 'Jue 3 de septiembre' o número de día)
+          const fRes = String(r.fecha || r.dia || '').toLowerCase();
+          const fSel = String(fecha || '').toLowerCase();
+          const numRes = fRes.match(/\b\d{1,2}\b/)?.[0] || fRes.match(/\d+/)?.[0];
+          const numSel = fSel.match(/\b\d{1,2}\b/)?.[0] || fSel.match(/\d+/)?.[0];
+          const mismaFecha = fRes === fSel || fRes.includes(fSel) || fSel.includes(fRes) || (numRes && numSel && numRes === numSel) || fechasCoinciden(fRes, fSel);
+
+          // Match de horario
+          const hRes = String(r.horario || r.hora || '');
           const ocupadas = typeof getHorasOcupadas === 'function' ? getHorasOcupadas(r) : [];
-          const mismaHora = horario.startsWith(horaSlot) || horario.includes(horaSlot) || ocupadas.includes(horaSlot);
-          const estado = String(r.estado || '').toLowerCase().trim();
-          const activo = estado !== 'cancelado' && estado !== 'liberado' && estado !== 'anulado';
-          return mismaCancha && mismaFecha && mismaHora && activo;
+          const mismaHora = hRes.includes(horaSlot) || hRes.startsWith(horaSlot) || ocupadas.includes(horaSlot);
+
+          const estadoValido = r.estado?.toLowerCase() !== 'cancelado' && r.estado?.toLowerCase() !== 'liberado' && r.estado?.toLowerCase() !== 'anulado';
+
+          return mismaCancha && mismaFecha && mismaHora && estadoValido;
         });
 
         if (turno) {
           const clienteNombre = turno.nombre || turno.cliente || 'Ocupado';
           slotsHtml += `
-            <div class="px-2.5 py-1.5 rounded-lg border bg-rose-950/40 text-rose-400 border-rose-800 text-xs font-bold flex items-center justify-between" title="Ocupado - ${escapeHtml(clienteNombre)}">
+            <button type="button" disabled class="w-full px-2.5 py-1.5 rounded-lg border bg-rose-950/40 text-rose-400 border-rose-800 text-xs font-bold flex items-center justify-between opacity-95 cursor-not-allowed shadow-inner" title="Ocupado - ${escapeHtml(clienteNombre)}">
               <span>🔴 ${horaSlot} OCUPADO</span>
               <span class="text-[10px] text-rose-300 font-medium truncate max-w-[90px]">(${escapeHtml(clienteNombre)})</span>
-            </div>
+            </button>
           `;
         } else {
           slotsHtml += `

@@ -270,6 +270,135 @@ function formatCurrency(amount, symbol = '$') {
   return `${symbol} ${Number(amount || 0).toLocaleString('es-AR')}`;
 }
 
+// ================= FIRESTORE CLOUD INTEGRATION (PERMANENTE EN RENDER) =================
+const FIRESTORE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'complejo-padel-3';
+const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}/databases/(default)/documents`;
+
+function fsFieldsToJs(fields) {
+  const res = {};
+  for (const [k, v] of Object.entries(fields || {})) {
+    if (v.stringValue !== undefined) res[k] = v.stringValue;
+    else if (v.integerValue !== undefined) res[k] = Number(v.integerValue);
+    else if (v.doubleValue !== undefined) res[k] = Number(v.doubleValue);
+    else if (v.booleanValue !== undefined) res[k] = v.booleanValue;
+    else if (v.arrayValue !== undefined) res[k] = (v.arrayValue.values || []).map(x => fsFieldsToJs({ val: x }).val);
+    else if (v.mapValue !== undefined) res[k] = fsFieldsToJs(v.mapValue.fields);
+    else res[k] = null;
+  }
+  return res;
+}
+
+function jsValToFs(val) {
+  if (val === null || val === undefined) return { nullValue: null };
+  if (typeof val === 'string') return { stringValue: val };
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (typeof val === 'number') {
+    if (Number.isInteger(val)) return { integerValue: String(val) };
+    return { doubleValue: val };
+  }
+  if (Array.isArray(val)) {
+    return { arrayValue: { values: val.map(jsValToFs) } };
+  }
+  if (typeof val === 'object') {
+    const fields = {};
+    for (const [k, v] of Object.entries(val)) {
+      fields[k] = jsValToFs(v);
+    }
+    return { mapValue: { fields } };
+  }
+  return { stringValue: String(val) };
+}
+
+async function fetchTurnosFromFirestoreCloud() {
+  try {
+    const res = await fetch(`${FIRESTORE_BASE_URL}/turnos?pageSize=300`);
+    if (!res.ok) {
+      console.warn(`[Firestore Cloud] Respuesta ${res.status} al consultar turnos`);
+      return db.turnos || [];
+    }
+    const data = await res.json();
+    const docs = (data.documents || []).map(doc => {
+      const docId = doc.name.split('/').pop();
+      return { id: docId, ...fsFieldsToJs(doc.fields) };
+    });
+    return docs;
+  } catch (err) {
+    console.warn('[Firestore Cloud] Error al leer turnos:', err.message);
+    return db.turnos || [];
+  }
+}
+
+async function saveTurnoToFirestoreCloud(turno) {
+  try {
+    const fields = {};
+    for (const [k, v] of Object.entries(turno)) {
+      fields[k] = jsValToFs(v);
+    }
+    const body = JSON.stringify({ fields });
+
+    await Promise.all([
+      fetch(`${FIRESTORE_BASE_URL}/turnos/${turno.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      }).catch(e => console.warn('[Firestore Cloud] Error guardando en /turnos:', e.message)),
+      fetch(`${FIRESTORE_BASE_URL}/reservas/${turno.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      }).catch(e => console.warn('[Firestore Cloud] Error guardando en /reservas:', e.message))
+    ]);
+
+    console.log(`✓ [Firestore Cloud] Turno ${turno.id} persistido permanentemente en la nube`);
+    return true;
+  } catch (err) {
+    console.error('[Firestore Cloud] Error al guardar turno:', err.message);
+    return false;
+  }
+}
+
+async function deleteTurnoFromFirestoreCloud(id) {
+  try {
+    await Promise.all([
+      fetch(`${FIRESTORE_BASE_URL}/turnos/${id}`, { method: 'DELETE' }).catch(() => null),
+      fetch(`${FIRESTORE_BASE_URL}/reservas/${id}`, { method: 'DELETE' }).catch(() => null)
+    ]);
+    console.log(`✓ [Firestore Cloud] Turno ${id} eliminado de la nube`);
+    return true;
+  } catch (err) {
+    console.error('[Firestore Cloud] Error al eliminar turno:', err.message);
+    return false;
+  }
+}
+
+async function updateTurnoInFirestoreCloud(id, patchFields) {
+  try {
+    const fields = {};
+    for (const [k, v] of Object.entries(patchFields)) {
+      fields[k] = jsValToFs(v);
+    }
+    const body = JSON.stringify({ fields });
+
+    await Promise.all([
+      fetch(`${FIRESTORE_BASE_URL}/turnos/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      }).catch(() => null),
+      fetch(`${FIRESTORE_BASE_URL}/reservas/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      }).catch(() => null)
+    ]);
+    console.log(`✓ [Firestore Cloud] Turno ${id} actualizado en la nube`);
+    return true;
+  } catch (err) {
+    console.error('[Firestore Cloud] Error al actualizar turno:', err.message);
+    return false;
+  }
+}
+
 // ================= ADMIN ROUTING =================
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
@@ -392,148 +521,199 @@ function getHorasCubiertas(horaInicioStr, duracionHoras = 1) {
   return slots;
 }
 
-// 5. GET /api/turnos
-app.get('/api/turnos', (req, res) => {
-  const { fecha, canchaId, deporte } = req.query;
-  let list = [...(db.turnos || [])];
+// 5. GET /api/turnos (Lee directamente desde Firestore Cloud permanente)
+app.get('/api/turnos', async (req, res) => {
+  try {
+    const { fecha, canchaId, deporte } = req.query;
+    let list = await fetchTurnosFromFirestoreCloud();
 
-  if (fecha) {
-    list = list.filter(t => t.fecha === fecha);
-  }
-  if (canchaId) {
-    list = list.filter(t => t.canchaId === canchaId);
-  }
-  if (deporte) {
-    list = list.filter(t => t.deporte === deporte);
-  }
+    if (list && list.length > 0) {
+      db.turnos = list;
+    } else {
+      list = db.turnos || [];
+    }
 
-  list.sort((a, b) => {
-    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    return a.hora.localeCompare(b.hora);
-  });
+    if (fecha) {
+      list = list.filter(t => t.fecha === fecha);
+    }
+    if (canchaId) {
+      list = list.filter(t => t.canchaId === canchaId);
+    }
+    if (deporte) {
+      list = list.filter(t => (t.deporte || '').toLowerCase() === deporte.toLowerCase());
+    }
 
-  res.json({ success: true, turnos: list });
+    list.sort((a, b) => {
+      const fechaA = String(a?.fecha || a?.dia || '');
+      const fechaB = String(b?.fecha || b?.dia || '');
+      const fechaComp = fechaA.localeCompare(fechaB);
+      if (fechaComp !== 0) return fechaComp;
+
+      const horaA = String(a?.horario || a?.hora || '');
+      const horaB = String(b?.horario || b?.hora || '');
+      return horaA.localeCompare(horaB);
+    });
+
+    res.json({ success: true, turnos: list });
+  } catch (err) {
+    console.error('Error en GET /api/turnos:', err);
+    res.json({ success: true, turnos: db.turnos || [] });
+  }
 });
 
-// 6. POST /api/turnos
-app.post('/api/turnos', (req, res) => {
-  const { canchaId, fecha, hora, nombre, whatsapp, equipo, duracion } = req.body;
+// 6. POST /api/turnos (Crea y persiste en Firestore Cloud en las colecciones 'turnos' y 'reservas')
+app.post('/api/turnos', async (req, res) => {
+  try {
+    const { canchaId, fecha, hora, nombre, whatsapp, equipo, duracion } = req.body;
 
-  if (!canchaId || !fecha || !hora || !nombre || !String(nombre).trim()) {
-    return res.status(400).json({
-      success: false,
-      message: 'Faltan datos obligatorios para la reserva (cancha, fecha, horario y nombre).'
+    if (!canchaId || !fecha || !hora || !nombre || !String(nombre).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Faltan datos obligatorios para la reserva (cancha, fecha, horario y nombre).'
+      });
+    }
+
+    const cancha = (db.config.canchas || []).find(c => c.id === canchaId);
+    if (!cancha) {
+      return res.status(404).json({ success: false, message: 'La cancha seleccionada no existe.' });
+    }
+
+    const duracionHoras = Number(duracion) === 2 ? 2 : 1;
+    const horasRequeridas = getHorasCubiertas(hora, duracionHoras);
+
+    const [hIniReq, mIniReq] = hora.split(':').map(Number);
+    const finReqMin = (hIniReq + duracionHoras) * 60 + (mIniReq || 0);
+    let [hCierre, mCierre] = (db.config.horaFin || '24:00').split(':').map(Number);
+    if (hCierre === 0 && mCierre === 0) hCierre = 24;
+    const cierreMin = hCierre * 60 + (mCierre || 0);
+
+    if (finReqMin > cierreMin) {
+      return res.status(400).json({
+        success: false,
+        message: `El turno de ${duracionHoras}hs excede el horario de cierre del complejo (${db.config.horaFin || '24:00'} hs).`
+      });
+    }
+
+    // Consultar turnos frescos desde Firestore para asegurar persistencia y evitar conflictos
+    const todosTurnos = await fetchTurnosFromFirestoreCloud();
+    const turnosExistentes = todosTurnos.filter(t => {
+      const mismaCancha = t.canchaId === canchaId || (t.canchaNombre && t.canchaNombre === cancha.nombre);
+      const mismaFecha = t.fecha === fecha;
+      const activo = String(t.estado || '').toLowerCase() !== 'cancelado' && String(t.estado || '').toLowerCase() !== 'liberado';
+      return mismaCancha && mismaFecha && activo;
     });
-  }
 
-  const cancha = (db.config.canchas || []).find(c => c.id === canchaId);
-  if (!cancha) {
-    return res.status(404).json({ success: false, message: 'La cancha seleccionada no existe.' });
-  }
-
-  const duracionHoras = Number(duracion) === 2 ? 2 : 1;
-  const horasRequeridas = getHorasCubiertas(hora, duracionHoras);
-
-  const [hIniReq, mIniReq] = hora.split(':').map(Number);
-  const finReqMin = (hIniReq + duracionHoras) * 60 + (mIniReq || 0);
-  let [hCierre, mCierre] = (db.config.horaFin || '24:00').split(':').map(Number);
-  if (hCierre === 0 && mCierre === 0) hCierre = 24;
-  const cierreMin = hCierre * 60 + (mCierre || 0);
-
-  if (finReqMin > cierreMin) {
-    return res.status(400).json({
-      success: false,
-      message: `El turno de ${duracionHoras}hs excede el horario de cierre del complejo (${db.config.horaFin || '24:00'} hs).`
+    const horasOcupadas = new Set();
+    turnosExistentes.forEach(t => {
+      const cubiertas = getHorasCubiertas(t.hora || t.horario, t.duracion || 1);
+      cubiertas.forEach(h => horasOcupadas.add(h));
     });
-  }
 
-  const turnosExistentes = (db.turnos || []).filter(t => t.canchaId === canchaId && t.fecha === fecha);
-  const horasOcupadas = new Set();
+    const hayConflicto = horasRequeridas.some(h => horasOcupadas.has(h));
+    if (hayConflicto) {
+      return res.status(409).json({
+        success: false,
+        message: `Uno o más horarios para este turno (${duracionHoras === 2 ? 'Turno doble de 2hs' : 'Turno de 1h'}) ya se encuentran ocupados. Por favor elegí otro horario.`
+      });
+    }
 
-  turnosExistentes.forEach(t => {
-    const cubiertas = getHorasCubiertas(t.hora, t.duracion || 1);
-    cubiertas.forEach(h => horasOcupadas.add(h));
-  });
+    const precioUnitario = Number(cancha.precio) >= 0 ? Number(cancha.precio) : 20000;
+    const precioTotal = precioUnitario * duracionHoras;
 
-  const hayConflicto = horasRequeridas.some(h => horasOcupadas.has(h));
-  if (hayConflicto) {
-    return res.status(409).json({
-      success: false,
-      message: `Uno o más horarios para este turno (${duracionHoras === 2 ? 'Turno doble de 2hs' : 'Turno de 1h'}) ya se encuentran ocupados. Por favor elegí otro horario.`
+    const [hStr, mStr] = hora.split(':').map(Number);
+    const nextH = (hStr + duracionHoras) % 24;
+    const horaFinCalculada = `${pad2(nextH)}:${pad2(mStr || 0)}`;
+
+    const nuevoTurno = {
+      id: `turno_${canchaId}_${fecha.replace(/-/g, '')}_${hora.replace(':', '')}_${Date.now()}`,
+      canchaId: cancha.id,
+      canchaNombre: cancha.nombre,
+      deporte: cancha.deporte,
+      ubicacion: cancha.ubicacion,
+      superficie: cancha.superficie,
+      jugadores: cancha.jugadores,
+      fecha,
+      hora,
+      horaFin: horaFinCalculada,
+      duracion: duracionHoras,
+      horasCubiertas: horasRequeridas,
+      nombre: String(nombre).trim(),
+      whatsapp: whatsapp ? String(whatsapp).trim() : '',
+      equipo: equipo ? String(equipo).trim() : '',
+      precioUnitario: precioUnitario,
+      precio: precioTotal,
+      precioFormateado: formatCurrency(precioTotal, db.config.monedaSimbolo || '$'),
+      confirmado: false,
+      estado: 'pendiente',
+      ts: Date.now()
+    };
+
+    // Guardar permanentemente en Firestore Cloud
+    await saveTurnoToFirestoreCloud(nuevoTurno);
+
+    // Actualizar cache local
+    if (!Array.isArray(db.turnos)) db.turnos = [];
+    db.turnos.push(nuevoTurno);
+    saveDatabase(db);
+
+    res.status(201).json({
+      success: true,
+      message: `Turno de ${duracionHoras} hora(s) reservado exitosamente.`,
+      turno: nuevoTurno
     });
+  } catch (error) {
+    console.error('Error en POST /api/turnos:', error);
+    res.status(500).json({ success: false, message: 'Error interno al procesar la reserva.' });
   }
-
-  const precioUnitario = Number(cancha.precio) >= 0 ? Number(cancha.precio) : 20000;
-  const precioTotal = precioUnitario * duracionHoras;
-
-  const [hStr, mStr] = hora.split(':').map(Number);
-  const nextH = (hStr + duracionHoras) % 24;
-  const horaFinCalculada = `${pad2(nextH)}:${pad2(mStr || 0)}`;
-
-  const nuevoTurno = {
-    id: `turno_${canchaId}_${fecha.replace(/-/g, '')}_${hora.replace(':', '')}_${Date.now()}`,
-    canchaId: cancha.id,
-    canchaNombre: cancha.nombre,
-    deporte: cancha.deporte,
-    ubicacion: cancha.ubicacion,
-    superficie: cancha.superficie,
-    jugadores: cancha.jugadores,
-    fecha,
-    hora,
-    horaFin: horaFinCalculada,
-    duracion: duracionHoras,
-    horasCubiertas: horasRequeridas,
-    nombre: String(nombre).trim(),
-    whatsapp: whatsapp ? String(whatsapp).trim() : '',
-    equipo: equipo ? String(equipo).trim() : '',
-    precioUnitario: precioUnitario,
-    precio: precioTotal,
-    precioFormateado: formatCurrency(precioTotal, db.config.monedaSimbolo || '$'),
-    confirmado: false,
-    ts: Date.now()
-  };
-
-  if (!Array.isArray(db.turnos)) db.turnos = [];
-  db.turnos.push(nuevoTurno);
-  saveDatabase(db);
-
-  res.status(201).json({
-    success: true,
-    message: `Turno de ${duracionHoras} hora(s) reservado exitosamente.`,
-    turno: nuevoTurno
-  });
 });
 
-// 7. DELETE /api/turnos/:id (Cancel booking)
-app.delete('/api/turnos/:id', (req, res) => {
-  const { id } = req.params;
-  const index = (db.turnos || []).findIndex(t => t.id === id);
-  if (index === -1) {
-    return res.status(404).json({ success: false, message: 'Turno no encontrado.' });
+// 7. DELETE /api/turnos/:id (Cancela y elimina de Firestore Cloud permanente)
+app.delete('/api/turnos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await deleteTurnoFromFirestoreCloud(id);
+
+    let eliminado = null;
+    if (Array.isArray(db.turnos)) {
+      const index = db.turnos.findIndex(t => t.id === id);
+      if (index !== -1) {
+        [eliminado] = db.turnos.splice(index, 1);
+        saveDatabase(db);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Turno cancelado y liberado permanentemente.`,
+      turno: eliminado || { id }
+    });
+  } catch (error) {
+    console.error('Error en DELETE /api/turnos/:id:', error);
+    res.status(500).json({ success: false, message: 'Error al cancelar turno.' });
   }
-
-  const [eliminado] = db.turnos.splice(index, 1);
-  saveDatabase(db);
-
-  res.json({
-    success: true,
-    message: `Turno de ${eliminado.nombre} cancelado. La cancha quedó libre.`,
-    turno: eliminado
-  });
 });
 
-// 8. PATCH /api/turnos/:id/confirmar
-app.patch('/api/turnos/:id/confirmar', (req, res) => {
-  const { id } = req.params;
-  const turno = (db.turnos || []).find(t => t.id === id);
-  if (!turno) {
-    return res.status(404).json({ success: false, message: 'Turno no encontrado.' });
+// 8. PATCH /api/turnos/:id/confirmar (Confirma permanentemente en Firestore Cloud)
+app.patch('/api/turnos/:id/confirmar', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await updateTurnoInFirestoreCloud(id, { confirmado: true, estado: 'confirmado' });
+
+    let turno = null;
+    if (Array.isArray(db.turnos)) {
+      turno = db.turnos.find(t => t.id === id);
+      if (turno) {
+        turno.confirmado = true;
+        turno.estado = 'confirmado';
+        saveDatabase(db);
+      }
+    }
+
+    res.json({ success: true, message: 'Turno marcado como confirmado permanentemente.', turno });
+  } catch (error) {
+    console.error('Error en PATCH /api/turnos/:id/confirmar:', error);
+    res.status(500).json({ success: false, message: 'Error al confirmar turno.' });
   }
-
-  turno.confirmado = true;
-  saveDatabase(db);
-
-  res.json({ success: true, message: 'Turno marcado como confirmado.', turno });
 });
 
 // 9. GET /api/metrics
@@ -754,11 +934,23 @@ app.delete('/api/servicios/:id', async (req, res) => {
 });
 
 // Start Express Server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`=======================================================`);
   console.log(`🎾 COMPLEJO PADEL 3 - Backend Moderno iniciado`);
   console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
   console.log(`🛡️ Panel de Administración en http://localhost:${PORT}/admin`);
-  console.log(`📁 Base de datos persistente: ${DB_FILE}`);
+  console.log(`☁️ Conectando con Firestore Cloud (proyecto: ${FIRESTORE_PROJECT_ID})...`);
+
+  try {
+    const firestoreTurnos = await fetchTurnosFromFirestoreCloud();
+    if (firestoreTurnos && firestoreTurnos.length > 0) {
+      db.turnos = firestoreTurnos;
+      console.log(`✓ [Firestore Cloud] ${firestoreTurnos.length} reservas activas sincronizadas permanentemente`);
+    } else {
+      console.log(`ℹ️ [Firestore Cloud] Conexión establecida. Listo para recibir reservas.`);
+    }
+  } catch (e) {
+    console.warn('Aviso inicializando Firestore Cloud:', e.message);
+  }
   console.log(`=======================================================`);
 });
