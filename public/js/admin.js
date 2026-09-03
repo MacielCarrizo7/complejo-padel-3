@@ -456,17 +456,66 @@ function setupAdminFirestoreListeners() {
     }
   }, err => console.warn('Admin Firestore eventos onSnapshot error:', err));
 
+  // Purga definitiva de canchas obsoletas ('Wembley' y 'San Siro')
+  async function purgarCanchasObsoletas() {
+    if (!firebaseFirestore) return;
+    try {
+      // 1. Purgar de colección 'canchas'
+      const snap = await firebaseFirestore.collection('canchas').get();
+      snap.forEach(async doc => {
+        const d = doc.data() || {};
+        const nom = String(d.nombre || '').toLowerCase();
+        if (nom.includes('wembley') || nom.includes('san siro') || doc.id === 'c5' || doc.id === 'c6') {
+          await doc.ref.delete().catch(() => {});
+          console.log(`✓ [Firestore] Cancha obsoleta eliminada: ${doc.id} - ${d.nombre}`);
+        }
+      });
+
+      // 2. Purgar de configuracion/general y config/general
+      const cfgRefs = [
+        firebaseFirestore.collection('configuracion').doc('general'),
+        firebaseFirestore.collection('config').doc('general')
+      ];
+      for (const ref of cfgRefs) {
+        const cSnap = await ref.get();
+        if (cSnap.exists) {
+          const arr = cSnap.data().canchas || [];
+          const filtradas = arr.filter(c => {
+            const nom = String(c.nombre || '').toLowerCase();
+            return !nom.includes('wembley') && !nom.includes('san siro') && c.id !== 'c5' && c.id !== 'c6';
+          });
+          if (filtradas.length !== arr.length) {
+            await ref.set({ canchas: filtradas, actualizadoEn: new Date().toISOString() }, { merge: true });
+            console.log(`✓ [Firestore] Array purgado en ${ref.path}`);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error purgando canchas obsoletas:', e);
+    }
+  }
+  purgarCanchasObsoletas();
+
   // Escucha reactiva en tiempo real de la colección 'canchas'
   firebaseFirestore.collection('canchas').onSnapshot(snapshot => {
     if (!snapshot.empty) {
       const list = [];
       snapshot.forEach(doc => {
-        list.push(sanitizarCancha({ id: doc.id, ...doc.data() }, doc.id));
+        const d = doc.data() || {};
+        const nom = String(d.nombre || '').toLowerCase();
+        if (nom.includes('wembley') || nom.includes('san siro') || doc.id === 'c5' || doc.id === 'c6') {
+          doc.ref.delete().catch(() => {});
+          return;
+        }
+        list.push(sanitizarCancha({ id: doc.id, ...d }, doc.id));
       });
       adminState.config = adminState.config || {};
       adminState.config.canchas = list;
       if (adminState.currentTab === 'canchas') {
         renderCanchasTab();
+      }
+      if (adminState.currentTab === 'historias') {
+        renderHistoriasTab();
       }
       const estaEnSiluetas = !document.getElementById('vista-siluetas-container')?.classList.contains('hidden');
       if (estaEnSiluetas) {
@@ -480,9 +529,15 @@ function setupAdminFirestoreListeners() {
   const handleConfigDocSnapshot = (doc) => {
     if (doc.exists) {
       const d = doc.data();
+      const canchasLimpias = (d.canchas || adminState.config?.canchas || []).filter(c => {
+        const nom = String(c?.nombre || '').toLowerCase();
+        return !nom.includes('wembley') && !nom.includes('san siro') && c.id !== 'c5' && c.id !== 'c6';
+      });
+
       adminState.config = {
         ...(adminState.config || {}),
         ...d,
+        canchas: canchasLimpias,
         nombre: d.nombreComplejo || d.nombre || adminState.config?.nombre,
         subtitulo: d.slogan || d.subtitulo || adminState.config?.subtitulo,
         direccion: d.direccion || adminState.config?.direccion,
@@ -495,6 +550,12 @@ function setupAdminFirestoreListeners() {
       };
       if (adminState.currentTab === 'config') {
         syncConfigTabInputs();
+      }
+      if (adminState.currentTab === 'canchas') {
+        renderCanchasTab();
+      }
+      if (adminState.currentTab === 'historias') {
+        renderHistoriasTab();
       }
     }
   };
@@ -1381,21 +1442,24 @@ function renderSiluetasPorDia(fecha) {
       });
     }
 
-    // 2. Canchas: asegurar las 6 canchas activas del complejo
-    const DEFAULT_CANCHAS = [
-      { id: 'c1', deporte: 'padel', nombre: 'Pista 1 - Cristal Pro', ubicacion: 'interior', superficie: 'Césped Sintético Azul WPT', jugadores: 4, precio: 24000 },
-      { id: 'c2', deporte: 'padel', nombre: 'Pista 2 - Panorámica', ubicacion: 'interior', superficie: 'Vidrio Panorámico LED', jugadores: 4, precio: 24000 },
-      { id: 'c3', deporte: 'padel', nombre: 'Pista 3 - Sunset Open', ubicacion: 'exterior', superficie: 'Césped Texturado Fibrilado', jugadores: 4, precio: 20000 },
-      { id: 'c4', deporte: 'futbol', nombre: 'Cancha 1 - Monumental F5', ubicacion: 'interior', superficie: 'Sintético Forbex 50mm Techada', jugadores: 5, precio: 28000 },
-      { id: 'c5', deporte: 'futbol', nombre: 'Cancha 2 - Wembley F7', ubicacion: 'exterior', superficie: 'Césped Sintético Pro Iluminación LED', jugadores: 7, precio: 36000 },
-      { id: 'c6', deporte: 'futbol', nombre: 'Cancha 3 - San Siro F5', ubicacion: 'exterior', superficie: 'Césped Sintético Premium', jugadores: 5, precio: 26000 }
-    ];
-
-    const canchas = (adminState.config?.canchas && adminState.config.canchas.length > 0)
-      ? adminState.config.canchas
-      : DEFAULT_CANCHAS;
+    // 2. Canchas: iterar únicamente sobre las canchas reales devueltas por Firestore
+    const canchas = (adminState.config?.canchas || []).filter(c => {
+      const nom = String(c?.nombre || '').toLowerCase();
+      return !nom.includes('wembley') && !nom.includes('san siro') && c.id !== 'c5' && c.id !== 'c6';
+    });
 
     pitchesGrid.innerHTML = '';
+    if (canchas.length === 0) {
+      pitchesGrid.innerHTML = `
+        <div class="col-span-full py-12 text-center text-slate-400">
+          <i data-lucide="layers" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+          <p class="text-sm font-semibold">Cargando canchas de Firestore o no hay canchas configuradas...</p>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+
     const slots = generarHorarios();
 
     canchas.forEach(cancha => {
@@ -1607,16 +1671,47 @@ function renderCanchasTab() {
       const c = adminState.config?.canchas?.find(x => x.id === id);
       const nombre = c?.nombre || 'esta cancha';
       if (confirm(`¿Eliminar la cancha "${nombre}"?`)) {
-        if (id && firebaseFirestore) {
+        // 1. Eliminar de memoria y DOM al instante
+        adminState.config.canchas = (adminState.config.canchas || []).filter(x => x.id !== id && x.nombre !== nombre);
+        renderCanchasTab();
+
+        const estaEnSiluetas = !document.getElementById('vista-siluetas-container')?.classList.contains('hidden');
+        if (estaEnSiluetas) {
+          const diaActivo = document.querySelector('.btn-dia-silueta.activo')?.dataset.date || adminState.selectedTacticalFecha || '2026-09-03';
+          renderTacticalPitchesView(diaActivo);
+        }
+
+        // 2. Borrado real en Firestore (colección 'canchas' y array en 'configuracion/general')
+        if (firebaseFirestore) {
           try {
-            await firebaseFirestore.collection('canchas').doc(id).delete();
-            console.log(`✓ [Firestore] Cancha ${id} eliminada`);
+            // A) Eliminar documento individual en colección 'canchas'
+            if (id) {
+              await firebaseFirestore.collection('canchas').doc(id).delete();
+              console.log(`✓ [Firestore] Cancha ${id} eliminada de colección canchas`);
+            }
+
+            // B) Eliminar del array canchas en configuracion/general y config/general
+            const configDocRefs = [
+              firebaseFirestore.collection('configuracion').doc('general'),
+              firebaseFirestore.collection('config').doc('general')
+            ];
+
+            for (const docRef of configDocRefs) {
+              const snap = await docRef.get();
+              if (snap.exists) {
+                const canchasActuales = snap.data().canchas || [];
+                const canchasFiltradas = canchasActuales.filter(item => item.id !== id && item.nombre !== nombre);
+                await docRef.set({
+                  canchas: canchasFiltradas,
+                  actualizadoEn: new Date().toISOString()
+                }, { merge: true });
+                console.log(`✓ [Firestore] Cancha eliminada de array en ${docRef.path}`);
+              }
+            }
           } catch (err) {
             console.error('Error eliminando cancha de Firestore:', err);
           }
         }
-        adminState.config.canchas = (adminState.config.canchas || []).filter(x => x.id !== id);
-        renderCanchasTab();
       }
     });
   });
@@ -2802,16 +2897,29 @@ function getTurnosLibresParaCancha(canchaId, fecha) {
 function renderHistoriasTab() {
   const selectCancha = document.getElementById('story-cancha-select');
   if (selectCancha) {
-    let canchas = adminState.config?.canchas || [];
+    let canchas = (adminState.config?.canchas || []).filter(c => {
+      const n = String(c?.nombre || '').toLowerCase();
+      return !n.includes('wembley') && !n.includes('san siro') && c.id !== 'c5' && c.id !== 'c6';
+    });
+
     if (storyState.deporte === 'padel') {
-      canchas = canchas.filter(c => c.deporte === 'padel');
+      canchas = canchas.filter(c => {
+        const dep = String(c.deporte || '').toLowerCase();
+        return dep.includes('pad') || (c.nombre || '').toLowerCase().includes('pista');
+      });
     } else if (storyState.deporte === 'futbol') {
-      canchas = canchas.filter(c => c.deporte === 'futbol');
+      canchas = canchas.filter(c => {
+        const dep = String(c.deporte || '').toLowerCase();
+        const esPadel = dep.includes('pad') || (c.nombre || '').toLowerCase().includes('pista');
+        return !esPadel;
+      });
     }
 
     let html = '';
     canchas.forEach(c => {
-      const emoji = c.deporte === 'padel' ? '🎾' : '⚽';
+      const dep = String(c.deporte || '').toLowerCase();
+      const isPadel = dep.includes('pad') || (c.nombre || '').toLowerCase().includes('pista');
+      const emoji = isPadel ? '🎾' : '⚽';
       html += `<option value="${c.id}" ${c.id === storyState.canchaId ? 'selected' : ''}>${emoji} ${escapeHtml(c.nombre)} (${c.ubicacion})</option>`;
     });
     selectCancha.innerHTML = html;
@@ -2834,11 +2942,22 @@ function syncStorySummary() {
   const summaryDetails = document.getElementById('story-summary-details');
   if (!summaryText || !summaryDetails) return;
 
-  let canchas = adminState.config?.canchas || [];
+  let canchas = (adminState.config?.canchas || []).filter(c => {
+    const n = String(c?.nombre || '').toLowerCase();
+    return !n.includes('wembley') && !n.includes('san siro') && c.id !== 'c5' && c.id !== 'c6';
+  });
+
   if (storyState.deporte === 'padel') {
-    canchas = canchas.filter(c => c.deporte === 'padel');
+    canchas = canchas.filter(c => {
+      const dep = String(c.deporte || '').toLowerCase();
+      return dep.includes('pad') || (c.nombre || '').toLowerCase().includes('pista');
+    });
   } else if (storyState.deporte === 'futbol') {
-    canchas = canchas.filter(c => c.deporte === 'futbol');
+    canchas = canchas.filter(c => {
+      const dep = String(c.deporte || '').toLowerCase();
+      const esPadel = dep.includes('pad') || (c.nombre || '').toLowerCase().includes('pista');
+      return !esPadel;
+    });
   }
 
   let totalLibres = 0;
@@ -3013,11 +3132,22 @@ async function renderStoryCanvas() {
 }
 
 function renderCanvasGeneralMode(ctx, width, height) {
-  let canchas = adminState.config?.canchas || [];
+  let canchas = (adminState.config?.canchas || []).filter(c => {
+    const n = String(c?.nombre || '').toLowerCase();
+    return !n.includes('wembley') && !n.includes('san siro') && c.id !== 'c5' && c.id !== 'c6';
+  });
+
   if (storyState.deporte === 'padel') {
-    canchas = canchas.filter(c => c.deporte === 'padel');
+    canchas = canchas.filter(c => {
+      const dep = String(c.deporte || '').toLowerCase();
+      return dep.includes('pad') || (c.nombre || '').toLowerCase().includes('pista');
+    });
   } else if (storyState.deporte === 'futbol') {
-    canchas = canchas.filter(c => c.deporte === 'futbol');
+    canchas = canchas.filter(c => {
+      const dep = String(c.deporte || '').toLowerCase();
+      const esPadel = dep.includes('pad') || (c.nombre || '').toLowerCase().includes('pista');
+      return !esPadel;
+    });
   }
 
   const courtThemes = [
@@ -3133,12 +3263,16 @@ function renderCanvasGeneralMode(ctx, width, height) {
 }
 
 function renderCanvasIndividualMode(ctx, width, height) {
-  const canchas = adminState.config?.canchas || [];
+  const canchas = (adminState.config?.canchas || []).filter(c => {
+    const n = String(c?.nombre || '').toLowerCase();
+    return !n.includes('wembley') && !n.includes('san siro') && c.id !== 'c5' && c.id !== 'c6';
+  });
   const cancha = canchas.find(c => c.id === storyState.canchaId) || canchas[0];
   if (!cancha) return;
 
   const libres = getTurnosLibresParaCancha(cancha.id, storyState.fecha);
-  const isPadel = cancha.deporte === 'padel';
+  const dep = String(cancha.deporte || '').toLowerCase();
+  const isPadel = dep.includes('pad') || (cancha.nombre || '').toLowerCase().includes('pista');
   const themeColor = isPadel ? (cancha.ubicacion === 'interior' ? '#0072CE' : '#FF6A00') : '#62B400';
   const bgTint = isPadel ? '#F0F7FF' : '#F4FBF0';
 

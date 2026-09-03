@@ -1222,6 +1222,8 @@ function setupFirestoreListeners() {
       const list = [];
       snapshot.forEach(doc => {
         const d = doc.data() || {};
+        const nom = String(d.nombre || '').toLowerCase();
+        if (nom.includes('wembley') || nom.includes('san siro') || doc.id === 'c5' || doc.id === 'c6') return;
         const depStr = String(d.deporte || 'PADEL').trim().toUpperCase();
         list.push({
           id: doc.id,
