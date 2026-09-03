@@ -2,7 +2,7 @@
 // COMPLEJO PADEL 3 - MOBILE-FIRST UI & NAVIGATION HELPERS
 // =========================================================
 
-function setupCarousel(sliderId, prevBtnId, nextBtnId, step = 320) {
+function setupCarousel(sliderId, prevBtnId, nextBtnId, step = 380) {
   const slider = document.getElementById(sliderId);
   const prevBtn = document.getElementById(prevBtnId);
   const nextBtn = document.getElementById(nextBtnId);

@@ -286,74 +286,88 @@
 
   <!-- ================= INSTALACIONES Y SERVICIOS ================= -->
   <section id="servicios" class="py-8 md:py-20 bg-[#070A10]/60 border-y border-slate-800/80 relative">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <!-- Section Header -->
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-12">
-        <div class="space-y-2 max-w-2xl">
-          <span class="text-[#00E676] font-sports font-bold text-xs sm:text-sm tracking-widest uppercase">NUESTRO COMPLEJO</span>
-          <h2 class="text-2xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
-            INSTALACIONES Y SERVICIOS
-          </h2>
-          <p class="text-slate-400 text-xs sm:text-base">
-            Conocé todo lo que tenemos preparado para que disfrutes antes, durante y después de cada partido.
-          </p>
-        </div>
-
-        <!-- Carousel Arrows -->
-        <div class="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
-          <button id="btn-servicios-prev" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Anterior">
-            <i data-lucide="chevron-left" class="w-5 h-5"></i>
-          </button>
-          <button id="btn-servicios-next" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Siguiente">
-            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-          </button>
-        </div>
+      <div class="mb-6 md:mb-12 space-y-2 max-w-2xl">
+        <span class="text-[#00E676] font-sports font-bold text-xs sm:text-sm tracking-widest uppercase">NUESTRO COMPLEJO</span>
+        <h2 class="text-2xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
+          INSTALACIONES Y SERVICIOS
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-base">
+          Conocé todo lo que tenemos preparado para que disfrutes antes, durante y después de cada partido.
+        </p>
       </div>
 
-      <!-- Dynamic Services Horizontal Scroll Carousel -->
-      <div id="servicios-slider" class="flex flex-nowrap justify-start lg:justify-center gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth w-full max-w-7xl mx-auto pb-4 px-4 no-scrollbar" style="touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;">
+    </div>
+
+    <!-- Relative Container with Floating Overlaid Arrows -->
+    <div class="relative w-full max-w-7xl mx-auto px-4 group">
+      <!-- Floating Left Button -->
+      <button id="btn-servicios-prev" 
+              class="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700/60 shadow-xl backdrop-blur-sm flex items-center justify-center transition-all disabled:opacity-0 disabled:pointer-events-none active:scale-95"
+              aria-label="Anterior">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+
+      <!-- Cards Slider -->
+      <div id="servicios-slider" 
+           class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 px-2 no-scrollbar"
+           style="touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;">
         <!-- Inyección dinámica de tarjetas desde Firestore -->
       </div>
 
+      <!-- Floating Right Button -->
+      <button id="btn-servicios-next" 
+              class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700/60 shadow-xl backdrop-blur-sm flex items-center justify-center transition-all disabled:opacity-0 disabled:pointer-events-none active:scale-95"
+              aria-label="Siguiente">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
     </div>
   </section>
 
   <!-- ================= NUEVA SECCIÓN: EVENTOS Y TORNEOS ================= -->
   <section id="eventos" class="py-8 md:py-20 relative">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <!-- Section Header -->
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-12">
-        <div class="space-y-2 max-w-2xl">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00E676]/10 border border-[#00E676]/30 text-[#00E676] text-xs font-bold uppercase mb-1">
-            <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
-            <span>Comunidad & Competición</span>
-          </div>
-          <h2 class="text-2xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
-            EVENTOS Y TORNEOS
-          </h2>
-          <p class="text-slate-400 text-xs sm:text-base">
-            Participá de nuestros campeonatos de fin de semana, ligas y torneos relámpago con grandes premios.
-          </p>
+      <div class="mb-6 md:mb-12 space-y-2 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00E676]/10 border border-[#00E676]/30 text-[#00E676] text-xs font-bold uppercase mb-1">
+          <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
+          <span>Comunidad & Competición</span>
         </div>
-
-        <!-- Carousel Arrows -->
-        <div class="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
-          <button id="btn-eventos-prev" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Anterior">
-            <i data-lucide="chevron-left" class="w-5 h-5"></i>
-          </button>
-          <button id="btn-eventos-next" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Siguiente">
-            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-          </button>
-        </div>
+        <h2 class="text-2xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
+          EVENTOS Y TORNEOS
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-base">
+          Participá de nuestros campeonatos de fin de semana, ligas y torneos relámpago con grandes premios.
+        </p>
       </div>
 
-      <!-- Tournaments & Events Horizontal Scroll Carousel -->
-      <div id="eventos-slider" class="flex flex-nowrap justify-start lg:justify-center gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth w-full max-w-7xl mx-auto pb-4 px-4 no-scrollbar" style="touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;">
+    </div>
+
+    <!-- Relative Container with Floating Overlaid Arrows -->
+    <div class="relative w-full max-w-7xl mx-auto px-4 group">
+      <!-- Floating Left Button -->
+      <button id="btn-eventos-prev" 
+              class="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700/60 shadow-xl backdrop-blur-sm flex items-center justify-center transition-all disabled:opacity-0 disabled:pointer-events-none active:scale-95"
+              aria-label="Anterior">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+
+      <!-- Cards Slider -->
+      <div id="eventos-slider" 
+           class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 px-2 no-scrollbar"
+           style="touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;">
         <!-- Rendered dynamically by app.js from /api/eventos -->
       </div>
 
+      <!-- Floating Right Button -->
+      <button id="btn-eventos-next" 
+              class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700/60 shadow-xl backdrop-blur-sm flex items-center justify-center transition-all disabled:opacity-0 disabled:pointer-events-none active:scale-95"
+              aria-label="Siguiente">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
     </div>
   </section>
 
