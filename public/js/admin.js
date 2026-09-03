@@ -763,25 +763,48 @@ function getFilteredTurnos() {
   });
 }
 
+function renderTurnos() {
+  renderAgendaListItems();
+}
+
+function renderSiluetas(diaActivo) {
+  renderTacticalPitchesView(diaActivo);
+}
+
 function renderAgendaTab() {
   populateAgendaFilters();
 
-  const listView = document.getElementById('admin-agenda-list-view');
-  const tacticalView = document.getElementById('admin-tactical-view');
+  const seccionLista = document.getElementById('seccion-lista-turnos') || document.getElementById('admin-agenda-list-view');
+  const seccionSiluetas = document.getElementById('seccion-siluetas-tacticas') || document.getElementById('admin-tactical-view');
+  const btnLista = document.getElementById('btn-vista-lista') || document.getElementById('btn-subview-lista');
+  const btnTactica = document.getElementById('btn-vista-siluetas') || document.getElementById('btn-subview-tactica');
 
   if (adminState.agendaSubView === 'lista') {
-    if (listView) listView.classList.remove('hidden');
-    if (tacticalView) tacticalView.classList.add('hidden');
-    renderAgendaListItems();
+    if (seccionLista) seccionLista.classList.remove('hidden');
+    if (seccionSiluetas) seccionSiluetas.classList.add('hidden');
+    if (btnLista) {
+      btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
+    }
+    if (btnTactica) {
+      btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+    }
+    renderTurnos();
   } else {
-    if (listView) listView.classList.add('hidden');
-    if (tacticalView) tacticalView.classList.remove('hidden');
-    renderTacticalPitchesView();
+    if (seccionLista) seccionLista.classList.add('hidden');
+    if (seccionSiluetas) seccionSiluetas.classList.remove('hidden');
+    if (btnTactica) {
+      btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
+    }
+    if (btnLista) {
+      btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+    }
+    const diaActivo = adminState.selectedTacticalFecha || hoyISO();
+    renderSiluetas(diaActivo);
   }
 }
 
 function renderAgendaListItems() {
-  const container = document.getElementById('admin-agenda-list-container');
+  const container = document.getElementById('admin-agenda-list-container') || document.getElementById('turnos-list-container');
   const emptyEl = document.getElementById('admin-agenda-empty');
   if (!container || !emptyEl) return;
   container.innerHTML = '';
@@ -819,6 +842,7 @@ function renderAgendaListItems() {
     const horaFin = t.horaFin || `${pad2(nextH)}:${pad2(mStr || 0)}`;
     const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
     const pasado = isTurnoPasado(t);
+    const isPendiente = !isConfirmed && !pasado && (String(t.estado || 'pendiente').toLowerCase().trim() === 'pendiente');
 
     // Formato de nombre de cancha con deporte y superficie (ej: CANCHA 1 (FÚTBOL 5 - CÉSPED SINTÉTICO) o PISTA 1 - CRISTAL PRO)
     const courtObj = (adminState.config?.canchas || []).find(c => c.id === t.canchaId);
@@ -862,8 +886,8 @@ function renderAgendaListItems() {
       `;
     } else {
       actionsHtml = `
-        ${(!isConfirmed && cleanPhone) ? `
-        <a href="${whatsappLink}" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-600/30 flex items-center gap-1 text-xs font-semibold transition-all shadow-sm" title="Consultar Asistencia por WhatsApp">
+        ${(isPendiente && cleanPhone) ? `
+        <a href="${whatsappLink}" target="_blank" class="btn-consultar-asistencia px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-600/30 flex items-center gap-1 text-xs font-semibold" title="Consultar asistencia por WhatsApp">
           💬 Consultar Asistencia
         </a>` : ''}
 
@@ -1723,17 +1747,26 @@ async function initAdmin() {
   // Subview toggle listeners ("Lista de Turnos" vs "Vista Siluetas Tácticas")
   const setSubViewMode = (mode) => {
     adminState.agendaSubView = mode;
-    const btnLista = document.getElementById('btn-subview-lista') || document.getElementById('btn-vista-lista');
-    const btnTactica = document.getElementById('btn-subview-tactica') || document.getElementById('btn-vista-siluetas');
+    const seccionLista = document.getElementById('seccion-lista-turnos') || document.getElementById('admin-agenda-list-view');
+    const seccionSiluetas = document.getElementById('seccion-siluetas-tacticas') || document.getElementById('admin-tactical-view');
+    const btnLista = document.getElementById('btn-vista-lista') || document.getElementById('btn-subview-lista');
+    const btnTactica = document.getElementById('btn-vista-siluetas') || document.getElementById('btn-subview-tactica');
 
     if (mode === 'lista') {
-      if (btnLista) btnLista.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
-      if (btnTactica) btnTactica.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+      if (btnLista) btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
+      if (btnTactica) btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+      if (seccionLista) seccionLista.classList.remove('hidden');
+      if (seccionSiluetas) seccionSiluetas.classList.add('hidden');
+      renderTurnos();
     } else {
-      if (btnTactica) btnTactica.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
-      if (btnLista) btnLista.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+      if (btnTactica) btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
+      if (btnLista) btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+      if (seccionLista) seccionLista.classList.add('hidden');
+      if (seccionSiluetas) seccionSiluetas.classList.remove('hidden');
+      const diaActivo = adminState.selectedTacticalFecha || hoyISO();
+      renderSiluetas(diaActivo);
     }
-    renderAgendaTab();
+    if (window.lucide) window.lucide.createIcons();
   };
 
   ['btn-subview-lista', 'btn-vista-lista'].forEach(id => {
@@ -1781,10 +1814,12 @@ async function initAdmin() {
         const card = btnConfirmar.closest('.reserva-card, .glass-card') || btnConfirmar.parentElement;
         const badgePendiente = card?.querySelector('.estado-badge') || document.getElementById(`badge-status-${id}`);
         if (badgePendiente) {
-          badgePendiente.className = "estado-badge flex items-center gap-1 font-bold text-[#00E676]";
+          badgePendiente.className = "estado-badge flex items-center gap-1 font-bold text-[#00E676] bg-[#00E676]/10 px-2.5 py-0.5 rounded-lg border border-[#00E676]/30 text-xs";
           badgePendiente.innerHTML = "<span>✓ Confirmado</span>";
         }
         btnConfirmar.remove(); // Remueve el botón Confirmar dejando solo Liberar Cancha
+        const btnConsultar = card?.querySelector('.btn-consultar-asistencia');
+        if (btnConsultar) btnConsultar.remove();
         fetchMetrics().then(() => renderMetricsKpis());
       } catch (err) {
         console.error('Error al confirmar reserva en Firestore:', err);
