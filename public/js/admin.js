@@ -129,6 +129,57 @@ function generarHorarios() {
   return horarios;
 }
 
+function matchCancha(reserva, cancha) {
+  if (!reserva || !cancha) return false;
+  const resCanchaId = String(reserva.canchaId || '').toLowerCase().trim();
+  const targetId = String(cancha.id || '').toLowerCase().trim();
+  if (resCanchaId && targetId && resCanchaId === targetId) {
+    return true;
+  }
+  const nombreReserva = String(reserva.canchaNombre || reserva.cancha || reserva.nombreCancha || '').toLowerCase().trim();
+  const nombreCancha = String(cancha.nombre || '').toLowerCase().trim();
+  if (nombreReserva && nombreCancha) {
+    if (nombreReserva === nombreCancha) return true;
+    if (nombreReserva.includes(nombreCancha) || nombreCancha.includes(nombreReserva)) return true;
+    const cleanRes = nombreReserva.replace(/[^a-z0-9]/g, '');
+    const cleanCan = nombreCancha.replace(/[^a-z0-9]/g, '');
+    if (cleanRes && cleanCan && (cleanRes.includes(cleanCan) || cleanCan.includes(cleanRes))) return true;
+  }
+  return false;
+}
+
+function getHorasOcupadas(reserva) {
+  if (!reserva) return [];
+
+  const str = `${reserva.horario || ''} ${reserva.hora || ''} ${reserva.horaFin || ''}`;
+  const match = str.match(/(\d{1,2}):(\d{2})/g);
+
+  if (match && match.length >= 2) {
+    const inicio = parseInt(match[0].split(':')[0]);
+    const fin = parseInt(match[1].split(':')[0]);
+    if (fin > inicio) {
+      const ocupados = [];
+      for (let h = inicio; h < fin; h++) {
+        ocupados.push(`${String(h).padStart(2, '0')}:00`);
+      }
+      return ocupados;
+    }
+  }
+
+  const dur = Number(reserva.duracion) || 1;
+  if (reserva.hora) {
+    const [hStr, mStr] = String(reserva.hora).split(':').map(Number);
+    const ocupados = [];
+    for (let i = 0; i < dur; i++) {
+      const hh = (hStr + i) % 24;
+      ocupados.push(`${pad2(hh)}:${pad2(mStr || 0)}`);
+    }
+    return ocupados;
+  }
+
+  return [String(reserva.horario || reserva.hora || '')].filter(Boolean);
+}
+
 // ================= FIREBASE AUTH INITIALIZATION =================
 
 let firebaseApp = null;
@@ -229,6 +280,8 @@ function setupAdminFirestoreListeners() {
         list.push({ id: doc.id, ...doc.data() });
       });
       adminState.turnos = list;
+      window.turnosData = list;
+      window.todasLasReservas = list;
       fetchMetrics().then(() => renderMetricsKpis());
     }
   }, err => console.warn('Admin Firestore turnos onSnapshot error:', err));
@@ -361,6 +414,8 @@ async function syncFromFirestore() {
       const docTur = await firebaseFirestore.collection('complejo_data').doc('turnos').get();
       if (docTur.exists && Array.isArray(docTur.data().list)) adminState.turnos = docTur.data().list;
     }
+    window.turnosData = adminState.turnos;
+    window.todasLasReservas = adminState.turnos;
   } catch (err) {
     console.warn('Error al sincronizar datos desde Firestore:', err);
   }
@@ -772,34 +827,38 @@ function renderSiluetas(diaActivo) {
 }
 
 function renderAgendaTab() {
-  populateAgendaFilters();
+  try {
+    populateAgendaFilters();
 
-  const seccionLista = document.getElementById('seccion-lista-turnos') || document.getElementById('admin-agenda-list-view');
-  const seccionSiluetas = document.getElementById('seccion-siluetas-tacticas') || document.getElementById('admin-tactical-view');
-  const btnLista = document.getElementById('btn-vista-lista') || document.getElementById('btn-subview-lista');
-  const btnTactica = document.getElementById('btn-vista-siluetas') || document.getElementById('btn-subview-tactica');
+    const containerLista = document.getElementById('vista-lista-container') || document.getElementById('seccion-lista-turnos') || document.getElementById('admin-agenda-list-view');
+    const containerSiluetas = document.getElementById('vista-siluetas-container') || document.getElementById('seccion-siluetas-tacticas') || document.getElementById('admin-tactical-view');
+    const btnLista = document.getElementById('btn-vista-lista') || document.getElementById('btn-subview-lista');
+    const btnSiluetas = document.getElementById('btn-vista-siluetas') || document.getElementById('btn-subview-tactica');
 
-  if (adminState.agendaSubView === 'lista') {
-    if (seccionLista) seccionLista.classList.remove('hidden');
-    if (seccionSiluetas) seccionSiluetas.classList.add('hidden');
-    if (btnLista) {
-      btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
+    if (adminState.agendaSubView === 'lista') {
+      if (containerLista) containerLista.classList.remove('hidden');
+      if (containerSiluetas) containerSiluetas.classList.add('hidden');
+      if (btnLista) {
+        btnLista.className = "btn-subview-toggle px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg transition-all";
+      }
+      if (btnSiluetas) {
+        btnSiluetas.className = "btn-subview-toggle px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-medium text-xs flex items-center gap-2 hover:bg-slate-850 transition-all";
+      }
+      renderTurnos();
+    } else {
+      if (containerLista) containerLista.classList.add('hidden');
+      if (containerSiluetas) containerSiluetas.classList.remove('hidden');
+      if (btnSiluetas) {
+        btnSiluetas.className = "btn-subview-toggle px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg transition-all";
+      }
+      if (btnLista) {
+        btnLista.className = "btn-subview-toggle px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-medium text-xs flex items-center gap-2 hover:bg-slate-850 transition-all";
+      }
+      const diaActivo = document.querySelector('.btn-dia-silueta.activo')?.dataset.date || adminState.selectedTacticalFecha || 'hoy';
+      renderSiluetasPorDia(diaActivo);
     }
-    if (btnTactica) {
-      btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
-    }
-    renderTurnos();
-  } else {
-    if (seccionLista) seccionLista.classList.add('hidden');
-    if (seccionSiluetas) seccionSiluetas.classList.remove('hidden');
-    if (btnTactica) {
-      btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
-    }
-    if (btnLista) {
-      btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
-    }
-    const diaActivo = adminState.selectedTacticalFecha || hoyISO();
-    renderSiluetas(diaActivo);
+  } catch (err) {
+    console.error('Error en renderAgendaTab:', err);
   }
 }
 
@@ -996,114 +1055,166 @@ function exportAgendaToCSV() {
   URL.revokeObjectURL(url);
 }
 
-function renderTacticalPitchesView() {
-  const fechasCont = document.getElementById('admin-tactical-fechas');
-  const pitchesGrid = document.getElementById('admin-tactical-pitches-grid');
-  if (!fechasCont || !pitchesGrid) return;
+function renderSiluetasPorDia(fecha) {
+  try {
+    const pitchesGrid = document.getElementById('siluetas-grid') || document.getElementById('admin-tactical-pitches-grid');
+    const fechasCont = document.getElementById('admin-tactical-fechas');
+    if (!pitchesGrid) {
+      console.warn('Contenedor siluetas-grid no encontrado en el DOM');
+      return;
+    }
 
-  const proximas = [];
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(hoy);
-    d.setDate(hoy.getDate() + i);
-    proximas.push(formatDateISO(d));
-  }
-  const fechasSet = new Set([...proximas, ...(adminState.turnos || []).map(t => t.fecha).filter(Boolean)]);
-  const fechas = Array.from(fechasSet).sort();
+    // Normalizar fecha
+    if (!fecha || fecha === 'hoy') {
+      fecha = hoyISO();
+    }
+    adminState.selectedTacticalFecha = fecha;
 
-  if (!adminState.selectedTacticalFecha || !fechas.includes(adminState.selectedTacticalFecha)) {
-    adminState.selectedTacticalFecha = fechas[0];
-  }
+    const allTurnos = adminState.turnos || window.turnosData || window.todasLasReservas || [];
 
-  fechasCont.innerHTML = '';
-  fechas.forEach(iso => {
-    const { dow, num } = formatFechaLabel(iso);
-    const isSelected = iso === adminState.selectedTacticalFecha;
-    const pill = document.createElement('button');
-    pill.type = 'button';
-    pill.className = `min-w-[65px] px-3 py-2 rounded-xl text-center border font-sports transition-all flex-shrink-0 ${isSelected ? 'bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.4)]' : 'bg-[#161F30] text-slate-300 border-slate-700 hover:text-white'}`;
-    pill.innerHTML = `
-      <div class="text-[10px] uppercase font-bold tracking-wider ${isSelected ? 'text-black' : 'text-slate-400'}">${dow}</div>
-      <div class="text-lg font-bold leading-none mt-0.5 ${isSelected ? 'text-black' : 'text-white'}">${num}</div>
-    `;
-    pill.addEventListener('click', () => {
-      adminState.selectedTacticalFecha = iso;
-      renderTacticalPitchesView();
-    });
-    fechasCont.appendChild(pill);
-  });
+    // 1. Selector de fechas (próximos 14 días + días con turnos)
+    if (fechasCont) {
+      const proximas = [];
+      const hoyDate = new Date();
+      hoyDate.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(hoyDate);
+        d.setDate(hoyDate.getDate() + i);
+        proximas.push(formatDateISO(d));
+      }
+      const fechasSet = new Set([...proximas, ...allTurnos.map(t => t.fecha).filter(Boolean)]);
+      const fechas = Array.from(fechasSet).sort();
 
-  pitchesGrid.innerHTML = '';
-  const canchas = adminState.config?.canchas || [];
+      fechasCont.innerHTML = '';
+      fechas.forEach(iso => {
+        const { dow, num } = formatFechaLabel(iso);
+        const isSelected = iso === fecha;
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.setAttribute('data-date', iso);
+        pill.className = `btn-dia-silueta min-w-[65px] px-3 py-2 rounded-xl text-center border font-sports transition-all flex-shrink-0 ${isSelected ? 'activo bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.4)]' : 'bg-[#161F30] text-slate-300 border-slate-700 hover:text-white'}`;
+        pill.innerHTML = `
+          <div class="text-[10px] uppercase font-bold tracking-wider ${isSelected ? 'text-black' : 'text-slate-400'}">${dow}</div>
+          <div class="text-lg font-bold leading-none mt-0.5 ${isSelected ? 'text-black' : 'text-white'}">${num}</div>
+        `;
+        pill.addEventListener('click', () => {
+          try {
+            renderSiluetasPorDia(iso);
+          } catch (e) {
+            console.error('Error al cambiar día de silueta:', e);
+          }
+        });
+        fechasCont.appendChild(pill);
+      });
+    }
 
-  canchas.forEach(cancha => {
-    const card = document.createElement('div');
-    card.className = 'glass-card p-5 border border-slate-800 space-y-4';
+    // 2. Canchas: asegurar las 6 canchas activas del complejo
+    const DEFAULT_CANCHAS = [
+      { id: 'c1', deporte: 'padel', nombre: 'Pista 1 - Cristal Pro', ubicacion: 'interior', superficie: 'Césped Sintético Azul WPT', jugadores: 4, precio: 24000 },
+      { id: 'c2', deporte: 'padel', nombre: 'Pista 2 - Panorámica', ubicacion: 'interior', superficie: 'Vidrio Panorámico LED', jugadores: 4, precio: 24000 },
+      { id: 'c3', deporte: 'padel', nombre: 'Pista 3 - Sunset Open', ubicacion: 'exterior', superficie: 'Césped Texturado Fibrilado', jugadores: 4, precio: 20000 },
+      { id: 'c4', deporte: 'futbol', nombre: 'Cancha 1 - Monumental F5', ubicacion: 'interior', superficie: 'Sintético Forbex 50mm Techada', jugadores: 5, precio: 28000 },
+      { id: 'c5', deporte: 'futbol', nombre: 'Cancha 2 - Wembley F7', ubicacion: 'exterior', superficie: 'Césped Sintético Pro Iluminación LED', jugadores: 7, precio: 36000 },
+      { id: 'c6', deporte: 'futbol', nombre: 'Cancha 3 - San Siro F5', ubicacion: 'exterior', superficie: 'Césped Sintético Premium', jugadores: 5, precio: 26000 }
+    ];
 
-    const pitchSvg = getCourtSvgHtml(cancha);
+    const canchas = (adminState.config?.canchas && adminState.config.canchas.length > 0)
+      ? adminState.config.canchas
+      : DEFAULT_CANCHAS;
+
+    pitchesGrid.innerHTML = '';
     const slots = generarHorarios();
 
-    let slotsHtml = '';
-    slots.forEach(h => {
-      const turno = (adminState.turnos || []).find(t => {
-        if (!matchCancha(t, cancha) || t.fecha !== adminState.selectedTacticalFecha) return false;
-        const estado = String(t.estado || '').toLowerCase().trim();
-        if (['cancelado', 'liberado', 'anulado'].includes(estado)) return false;
-        const ocupadas = typeof getHorasOcupadas === 'function' ? getHorasOcupadas(t) : [t.hora];
-        return ocupadas.includes(h);
+    canchas.forEach(cancha => {
+      const card = document.createElement('div');
+      card.className = 'glass-card p-5 border border-slate-800 space-y-4 rounded-2xl bg-[#161F30]/70 backdrop-blur-sm';
+
+      const pitchSvg = getCourtSvgHtml(cancha);
+
+      let slotsHtml = '';
+      slots.forEach(h => {
+        const turno = allTurnos.find(t => {
+          if (t.fecha !== fecha) return false;
+          if (!matchCancha(t, cancha)) return false;
+          const estado = String(t.estado || '').toLowerCase().trim();
+          if (['cancelado', 'liberado', 'anulado'].includes(estado)) return false;
+          const ocupadas = getHorasOcupadas(t);
+          return ocupadas.includes(h);
+        });
+
+        if (turno) {
+          const isConfirmed = Boolean(turno.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(turno.estado || '').toLowerCase().trim());
+          const pasado = isTurnoPasado(turno);
+          let badgeStyle = '';
+          let iconTxt = '';
+
+          if (pasado) {
+            badgeStyle = 'bg-slate-800/80 border-slate-700 text-slate-400';
+            iconTxt = '🏁';
+          } else if (isConfirmed) {
+            badgeStyle = 'bg-[#00E676]/20 border-[#00E676]/40 text-[#00E676]';
+            iconTxt = '🟢';
+          } else {
+            badgeStyle = 'bg-amber-500/20 border-amber-500/40 text-amber-300';
+            iconTxt = '⏳';
+          }
+
+          slotsHtml += `
+            <div class="px-2.5 py-1.5 rounded-lg border ${badgeStyle} text-xs font-bold flex items-center justify-between" title="${pasado ? 'Finalizado' : (isConfirmed ? 'Confirmado' : 'Pendiente')} - ${escapeHtml(turno.nombre || 'Reservado')}">
+              <span>${iconTxt} ${h}</span>
+              <span class="text-[10px] text-white font-normal truncate max-w-[80px]">${escapeHtml(turno.nombre || 'Reservado')}</span>
+            </div>
+          `;
+        } else {
+          slotsHtml += `
+            <div class="px-2.5 py-1.5 rounded-lg bg-[#1E293B]/60 border border-slate-800 text-slate-400 text-xs flex items-center justify-between hover:border-emerald-500/30 transition-colors">
+              <span class="text-emerald-400/90 font-medium">⚪ ${h}</span>
+              <span class="text-[10px] text-emerald-400/80 font-bold uppercase tracking-wider">Libre</span>
+            </div>
+          `;
+        }
       });
 
-      if (turno) {
-        const isConfirmed = Boolean(turno.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(turno.estado || '').toLowerCase().trim());
-        const pasado = isTurnoPasado(turno);
-        let badgeStyle = '';
-        let iconTxt = '';
-
-        if (pasado) {
-          badgeStyle = 'bg-slate-800/80 border-slate-700 text-slate-400';
-          iconTxt = '🏁';
-        } else if (isConfirmed) {
-          badgeStyle = 'bg-[#00E676]/20 border-[#00E676]/40 text-[#00E676]';
-          iconTxt = '🟢';
-        } else {
-          badgeStyle = 'bg-amber-500/20 border-amber-500/40 text-amber-300';
-          iconTxt = '⏳';
-        }
-
-        slotsHtml += `
-          <div class="px-2.5 py-1.5 rounded-lg border ${badgeStyle} text-xs font-bold flex items-center justify-between" title="${pasado ? 'Finalizado' : (isConfirmed ? 'Confirmado' : 'Pendiente')} - ${escapeHtml(turno.nombre)}">
-            <span>${iconTxt} ${h}</span>
-            <span class="text-[10px] text-white font-normal truncate max-w-[80px]">${escapeHtml(turno.nombre)}</span>
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <h4 class="font-sports text-lg font-bold text-white uppercase">${escapeHtml(cancha.nombre)}</h4>
+          <span class="font-bebas text-xl text-[#00E676]">${formatCurrency(cancha.precio)} / h</span>
+        </div>
+        ${pitchSvg}
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase mb-2 flex items-center justify-between">
+            <span>Horarios del día (${fecha}):</span>
+            <span class="text-[10px] text-slate-500 lowercase">60 min por turno</span>
           </div>
-        `;
-      } else {
-        slotsHtml += `
-          <div class="px-2.5 py-1.5 rounded-lg bg-[#1E293B]/60 border border-slate-800 text-slate-400 text-xs flex items-center justify-between">
-            <span>⚪ ${h}</span>
-            <span class="text-[10px] text-slate-500">Libre</span>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            ${slotsHtml}
           </div>
-        `;
-      }
+        </div>
+      `;
+
+      pitchesGrid.appendChild(card);
     });
 
-    card.innerHTML = `
-      <div class="flex items-center justify-between">
-        <h4 class="font-sports text-lg font-bold text-white">${escapeHtml(cancha.nombre)}</h4>
-        <span class="font-bebas text-xl text-[#00E676]">${formatCurrency(cancha.precio)} / h</span>
-      </div>
-      ${pitchSvg}
-      <div>
-        <div class="text-[11px] font-bold text-slate-400 uppercase mb-2">Horarios del día:</div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          ${slotsHtml}
-        </div>
-      </div>
-    `;
-
-    pitchesGrid.appendChild(card);
-  });
+    if (window.lucide) window.lucide.createIcons();
+  } catch (err) {
+    console.error('Error en renderSiluetasPorDia:', err);
+  }
 }
+
+// Aliases para compatibilidad global
+function renderSiluetas(diaActivo) {
+  renderSiluetasPorDia(diaActivo);
+}
+
+function renderTacticalPitchesView(diaActivo) {
+  renderSiluetasPorDia(diaActivo);
+}
+
+window.renderSiluetasPorDia = renderSiluetasPorDia;
+window.renderSiluetas = renderSiluetasPorDia;
+window.renderTacticalPitchesView = renderSiluetasPorDia;
+window.renderTurnos = renderAgendaListItems;
+window.aplicarFiltros = renderAgendaListItems;
 
 // ================= TAB 2: GESTIÓN DE CANCHAS =================
 
@@ -1744,37 +1855,53 @@ async function initAdmin() {
     renderAgendaListItems();
   });
 
-  // Subview toggle listeners ("Lista de Turnos" vs "Vista Siluetas Tácticas")
-  const setSubViewMode = (mode) => {
-    adminState.agendaSubView = mode;
-    const seccionLista = document.getElementById('seccion-lista-turnos') || document.getElementById('admin-agenda-list-view');
-    const seccionSiluetas = document.getElementById('seccion-siluetas-tacticas') || document.getElementById('admin-tactical-view');
-    const btnLista = document.getElementById('btn-vista-lista') || document.getElementById('btn-subview-lista');
-    const btnTactica = document.getElementById('btn-vista-siluetas') || document.getElementById('btn-subview-tactica');
+  // View Switcher: "Lista de Turnos" vs "Vista Siluetas Tácticas"
+  const btnLista = document.getElementById('btn-vista-lista') || document.querySelector('[data-view="lista"]') || document.getElementById('btn-subview-lista');
+  const btnSiluetas = document.getElementById('btn-vista-siluetas') || document.querySelector('[data-view="siluetas"]') || document.getElementById('btn-subview-tactica');
+  const containerLista = document.getElementById('vista-lista-container') || document.getElementById('seccion-lista-turnos') || document.getElementById('admin-agenda-list-view');
+  const containerSiluetas = document.getElementById('vista-siluetas-container') || document.getElementById('seccion-siluetas-tacticas') || document.getElementById('admin-tactical-view');
 
-    if (mode === 'lista') {
-      if (btnLista) btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
-      if (btnTactica) btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
-      if (seccionLista) seccionLista.classList.remove('hidden');
-      if (seccionSiluetas) seccionSiluetas.classList.add('hidden');
-      renderTurnos();
-    } else {
-      if (btnTactica) btnTactica.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
-      if (btnLista) btnLista.className = 'btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
-      if (seccionLista) seccionLista.classList.add('hidden');
-      if (seccionSiluetas) seccionSiluetas.classList.remove('hidden');
-      const diaActivo = adminState.selectedTacticalFecha || hoyISO();
-      renderSiluetas(diaActivo);
+  btnSiluetas?.addEventListener('click', () => {
+    try {
+      console.log('Cambiando a vista siluetas...');
+      adminState.agendaSubView = 'tactica';
+      if (btnSiluetas) btnSiluetas.className = "px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold flex items-center gap-2 shadow-lg";
+      if (btnLista) btnLista.className = "px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-medium flex items-center gap-2 hover:bg-slate-850";
+
+      if (containerLista) containerLista.classList.add('hidden');
+      if (containerSiluetas) containerSiluetas.classList.remove('hidden');
+
+      // Obtener el día activo actual del selector (ej: '2026-08-30' o el data-date del botón marcado)
+      const diaActivo = document.querySelector('.btn-dia-silueta.activo')?.dataset.date || adminState.selectedTacticalFecha || 'hoy';
+      renderSiluetasPorDia(diaActivo);
+      if (window.lucide) window.lucide.createIcons();
+    } catch (err) {
+      console.error('Error al cambiar a vista siluetas:', err);
     }
-    if (window.lucide) window.lucide.createIcons();
-  };
-
-  ['btn-subview-lista', 'btn-vista-lista'].forEach(id => {
-    document.getElementById(id)?.addEventListener('click', () => setSubViewMode('lista'));
   });
 
-  ['btn-subview-tactica', 'btn-vista-siluetas'].forEach(id => {
-    document.getElementById(id)?.addEventListener('click', () => setSubViewMode('tactica'));
+  btnLista?.addEventListener('click', () => {
+    try {
+      console.log('Cambiando a vista lista...');
+      adminState.agendaSubView = 'lista';
+      if (btnLista) btnLista.className = "px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold flex items-center gap-2 shadow-lg";
+      if (btnSiluetas) btnSiluetas.className = "px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-medium flex items-center gap-2 hover:bg-slate-850";
+
+      if (containerSiluetas) containerSiluetas.classList.add('hidden');
+      if (containerLista) containerLista.classList.remove('hidden');
+
+      // Volver a renderizar la lista completa sin perder los datos
+      if (typeof renderTurnos === 'function') {
+        renderTurnos();
+      } else if (typeof aplicarFiltros === 'function') {
+        aplicarFiltros();
+      } else {
+        renderAgendaListItems();
+      }
+      if (window.lucide) window.lucide.createIcons();
+    } catch (err) {
+      console.error('Error al cambiar a vista lista:', err);
+    }
   });
 
   // Global Event Delegation for Turnos & Reservas actions (Confirmar y Liberar)

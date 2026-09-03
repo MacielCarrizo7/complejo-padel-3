@@ -284,11 +284,11 @@
         <!-- View Mode Switcher -->
         <div class="flex items-center justify-between gap-4 flex-wrap">
           <div class="flex items-center gap-2">
-            <button id="btn-vista-lista" class="btn-subview-toggle px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]">
+            <button id="btn-vista-lista" data-view="lista" class="btn-subview-toggle px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg transition-all">
               <i data-lucide="list" class="w-3.5 h-3.5"></i>
               <span>Lista de Turnos</span>
             </button>
-            <button id="btn-vista-siluetas" class="btn-subview-toggle px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all">
+            <button id="btn-vista-siluetas" data-view="siluetas" class="btn-subview-toggle px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-medium text-xs flex items-center gap-2 hover:bg-slate-850 transition-all">
               <i data-lucide="grid" class="w-3.5 h-3.5"></i>
               <span>Vista Siluetas Tácticas</span>
             </button>
@@ -312,7 +312,7 @@
         </div>
 
         <!-- View 1: Lista de Turnos con Filtros Avanzados -->
-        <div id="seccion-lista-turnos" class="space-y-6">
+        <div id="vista-lista-container" class="space-y-6">
           
           <!-- Filters & Search Bar -->
           <div class="glass-card p-6 border border-slate-800 space-y-4">
@@ -374,7 +374,7 @@
         </div>
 
         <!-- View 2: Siluetas Tácticas de Canchas -->
-        <div id="seccion-siluetas-tacticas" class="hidden space-y-6">
+        <div id="vista-siluetas-container" class="hidden space-y-6">
           <div class="glass-card p-6 border border-slate-800 space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="font-sports text-lg font-bold text-white uppercase">Estado Visual de Ocupación por Pistas</h3>
@@ -382,7 +382,7 @@
             </div>
             <div id="admin-tactical-fechas" class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin"></div>
           </div>
-          <div id="admin-tactical-pitches-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+          <div id="siluetas-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
         </div>
 
       </section>
