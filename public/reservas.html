@@ -329,14 +329,22 @@
 
         </div>
 
-        <!-- 3. Grilla de Canchas y Horarios Dinámicos con Flechas Flotantes -->
-        <div class="relative w-full max-w-7xl mx-auto px-2 group">
-          <!-- Flecha Izquierda -->
-          <button id="btn-canchas-prev"
-                  class="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-slate-900/85 hover:bg-slate-900 text-emerald-400 border border-slate-700 shadow-xl backdrop-blur-sm flex items-center justify-center transition-all disabled:opacity-0 disabled:pointer-events-none active:scale-95"
-                  aria-label="Cancha anterior">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-          </button>
+        <!-- 3. Grilla de Canchas y Horarios Dinámicos con Header de Control -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between px-2">
+            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+              <i data-lucide="layout-grid" class="w-4 h-4 text-[#00E676]"></i>
+              Canchas disponibles:
+            </span>
+            <div class="flex items-center gap-2">
+              <button id="btn-canchas-prev" class="w-9 h-9 rounded-full bg-slate-900 border border-slate-700 text-emerald-400 hover:bg-slate-800 flex items-center justify-center shadow transition-all disabled:opacity-30 disabled:cursor-not-allowed" aria-label="Cancha anterior">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <button id="btn-canchas-next" class="w-9 h-9 rounded-full bg-slate-900 border border-slate-700 text-emerald-400 hover:bg-slate-800 flex items-center justify-center shadow transition-all disabled:opacity-30 disabled:cursor-not-allowed" aria-label="Siguiente cancha">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
 
           <!-- Slider de Canchas -->
           <div id="canchas-booking-grid" 
@@ -344,13 +352,6 @@
                style="touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;">
             <!-- Tarjetas inyectadas dinámicamente -->
           </div>
-
-          <!-- Flecha Derecha -->
-          <button id="btn-canchas-next"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-slate-900/85 hover:bg-slate-900 text-emerald-400 border border-slate-700 shadow-xl backdrop-blur-sm flex items-center justify-center transition-all disabled:opacity-0 disabled:pointer-events-none active:scale-95"
-                  aria-label="Siguiente cancha">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          </button>
         </div>
 
       </div>
