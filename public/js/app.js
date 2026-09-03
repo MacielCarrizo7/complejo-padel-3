@@ -1248,6 +1248,11 @@ function renderReservasPage() {
   });
 
   if (window.lucide) window.lucide.createIcons();
+  if (window.setupCanchasNav) window.setupCanchasNav();
+  if (window.updateCanchasNav) {
+    window.updateCanchasNav();
+    setTimeout(window.updateCanchasNav, 300);
+  }
 }
 
 function openBookingModal(canchaId, hora) {

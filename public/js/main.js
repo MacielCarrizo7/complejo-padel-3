@@ -74,10 +74,64 @@ function startAutoScroll(sliderId, intervalTime = 3500) {
   }, intervalTime);
 }
 
-window.getScrollStep = getScrollStep;
+function updateCanchasNav() {
+  const canchasSlider = document.getElementById('canchas-booking-grid') || document.getElementById('canchas-container');
+  const btnPrev = document.getElementById('btn-canchas-prev');
+  const btnNext = document.getElementById('btn-canchas-next');
+  if (!canchasSlider || !btnPrev || !btnNext) return;
 
+  // Si en pantalla grande se ve en grilla sin scroll, ocultar flechas
+  if (canchasSlider.scrollWidth <= canchasSlider.clientWidth + 5) {
+    btnPrev.style.display = 'none';
+    btnNext.style.display = 'none';
+    return;
+  }
+  btnPrev.style.display = 'flex';
+  btnNext.style.display = 'flex';
+
+  const maxScroll = canchasSlider.scrollWidth - canchasSlider.clientWidth - 5;
+  btnPrev.disabled = canchasSlider.scrollLeft <= 5;
+  btnNext.disabled = canchasSlider.scrollLeft >= maxScroll;
+}
+
+function setupCanchasNav() {
+  const canchasSlider = document.getElementById('canchas-booking-grid') || document.getElementById('canchas-container');
+  const btnPrev = document.getElementById('btn-canchas-prev');
+  const btnNext = document.getElementById('btn-canchas-next');
+  if (!canchasSlider || !btnPrev || !btnNext) return;
+
+  if (!btnNext.dataset.bound) {
+    btnNext.dataset.bound = 'true';
+    btnNext.addEventListener('click', () => {
+      const firstCard = canchasSlider.firstElementChild;
+      const step = firstCard ? firstCard.getBoundingClientRect().width + 20 : 320;
+      canchasSlider.scrollBy({ left: step, behavior: 'smooth' });
+    });
+  }
+
+  if (!btnPrev.dataset.bound) {
+    btnPrev.dataset.bound = 'true';
+    btnPrev.addEventListener('click', () => {
+      const firstCard = canchasSlider.firstElementChild;
+      const step = firstCard ? firstCard.getBoundingClientRect().width + 20 : 320;
+      canchasSlider.scrollBy({ left: -step, behavior: 'smooth' });
+    });
+  }
+
+  if (!canchasSlider.dataset.navBound) {
+    canchasSlider.dataset.navBound = 'true';
+    canchasSlider.addEventListener('scroll', updateCanchasNav);
+    window.addEventListener('resize', updateCanchasNav);
+  }
+
+  updateCanchasNav();
+}
+
+window.getScrollStep = getScrollStep;
 window.setupCarousel = setupCarousel;
 window.startAutoScroll = startAutoScroll;
+window.updateCanchasNav = updateCanchasNav;
+window.setupCanchasNav = setupCanchasNav;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Touch helper for horizontal scroll sliders
@@ -91,6 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCarousel('eventos-slider', 'btn-eventos-prev', 'btn-eventos-next');
   startAutoScroll('servicios-slider', 4000);
   startAutoScroll('eventos-slider', 4500);
+
+  setupCanchasNav();
 
   // Ensure Lucide icons are initialized on dynamic DOM changes
   if (window.lucide) {
