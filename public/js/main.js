@@ -437,6 +437,80 @@ function setupMainFirestoreListeners() {
         }
       }, err => console.warn('[main.js] Firestore canchas onSnapshot error:', err));
 
+function formatearDiasHorarios(conf) {
+  if (!conf) return 'Lun a Dom · 14:00 a 00:00 hs';
+  const apertura = conf.apertura || conf.horaInicio || '14:00';
+  const cierre = conf.cierre || conf.horaFin || '00:00';
+  
+  const diasMap = { 0: 'Dom', 1: 'Lun', 2: 'Mar', 3: 'Mié', 4: 'Jue', 5: 'Vie', 6: 'Sáb' };
+  let diasList = conf.diasAtencion || conf.diasActivos;
+  
+  if (Array.isArray(diasList) && diasList.length > 0) {
+    const nums = diasList.map(d => parseInt(d)).filter(n => !isNaN(n));
+    if (nums.length === 7) {
+      return `Lun a Dom · ${apertura} a ${cierre} hs`;
+    } else if (nums.length === 6 && !nums.includes(0)) {
+      return `Lun a Sáb · ${apertura} a ${cierre} hs`;
+    } else if (nums.length === 5 && !nums.includes(0) && !nums.includes(6)) {
+      return `Lun a Vie · ${apertura} a ${cierre} hs`;
+    } else if (nums.length > 0) {
+      const diasStr = nums.map(d => diasMap[d] || d).join(', ');
+      return `${diasStr} · ${apertura} a ${cierre} hs`;
+    }
+  }
+
+  return `Lun a Dom · ${apertura} a ${cierre} hs`;
+}
+
+function actualizarBannerContacto(conf) {
+  if (!conf) return;
+
+  const elNombre = document.getElementById('info-nombre');
+  if (elNombre) {
+    elNombre.textContent = (conf.nombreComplejo || conf.nombre || 'PADEL 3').toUpperCase();
+  }
+
+  const elSlogan = document.getElementById('info-slogan');
+  if (elSlogan) {
+    elSlogan.textContent = (conf.slogan || conf.subtitulo || 'TU PARTIDO, NUESTRO COMPROMISO').toUpperCase();
+  }
+
+  const elDireccion = document.getElementById('info-direccion');
+  if (elDireccion) {
+    elDireccion.textContent = conf.direccion || 'Lavalle, Mendoza · Complejo Deportivo';
+  }
+
+  const elHorarios = document.getElementById('info-horarios');
+  if (elHorarios) {
+    elHorarios.textContent = formatearDiasHorarios(conf);
+  }
+
+  const btnMaps = document.getElementById('btn-maps') || document.getElementById('btn-google-maps');
+  if (btnMaps) {
+    btnMaps.href = conf.linkMaps || conf.maps || 'https://maps.google.com/?q=Lavalle+Mendoza';
+  }
+
+  const btnWa = document.getElementById('btn-whatsapp-contacto');
+  if (btnWa) {
+    const rawWa = String(conf.whatsapp || '').replace(/\D/g, '');
+    btnWa.href = rawWa ? `https://wa.me/${rawWa}` : '#';
+  }
+
+  const btnIg = document.getElementById('btn-instagram-contacto');
+  if (btnIg) {
+    if (conf.instagram && String(conf.instagram).trim().length > 0) {
+      btnIg.href = String(conf.instagram).trim();
+      btnIg.classList.remove('hidden');
+    } else {
+      btnIg.href = '#';
+      btnIg.classList.add('hidden');
+    }
+  }
+}
+
+window.formatearDiasHorarios = formatearDiasHorarios;
+window.actualizarBannerContacto = actualizarBannerContacto;
+
       // Sincronizar configuración general
       const updateGeneralConfig = (doc) => {
         if (doc.exists) {
@@ -450,11 +524,13 @@ function setupMainFirestoreListeners() {
               direccion: cfg.direccion || window.state.config?.direccion,
               maps: cfg.linkMaps || cfg.maps || window.state.config?.maps,
               whatsapp: cfg.whatsapp || window.state.config?.whatsapp,
+              instagram: cfg.instagram || window.state.config?.instagram,
               horaInicio: cfg.apertura || cfg.horaInicio || window.state.config?.horaInicio,
               horaFin: cfg.cierre || cfg.horaFin || window.state.config?.horaFin,
               diasActivos: cfg.diasAtencion || cfg.diasActivos || window.state.config?.diasActivos
             };
           }
+          actualizarBannerContacto(cfg);
           if (cfg.whatsapp) {
             const cleanNum = String(cfg.whatsapp).replace(/[^0-9]/g, '');
             if (cleanNum) {
@@ -490,6 +566,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCanchasNav();
   setupMainFirestoreListeners();
   sincronizarFiltrosDeportes();
+  if (window.state?.config) {
+    actualizarBannerContacto(window.state.config);
+  }
 
   // Ensure Lucide icons are initialized on dynamic DOM changes
   if (window.lucide) {

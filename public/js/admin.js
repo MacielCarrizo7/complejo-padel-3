@@ -488,6 +488,7 @@ function setupAdminFirestoreListeners() {
         direccion: d.direccion || adminState.config?.direccion,
         maps: d.linkMaps || d.maps || adminState.config?.maps,
         whatsapp: d.whatsapp || adminState.config?.whatsapp,
+        instagram: d.instagram || adminState.config?.instagram || '',
         horaInicio: d.apertura || d.horaInicio || adminState.config?.horaInicio,
         horaFin: d.cierre || d.horaFin || adminState.config?.horaFin,
         diasActivos: d.diasAtencion || d.diasActivos || adminState.config?.diasActivos
@@ -2016,6 +2017,8 @@ function syncConfigTabInputs() {
   setVal('cfg-direccion', cfg.direccion);
   setVal('cfg-maps', cfg.maps);
   setVal('cfg-whatsapp', cfg.whatsapp);
+  setVal('config-instagram', cfg.instagram);
+  setVal('cfg-instagram', cfg.instagram);
   setVal('cfg-hora-inicio', cfg.horaInicio || '14:00');
   setVal('cfg-hora-fin', cfg.horaFin || '24:00');
 
@@ -2036,6 +2039,18 @@ async function saveGeneralConfig() {
   const direccion = document.getElementById('config-direccion')?.value.trim() || document.getElementById('cfg-direccion')?.value.trim() || '';
   const linkMaps = document.getElementById('config-maps')?.value.trim() || document.getElementById('cfg-maps')?.value.trim() || '';
   const whatsapp = document.getElementById('config-whatsapp')?.value.trim() || document.getElementById('cfg-whatsapp')?.value.trim() || '';
+
+  const rawInstagram = document.getElementById('config-instagram')?.value.trim() || document.getElementById('cfg-instagram')?.value.trim() || '';
+  let instagram = '';
+  if (rawInstagram) {
+    if (/^https?:\/\//i.test(rawInstagram)) {
+      instagram = rawInstagram;
+    } else {
+      const handle = rawInstagram.replace(/^@+/, '').trim();
+      instagram = `https://instagram.com/${handle}`;
+    }
+  }
+
   const apertura = document.getElementById('config-apertura')?.value || document.getElementById('cfg-hora-inicio')?.value || '14:00';
   const cierre = document.getElementById('config-cierre')?.value || document.getElementById('cfg-hora-fin')?.value || '00:00';
   const diasAtencion = Array.from(document.querySelectorAll('#cfg-dias-container input:checked, input[name="dias"]:checked')).map(cb => cb.value);
@@ -2050,6 +2065,7 @@ async function saveGeneralConfig() {
     linkMaps,
     maps: linkMaps,
     whatsapp,
+    instagram,
     apertura,
     horaInicio: apertura,
     cierre,

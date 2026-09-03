@@ -370,6 +370,10 @@ function renderHeader() {
     const cleanPhone = String(cfg.whatsapp).replace(/\D/g, '');
     bottomWa.href = `https://wa.me/${cleanPhone}`;
   }
+
+  if (typeof window.actualizarBannerContacto === 'function') {
+    window.actualizarBannerContacto(cfg);
+  }
 }
 
 function renderCanchas() {
@@ -1249,10 +1253,14 @@ function setupFirestoreListeners() {
         direccion: d.direccion || window.state.config?.direccion,
         maps: d.linkMaps || d.maps || window.state.config?.maps,
         whatsapp: d.whatsapp || window.state.config?.whatsapp,
+        instagram: d.instagram || window.state.config?.instagram,
         horaInicio: d.apertura || d.horaInicio || window.state.config?.horaInicio,
         horaFin: d.cierre || d.horaFin || window.state.config?.horaFin,
         diasActivos: d.diasAtencion || d.diasActivos || window.state.config?.diasActivos
       };
+      if (typeof window.actualizarBannerContacto === 'function') {
+        window.actualizarBannerContacto(window.state.config);
+      }
       render();
     }
   };

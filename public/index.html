@@ -451,36 +451,62 @@
   <!-- ================= UBICACIÓN & CONTACT BAR ================= -->
   <section id="ubicacion" class="py-6 md:py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="glass-card p-6 sm:p-8 border border-[rgba(0,230,118,0.3)] bg-gradient-to-r from-[#161F30] via-[#0B0F19] to-[#161F30] flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_30px_rgba(0,230,118,0.15)]">
-        
-        <!-- Left: Brand statement -->
-        <div class="flex items-center gap-4 text-left">
-          <div class="w-14 h-14 rounded-2xl bg-[#0B0F19] p-2 border border-[#00E676]/40 shrink-0">
-            <img src="assets/logo.png" alt="Logo" class="w-full h-full object-contain">
-          </div>
+      <div class="rounded-2xl bg-[#0f172a]/95 border border-emerald-500/30 p-5 shadow-2xl backdrop-blur-md flex flex-col lg:flex-row items-center justify-between gap-6">
+        <!-- 1. Marca y Slogan -->
+        <div class="flex items-center gap-4">
+          <img src="assets/logo.png" id="info-logo" alt="Logo" class="w-14 h-14 rounded-2xl object-cover border border-slate-800 shadow-md" onerror="this.src='logo.png'">
           <div>
-            <div class="font-sports text-2xl font-bold text-white tracking-wide">PADEL <span class="text-[#00E676]">3</span></div>
-            <div class="text-xs text-slate-400 font-semibold tracking-wider uppercase">TU PARTIDO, NUESTRO COMPROMISO</div>
+            <h3 id="info-nombre" class="text-lg font-black tracking-wider text-white uppercase">PADEL 3</h3>
+            <p id="info-slogan" class="text-xs text-slate-400 font-medium tracking-wide">TU PARTIDO, NUESTRO COMPROMISO</p>
           </div>
         </div>
 
-        <!-- Center: Address -->
-        <div class="flex items-center gap-2 text-center md:text-left">
-          <i data-lucide="map-pin" class="w-6 h-6 text-[#00E676] shrink-0"></i>
-          <div>
-            <div class="text-xs text-slate-400 uppercase font-bold tracking-wider">TE ESPERAMOS EN</div>
-            <div id="footer-direccion" class="text-base font-bold text-white">Lavalle, Mendoza · Complejo Deportivo</div>
+        <!-- 2. Ubicación & Horarios / Días de Atención -->
+        <div class="flex flex-col sm:flex-row items-center gap-6 text-xs text-slate-300">
+          <!-- Ubicación -->
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase font-bold text-slate-500">TE ESPERAMOS EN</span>
+              <span id="info-direccion" class="font-semibold text-white">Lavalle, Mendoza · Complejo Deportivo</span>
+            </div>
+          </div>
+
+          <!-- Días y Horarios -->
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase font-bold text-slate-500">DÍAS Y HORARIOS</span>
+              <span id="info-horarios" class="font-semibold text-emerald-400">Lun a Dom · 14:00 a 00:00 hs</span>
+            </div>
           </div>
         </div>
 
-        <!-- Right: Maps Link CTA -->
-        <div>
-          <a id="btn-google-maps" href="https://maps.google.com/?q=Lavalle+Mendoza" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#1E293B] hover:bg-[#00E676] text-white hover:text-black font-bold text-sm border border-slate-700 hover:border-[#00E676] transition-all shadow-md">
-            <i data-lucide="map" class="w-4 h-4"></i>
-            <span>Ver en Google Maps</span>
+        <!-- 3. Botones de Acción (Maps, WhatsApp, Instagram) -->
+        <div class="flex items-center gap-3">
+          <!-- Botón Google Maps -->
+          <a id="btn-maps" href="#" target="_blank" rel="noopener noreferrer" 
+             class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-2 transition-all hover:border-slate-500">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            <span>Maps</span>
+          </a>
+
+          <!-- Botón WhatsApp -->
+          <a id="btn-whatsapp-contacto" href="#" target="_blank" rel="noopener noreferrer" 
+             class="w-10 h-10 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center transition-all hover:scale-105" title="WhatsApp">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.777.781 2.791.781 3.182 0 5.768-2.587 5.769-5.766.001-3.182-2.585-5.767-5.77-5.767zm0 10.37c-.89 0-1.636-.252-2.378-.692l-.17-.101-1.579.414.421-1.54-.111-.177c-.477-.762-.728-1.517-.728-2.508 0-2.54 2.067-4.607 4.609-4.607 2.541 0 4.608 2.067 4.609 4.607 0 2.541-2.067 4.609-4.609 4.609z"/></svg>
+          </a>
+
+          <!-- Botón Instagram -->
+          <a id="btn-instagram-contacto" href="#" target="_blank" rel="noopener noreferrer" 
+             class="w-10 h-10 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 flex items-center justify-center transition-all hover:scale-105" title="Instagram">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
           </a>
         </div>
-
       </div>
     </div>
   </section>
