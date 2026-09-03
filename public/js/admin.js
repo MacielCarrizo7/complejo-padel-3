@@ -387,6 +387,50 @@ function setupAdminFirestoreListeners() {
     }
   }, err => console.warn('Admin Firestore eventos onSnapshot error:', err));
 
+  // Escucha reactiva en tiempo real de la colección 'canchas'
+  firebaseFirestore.collection('canchas').onSnapshot(snapshot => {
+    if (!snapshot.empty) {
+      const list = [];
+      snapshot.forEach(doc => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      adminState.config = adminState.config || {};
+      adminState.config.canchas = list;
+      if (adminState.currentTab === 'canchas') {
+        renderCanchasTab();
+      }
+      const estaEnSiluetas = !document.getElementById('vista-siluetas-container')?.classList.contains('hidden');
+      if (estaEnSiluetas) {
+        const diaActivo = document.querySelector('.btn-dia-silueta.activo')?.dataset.date || adminState.selectedTacticalFecha || '2026-09-03';
+        renderTacticalPitchesView(diaActivo);
+      }
+    }
+  }, err => console.warn('Admin Firestore canchas onSnapshot error:', err));
+
+  // Escucha reactiva en tiempo real de la configuración general
+  const handleConfigDocSnapshot = (doc) => {
+    if (doc.exists) {
+      const d = doc.data();
+      adminState.config = {
+        ...(adminState.config || {}),
+        ...d,
+        nombre: d.nombreComplejo || d.nombre || adminState.config?.nombre,
+        subtitulo: d.slogan || d.subtitulo || adminState.config?.subtitulo,
+        direccion: d.direccion || adminState.config?.direccion,
+        maps: d.linkMaps || d.maps || adminState.config?.maps,
+        whatsapp: d.whatsapp || adminState.config?.whatsapp,
+        horaInicio: d.apertura || d.horaInicio || adminState.config?.horaInicio,
+        horaFin: d.cierre || d.horaFin || adminState.config?.horaFin,
+        diasActivos: d.diasAtencion || d.diasActivos || adminState.config?.diasActivos
+      };
+      if (adminState.currentTab === 'config') {
+        syncConfigTabInputs();
+      }
+    }
+  };
+  firebaseFirestore.collection('configuracion').doc('general').onSnapshot(handleConfigDocSnapshot, err => console.warn('Admin Firestore configuracion error:', err));
+  firebaseFirestore.collection('config').doc('general').onSnapshot(handleConfigDocSnapshot, err => console.warn('Admin Firestore config error:', err));
+
   // Escucha activa en tiempo real de la colección 'reservas' (y 'turnos')
   const handleReservasSnapshot = (snapshot) => {
     todasLasReservas = snapshot.docs.map(doc => ({
@@ -1415,32 +1459,53 @@ function renderCanchasTab() {
   });
 
   container.querySelectorAll('input, select').forEach(el => {
-    el.addEventListener('change', (e) => {
+    el.addEventListener('change', async (e) => {
       const idx = parseInt(e.target.dataset.idx);
       const field = e.target.dataset.field;
-      if (adminState.config?.canchas[idx]) {
-        if (field === 'precio' || field === 'jugadores') {
-          adminState.config.canchas[idx][field] = Number(e.target.value) || 0;
-        } else {
-          adminState.config.canchas[idx][field] = e.target.value.trim();
-        }
+      const c = adminState.config?.canchas[idx];
+      if (!c) return;
 
-        if (field === 'deporte') {
-          if (e.target.value === 'padel') {
-            adminState.config.canchas[idx].jugadores = 4;
-            adminState.config.canchas[idx].superficie = 'Césped Sintético Azul WPT';
-          } else {
-            adminState.config.canchas[idx].jugadores = 5;
-            adminState.config.canchas[idx].superficie = 'Césped Sintético 50mm';
-          }
-          renderCanchasTab();
+      if (field === 'precio' || field === 'jugadores') {
+        c[field] = Number(e.target.value) || 0;
+      } else {
+        c[field] = e.target.value.trim();
+      }
+
+      if (field === 'deporte') {
+        if (e.target.value === 'padel') {
+          c.jugadores = 4;
+          c.superficie = 'Césped Sintético Azul WPT';
+        } else {
+          c.jugadores = 5;
+          c.superficie = 'Césped Sintético 50mm';
+        }
+        renderCanchasTab();
+      }
+
+      // Persistir inmediatamente en Firestore collection 'canchas'
+      if (c.id && firebaseFirestore) {
+        try {
+          await firebaseFirestore.collection('canchas').doc(c.id).set({
+            nombre: c.nombre,
+            deporte: c.deporte,
+            ubicacion: c.ubicacion,
+            precio: Number(c.precio) || 0,
+            superficie: c.superficie || '',
+            jugadores: c.jugadores || (c.deporte === 'padel' ? 4 : 5),
+            actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+              ? firebase.firestore.FieldValue.serverTimestamp()
+              : new Date()
+          }, { merge: true });
+          console.log(`✓ [Firestore] Cancha ${c.id} actualizada`);
+        } catch (err) {
+          console.error('Error actualizando cancha en Firestore:', err);
         }
       }
     });
   });
 
   container.querySelectorAll('.btn-del-cancha').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const idx = parseInt(btn.dataset.delIdx);
       if ((adminState.config?.canchas?.length || 0) <= 1) {
         alert('El complejo debe tener al menos una cancha configurada.');
@@ -1448,6 +1513,14 @@ function renderCanchasTab() {
       }
       const c = adminState.config.canchas[idx];
       if (confirm(`¿Eliminar la cancha "${c.nombre}"?`)) {
+        if (c.id && firebaseFirestore) {
+          try {
+            await firebaseFirestore.collection('canchas').doc(c.id).delete();
+            console.log(`✓ [Firestore] Cancha ${c.id} eliminada`);
+          } catch (err) {
+            console.error('Error eliminando cancha de Firestore:', err);
+          }
+        }
         adminState.config.canchas.splice(idx, 1);
         renderCanchasTab();
       }
@@ -1455,18 +1528,35 @@ function renderCanchasTab() {
   });
 }
 
-function addNewCancha() {
+async function addNewCancha() {
   const num = (adminState.config?.canchas?.length || 0) + 1;
   const isPadel = num % 2 !== 0;
   const nueva = {
-    id: `c_${Date.now()}`,
     deporte: isPadel ? 'padel' : 'futbol',
     nombre: isPadel ? `Pista ${num} - Cristal Pro` : `Cancha ${num} - Sintético`,
     ubicacion: 'interior',
     superficie: isPadel ? 'Césped Sintético Azul WPT' : 'Sintético 50mm',
     jugadores: isPadel ? 4 : 5,
-    precio: isPadel ? 24000 : 28000
+    precio: isPadel ? 24000 : 28000,
+    activo: true,
+    actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+      ? firebase.firestore.FieldValue.serverTimestamp()
+      : new Date()
   };
+
+  try {
+    if (firebaseFirestore) {
+      const docRef = await firebaseFirestore.collection('canchas').add(nueva);
+      nueva.id = docRef.id;
+      console.log('✓ [Firestore] Nueva cancha agregada con ID:', docRef.id);
+    } else {
+      nueva.id = `c_${Date.now()}`;
+    }
+  } catch (e) {
+    nueva.id = `c_${Date.now()}`;
+    console.error('Error al agregar cancha en Firestore:', e);
+  }
+
   if (!adminState.config.canchas) adminState.config.canchas = [];
   adminState.config.canchas.push(nueva);
   renderCanchasTab();
@@ -1475,30 +1565,52 @@ function addNewCancha() {
 async function saveCanchasConfig() {
   const btn = document.getElementById('btn-save-canchas');
   btn.disabled = true;
-  btn.textContent = 'Guardando Canchas... ⏳';
+  btn.textContent = 'Guardando Canchas en Firestore... ⏳';
 
   try {
-    const res = await fetch('/api/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(adminState.config)
-    });
-    const data = await res.json();
-    if (data.success) {
-      adminState.config = data.config;
-      saveToFirestore('config', adminState.config);
-      btn.textContent = '✓ ¡Canchas Guardadas!';
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 text-black"></i><span>Guardar Cambios de Canchas</span>';
-        if (window.lucide) window.lucide.createIcons();
-      }, 2000);
-    } else {
-      alert(data.message || 'Error al guardar canchas.');
-      btn.disabled = false;
+    const canchas = adminState.config?.canchas || [];
+    if (firebaseFirestore) {
+      for (const c of canchas) {
+        const cId = c.id || firebaseFirestore.collection('canchas').doc().id;
+        c.id = cId;
+        await firebaseFirestore.collection('canchas').doc(cId).set({
+          nombre: c.nombre,
+          deporte: c.deporte,
+          ubicacion: c.ubicacion,
+          precio: Number(c.precio) || 0,
+          superficie: c.superficie || '',
+          jugadores: c.jugadores || (c.deporte === 'padel' ? 4 : 5),
+          activo: true,
+          actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+            ? firebase.firestore.FieldValue.serverTimestamp()
+            : new Date()
+        }, { merge: true });
+      }
+
+      await firebaseFirestore.collection('configuracion').doc('general').set({
+        canchas,
+        actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+          ? firebase.firestore.FieldValue.serverTimestamp()
+          : new Date()
+      }, { merge: true });
+
+      await firebaseFirestore.collection('config').doc('general').set({
+        canchas,
+        actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+          ? firebase.firestore.FieldValue.serverTimestamp()
+          : new Date()
+      }, { merge: true });
     }
+
+    btn.textContent = '✓ ¡Canchas Guardadas en Firestore!';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 text-black"></i><span>Guardar Cambios de Canchas</span>';
+      if (window.lucide) window.lucide.createIcons();
+    }, 2000);
   } catch (e) {
-    alert('Error al conectar con el servidor.');
+    console.error('Error guardando canchas en Firestore:', e);
+    alert('Error al guardar canchas en Firestore: ' + (e.message || ''));
     btn.disabled = false;
   }
 }
@@ -1847,62 +1959,81 @@ function renderConfigTab() {
 }
 
 async function saveGeneralConfig() {
-  const adminEmail = document.getElementById('cfg-admin-email').value.trim() || 'admin@complejopadel3.com';
-  const adminPassword = document.getElementById('cfg-admin-password').value.trim();
-  const nombre = document.getElementById('cfg-nombre').value.trim() || 'COMPLEJO PADEL 3';
-  const subtitulo = document.getElementById('cfg-subtitulo').value.trim();
-  const direccion = document.getElementById('cfg-direccion').value.trim();
-  const maps = document.getElementById('cfg-maps').value.trim();
-  const whatsapp = document.getElementById('cfg-whatsapp').value.trim();
-  const horaInicio = document.getElementById('cfg-hora-inicio').value || '14:00';
-  const horaFin = document.getElementById('cfg-hora-fin').value || '24:00';
-  const diasActivos = Array.from(document.querySelectorAll('#cfg-dias-container input:checked')).map(c => parseInt(c.value));
+  const adminEmail = document.getElementById('cfg-admin-email')?.value.trim() || 'admin@complejopadel3.com';
+  const adminPassword = document.getElementById('cfg-admin-password')?.value.trim();
+  const nombreComplejo = document.getElementById('config-nombre')?.value.trim() || document.getElementById('cfg-nombre')?.value.trim() || 'COMPLEJO PADEL 3';
+  const slogan = document.getElementById('config-slogan')?.value.trim() || document.getElementById('cfg-subtitulo')?.value.trim() || '';
+  const direccion = document.getElementById('config-direccion')?.value.trim() || document.getElementById('cfg-direccion')?.value.trim() || '';
+  const linkMaps = document.getElementById('config-maps')?.value.trim() || document.getElementById('cfg-maps')?.value.trim() || '';
+  const whatsapp = document.getElementById('config-whatsapp')?.value.trim() || document.getElementById('cfg-whatsapp')?.value.trim() || '';
+  const apertura = document.getElementById('config-apertura')?.value || document.getElementById('cfg-hora-inicio')?.value || '14:00';
+  const cierre = document.getElementById('config-cierre')?.value || document.getElementById('cfg-hora-fin')?.value || '00:00';
+  const diasAtencion = Array.from(document.querySelectorAll('#cfg-dias-container input:checked, input[name="dias"]:checked')).map(cb => cb.value);
+  const diasActivos = diasAtencion.map(d => parseInt(d)).filter(n => !isNaN(n));
 
-  const payload = {
-    adminEmail,
-    nombre,
-    subtitulo,
+  const generalConfigData = {
+    nombreComplejo,
+    nombre: nombreComplejo,
+    slogan,
+    subtitulo: slogan,
     direccion,
-    maps,
+    linkMaps,
+    maps: linkMaps,
     whatsapp,
-    horaInicio,
-    horaFin,
+    apertura,
+    horaInicio: apertura,
+    cierre,
+    horaFin: cierre,
+    diasAtencion,
     diasActivos,
-    canchas: adminState.config.canchas
+    adminEmail,
+    canchas: adminState.config?.canchas || [],
+    actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+      ? firebase.firestore.FieldValue.serverTimestamp()
+      : new Date()
   };
 
-  if (adminPassword && adminPassword.length >= 6) {
-    payload.adminPassword = adminPassword;
+  const saveBtn = document.getElementById('btn-save-general-config');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando en Firestore... ⏳';
   }
 
-  const saveBtn = document.getElementById('btn-save-general-config');
-  saveBtn.disabled = true;
-  saveBtn.textContent = 'Guardando en Servidor... ⏳';
-
   try {
-    const res = await fetch('/api/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
+    if (firebaseFirestore) {
+      await firebaseFirestore.collection('configuracion').doc('general').set(generalConfigData, { merge: true });
+      await firebaseFirestore.collection('config').doc('general').set(generalConfigData, { merge: true });
+      console.log('✓ [Firestore] Configuración general guardada permanentemente en Firestore');
+    }
 
-    if (data.success) {
-      adminState.config = data.config;
-      saveToFirestore('config', adminState.config);
-      saveBtn.textContent = '✓ ¡Configuración Guardada!';
+    // Actualizar contraseña de administrador en Firebase Auth si se proporcionó
+    if (adminPassword && adminPassword.length >= 6) {
+      if (firebaseAuth && firebaseAuth.currentUser) {
+        try {
+          await firebaseAuth.currentUser.updatePassword(adminPassword);
+          console.log('✓ [Firebase Auth] Contraseña actualizada correctamente');
+          alert('✓ Contraseña de Firebase Auth actualizada correctamente.');
+        } catch (authErr) {
+          console.warn('Aviso al actualizar contraseña en Firebase Auth:', authErr);
+          alert('Nota sobre contraseña: ' + (authErr.message || 'Se requiere inicio de sesión reciente para cambiarla'));
+        }
+      }
+    }
+
+    adminState.config = { ...(adminState.config || {}), ...generalConfigData };
+
+    if (saveBtn) {
+      saveBtn.textContent = '✓ ¡Configuración Guardada en Firestore!';
       setTimeout(() => {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4 text-black"></i><span>Guardar Configuración General</span>';
         if (window.lucide) window.lucide.createIcons();
       }, 2000);
-    } else {
-      alert(data.message || 'Error al guardar configuración.');
-      saveBtn.disabled = false;
     }
   } catch (e) {
-    alert('Error al conectar con el servidor.');
-    saveBtn.disabled = false;
+    console.error('Error guardando configuración en Firestore:', e);
+    alert('Error al guardar configuración en Firestore: ' + (e.message || ''));
+    if (saveBtn) saveBtn.disabled = false;
   }
 }
 
@@ -2202,40 +2333,49 @@ async function initAdmin() {
     const premio = document.getElementById('edit-evento-premio').value.trim();
     const descripcion = document.getElementById('edit-evento-descripcion').value.trim();
     const imagen = document.getElementById('edit-evento-imagen').value.trim();
-    const whatsappContacto = document.getElementById('edit-evento-whatsapp').value.trim();
+    const whatsapp = document.getElementById('edit-evento-whatsapp').value.trim();
 
-    const eventId = id || (firebaseFirestore ? firebaseFirestore.collection('eventos').doc().id : `ev_${Date.now()}`);
-
-    const payload = {
-      id: eventId,
+    const eventoData = {
       titulo,
-      categoria,
-      estado,
+      descripcion,
       fecha,
       horario,
+      categoria,
+      estado,
       premio,
-      descripcion,
-      imagen,
-      whatsappContacto,
+      imagen: imagen || 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
+      whatsapp,
+      whatsappContacto: whatsapp,
       activo: true,
-      updatedAt: new Date()
+      actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+        ? firebase.firestore.FieldValue.serverTimestamp()
+        : new Date()
     };
 
     try {
-      // Guardado DIRECTO en Cloud Firestore con { merge: true }
-      if (firebaseFirestore) {
-        await firebaseFirestore.collection('eventos').doc(eventId).set(payload, { merge: true });
-        console.log(`✓ Evento guardado directamente en Firestore con { merge: true }:`, eventId);
-      }
-
-      const idx = adminState.eventos.findIndex(x => x.id === eventId);
-      if (idx !== -1) {
-        adminState.eventos[idx] = { ...adminState.eventos[idx], ...payload };
+      if (id) {
+        eventoData.id = id;
+        if (firebaseFirestore) {
+          await firebaseFirestore.collection('eventos').doc(id).set(eventoData, { merge: true });
+          console.log(`✓ [Firestore] Evento ${id} actualizado`);
+        }
       } else {
-        adminState.eventos.unshift(payload);
+        if (firebaseFirestore) {
+          const docRef = await firebaseFirestore.collection('eventos').add(eventoData);
+          eventoData.id = docRef.id;
+          console.log(`✓ [Firestore] Evento creado con ID:`, docRef.id);
+        } else {
+          eventoData.id = `ev_${Date.now()}`;
+        }
       }
 
-      saveToFirestore('eventos', { list: adminState.eventos });
+      const idx = adminState.eventos.findIndex(x => x.id === eventoData.id);
+      if (idx !== -1) {
+        adminState.eventos[idx] = { ...adminState.eventos[idx], ...eventoData };
+      } else {
+        adminState.eventos.unshift(eventoData);
+      }
+
       closeEditEventoModal();
       renderEventosTab();
       alert(id ? '✓ Evento actualizado exitosamente en Firestore.' : '✓ Evento creado exitosamente en Firestore.');
@@ -2268,41 +2408,39 @@ async function initAdmin() {
     const imagen = document.getElementById('edit-servicio-imagen').value.trim();
     const descripcion = document.getElementById('edit-servicio-descripcion').value.trim();
     const tagsStr = document.getElementById('edit-servicio-tags').value.trim();
-    const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const badges = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
 
-    // Generar ID único si es nuevo servicio
     const serviceId = id || (firebaseFirestore ? firebaseFirestore.collection('servicios').doc().id : `srv_${Date.now()}`);
 
-    const payload = {
+    const servicioData = {
       id: serviceId,
-      titulo,
       nombre: titulo,
-      icono: icono || 'Sparkles',
-      categoria,
-      imagen: imagen || 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
+      titulo,
       descripcion,
-      tags,
-      badges: tags,
+      categoria,
+      icono: icono || 'Sparkles',
+      imagen: imagen || 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80',
+      badges,
+      tags: badges,
       activo: true,
-      updatedAt: new Date()
+      actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+        ? firebase.firestore.FieldValue.serverTimestamp()
+        : new Date()
     };
 
     try {
-      // Guardado DIRECTO en Cloud Firestore con { merge: true } (sin endpoints locales efímeros)
       if (firebaseFirestore) {
-        await firebaseFirestore.collection('servicios').doc(serviceId).set(payload, { merge: true });
-        console.log(`✓ Servicio guardado directamente en Firestore con { merge: true }:`, serviceId);
+        await firebaseFirestore.collection('servicios').doc(serviceId).set(servicioData, { merge: true });
+        console.log(`✓ [Firestore] Servicio guardado con { merge: true }:`, serviceId);
       }
 
-      // Actualizar estado en memoria de la app
       const idx = adminState.servicios.findIndex(x => x.id === serviceId);
       if (idx !== -1) {
-        adminState.servicios[idx] = { ...adminState.servicios[idx], ...payload };
+        adminState.servicios[idx] = { ...adminState.servicios[idx], ...servicioData };
       } else {
-        adminState.servicios.push(payload);
+        adminState.servicios.push(servicioData);
       }
 
-      saveToFirestore('servicios', { list: adminState.servicios });
       closeEditServicioModal();
       renderServiciosTab();
       alert(id ? '✓ Servicio actualizado exitosamente en Firestore.' : '✓ Servicio creado exitosamente en Firestore.');

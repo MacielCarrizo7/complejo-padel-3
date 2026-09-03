@@ -1179,13 +1179,41 @@ function setupFirestoreListeners() {
   dbFs.collection('turnos').onSnapshot(updateTurnosFromSnapshot, err => console.warn('Firestore listener turnos error:', err));
   dbFs.collection('reservas').onSnapshot(updateTurnosFromSnapshot, err => console.warn('Firestore listener reservas error:', err));
 
-  // 4. Escuchador de Configuración General
-  dbFs.collection('config').doc('general').onSnapshot(doc => {
+  // 4. Escuchador de Canchas en tiempo real desde Firestore
+  dbFs.collection('canchas').onSnapshot(snapshot => {
+    if (!snapshot.empty) {
+      const list = [];
+      snapshot.forEach(doc => {
+        list.push({ id: doc.id, ...doc.data() });
+      });
+      window.state.config = window.state.config || {};
+      window.state.config.canchas = list;
+      renderCanchas();
+      renderReservasPage();
+    }
+  }, err => console.warn('Firestore listener canchas error:', err));
+
+  // 5. Escuchador de Configuración General
+  const updateGeneralConfigFromFirestore = (doc) => {
     if (doc.exists) {
-      window.state.config = doc.data();
+      const d = doc.data();
+      window.state.config = {
+        ...(window.state.config || {}),
+        ...d,
+        nombre: d.nombreComplejo || d.nombre || window.state.config?.nombre,
+        subtitulo: d.slogan || d.subtitulo || window.state.config?.subtitulo,
+        direccion: d.direccion || window.state.config?.direccion,
+        maps: d.linkMaps || d.maps || window.state.config?.maps,
+        whatsapp: d.whatsapp || window.state.config?.whatsapp,
+        horaInicio: d.apertura || d.horaInicio || window.state.config?.horaInicio,
+        horaFin: d.cierre || d.horaFin || window.state.config?.horaFin,
+        diasActivos: d.diasAtencion || d.diasActivos || window.state.config?.diasActivos
+      };
       render();
     }
-  }, err => console.warn('Firestore listener config error:', err));
+  };
+  dbFs.collection('configuracion').doc('general').onSnapshot(updateGeneralConfigFromFirestore, err => console.warn('Firestore listener configuracion/general error:', err));
+  dbFs.collection('config').doc('general').onSnapshot(updateGeneralConfigFromFirestore, err => console.warn('Firestore listener config/general error:', err));
 }
 
 // ================= API FETCHING =================

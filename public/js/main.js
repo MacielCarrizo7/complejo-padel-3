@@ -324,6 +324,62 @@ window.estaSlotOcupado = estaSlotOcupado;
 window.slotEstaOcupado = slotEstaOcupado;
 window.crearObjetoReserva = crearObjetoReserva;
 
+function setupMainFirestoreListeners() {
+  try {
+    if (window.firebase && firebase.firestore) {
+      const db = firebase.firestore();
+
+      // Sincronizar canchas en tiempo real
+      db.collection('canchas').onSnapshot(snapshot => {
+        if (!snapshot.empty) {
+          const list = [];
+          snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+          if (window.state) {
+            window.state.config = window.state.config || {};
+            window.state.config.canchas = list;
+            if (typeof window.renderCanchas === 'function') window.renderCanchas();
+            if (typeof window.renderReservasPage === 'function') window.renderReservasPage();
+          }
+        }
+      }, err => console.warn('[main.js] Firestore canchas onSnapshot error:', err));
+
+      // Sincronizar configuración general
+      const updateGeneralConfig = (doc) => {
+        if (doc.exists) {
+          const cfg = doc.data();
+          if (window.state) {
+            window.state.config = {
+              ...(window.state.config || {}),
+              ...cfg,
+              nombre: cfg.nombreComplejo || cfg.nombre || window.state.config?.nombre,
+              subtitulo: cfg.slogan || cfg.subtitulo || window.state.config?.subtitulo,
+              direccion: cfg.direccion || window.state.config?.direccion,
+              maps: cfg.linkMaps || cfg.maps || window.state.config?.maps,
+              whatsapp: cfg.whatsapp || window.state.config?.whatsapp,
+              horaInicio: cfg.apertura || cfg.horaInicio || window.state.config?.horaInicio,
+              horaFin: cfg.cierre || cfg.horaFin || window.state.config?.horaFin,
+              diasActivos: cfg.diasAtencion || cfg.diasActivos || window.state.config?.diasActivos
+            };
+          }
+          if (cfg.whatsapp) {
+            const cleanNum = String(cfg.whatsapp).replace(/[^0-9]/g, '');
+            if (cleanNum) {
+              document.querySelectorAll('a[href*="wa.me"]').forEach(a => {
+                a.href = `https://wa.me/${cleanNum}`;
+              });
+            }
+          }
+        }
+      };
+
+      db.collection('configuracion').doc('general').onSnapshot(updateGeneralConfig, err => console.warn('[main.js] Firestore configuracion error:', err));
+      db.collection('config').doc('general').onSnapshot(updateGeneralConfig, err => console.warn('[main.js] Firestore config error:', err));
+    }
+  } catch (e) {
+    console.warn('[main.js] Error inicializando Firestore listeners:', e);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Touch helper for horizontal scroll sliders
   const noScrollbarElems = document.querySelectorAll('.no-scrollbar');
@@ -338,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
   startAutoScroll('eventos-slider', 4500);
 
   setupCanchasNav();
+  setupMainFirestoreListeners();
 
   // Ensure Lucide icons are initialized on dynamic DOM changes
   if (window.lucide) {
