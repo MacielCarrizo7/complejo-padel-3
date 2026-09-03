@@ -2,32 +2,50 @@
 // COMPLEJO PADEL 3 - MOBILE-FIRST UI & NAVIGATION HELPERS
 // =========================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Smooth scroll to anchor targets for bottom floating navigation bar
-  const bottomNavLinks = document.querySelectorAll('nav.fixed a[href^="#"]');
-  bottomNavLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetId = link.getAttribute('href').substring(1);
-      const targetEl = document.getElementById(targetId);
-      if (targetEl) {
-        targetEl.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  });
+function setupCarousel(sliderId, prevBtnId, nextBtnId, step = 320) {
+  const slider = document.getElementById(sliderId);
+  const prevBtn = document.getElementById(prevBtnId);
+  const nextBtn = document.getElementById(nextBtnId);
+  if (!slider || !prevBtn || !nextBtn) return;
 
-  // 2. Touch helper for horizontal scroll sliders (#servicios-slider, .no-scrollbar)
-  const serviciosSlider = document.getElementById('servicios-slider');
-  if (serviciosSlider) {
-    serviciosSlider.style.webkitOverflowScrolling = 'touch';
+  const updateButtons = () => {
+    const maxScroll = slider.scrollWidth - slider.clientWidth - 5;
+    prevBtn.disabled = slider.scrollLeft <= 5;
+    nextBtn.disabled = slider.scrollLeft >= maxScroll;
+  };
+
+  if (!prevBtn.dataset.carouselBound) {
+    prevBtn.dataset.carouselBound = 'true';
+    nextBtn.addEventListener('click', () => {
+      slider.scrollBy({ left: step, behavior: 'smooth' });
+    });
+
+    prevBtn.addEventListener('click', () => {
+      slider.scrollBy({ left: -step, behavior: 'smooth' });
+    });
+
+    slider.addEventListener('scroll', updateButtons);
+    window.addEventListener('resize', updateButtons);
   }
 
+  updateButtons();
+  setTimeout(updateButtons, 300);
+}
+
+window.setupCarousel = setupCarousel;
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Touch helper for horizontal scroll sliders
   const noScrollbarElems = document.querySelectorAll('.no-scrollbar');
   noScrollbarElems.forEach(slider => {
     slider.style.webkitOverflowScrolling = 'touch';
   });
 
-  // 3. Ensure Lucide icons are initialized on dynamic DOM changes
+  // Initialize Carousels
+  setupCarousel('servicios-slider', 'btn-servicios-prev', 'btn-servicios-next');
+  setupCarousel('eventos-slider', 'btn-eventos-prev', 'btn-eventos-next');
+
+  // Ensure Lucide icons are initialized on dynamic DOM changes
   if (window.lucide) {
     window.lucide.createIcons();
   }

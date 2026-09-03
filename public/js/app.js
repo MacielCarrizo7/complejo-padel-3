@@ -506,10 +506,13 @@ function renderServicios() {
   });
 
   if (window.lucide) window.lucide.createIcons();
+  if (window.setupCarousel) {
+    window.setupCarousel('servicios-slider', 'btn-servicios-prev', 'btn-servicios-next');
+  }
 }
 
 function renderEventos() {
-  const grid = document.getElementById('eventos-grid');
+  const grid = document.getElementById('eventos-slider') || document.getElementById('eventos-grid');
   if (!grid) return;
   grid.innerHTML = '';
 
@@ -523,7 +526,7 @@ function renderEventos() {
 
   eventos.filter(e => e.activo !== false).forEach(ev => {
     const card = document.createElement('div');
-    card.className = 'flex-shrink-0 w-[82vw] max-w-[320px] md:w-auto snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-3 shadow-lg flex flex-col justify-between group overflow-hidden transition-all duration-300';
+    card.className = 'flex-shrink-0 w-[82vw] max-w-[320px] snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-4 shadow-lg flex flex-col justify-between group overflow-hidden transition-all duration-300 hover:border-[#00E676]/40 hover:shadow-[0_0_30px_rgba(0,230,118,0.15)]';
 
     const cleanWa = ev.whatsappContacto ? String(ev.whatsappContacto).replace(/\D/g, '') : (cfg.whatsapp ? String(cfg.whatsapp).replace(/\D/g, '') : '');
     const waMsg = `Hola! Quiero inscribirme / consultar información sobre el evento: *${ev.titulo}* (${ev.fecha})`;
@@ -575,6 +578,11 @@ function renderEventos() {
 
     grid.appendChild(card);
   });
+
+  if (window.lucide) window.lucide.createIcons();
+  if (window.setupCarousel) {
+    window.setupCarousel('eventos-slider', 'btn-eventos-prev', 'btn-eventos-next');
+  }
 }
 
 function setupFilterButtons() {

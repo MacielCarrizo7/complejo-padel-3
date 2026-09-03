@@ -289,14 +289,26 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden relative">
       
       <!-- Section Header -->
-      <div class="text-center max-w-3xl mx-auto mb-6 md:mb-16 space-y-2">
-        <span class="text-[#00E676] font-sports font-bold text-xs sm:text-sm tracking-widest uppercase">NUESTRO COMPLEJO</span>
-        <h2 class="text-2xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
-          INSTALACIONES Y SERVICIOS
-        </h2>
-        <p class="text-slate-400 text-xs sm:text-base">
-          Conocé todo lo que tenemos preparado para que disfrutes antes, durante y después de cada partido.
-        </p>
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-12">
+        <div class="space-y-2 max-w-2xl">
+          <span class="text-[#00E676] font-sports font-bold text-xs sm:text-sm tracking-widest uppercase">NUESTRO COMPLEJO</span>
+          <h2 class="text-2xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
+            INSTALACIONES Y SERVICIOS
+          </h2>
+          <p class="text-slate-400 text-xs sm:text-base">
+            Conocé todo lo que tenemos preparado para que disfrutes antes, durante y después de cada partido.
+          </p>
+        </div>
+
+        <!-- Carousel Arrows -->
+        <div class="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
+          <button id="btn-servicios-prev" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Anterior">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          <button id="btn-servicios-next" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Siguiente">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Dynamic Services Horizontal Scroll Carousel -->
@@ -309,10 +321,10 @@
 
   <!-- ================= NUEVA SECCIÓN: EVENTOS Y TORNEOS ================= -->
   <section id="eventos" class="py-8 md:py-20 relative">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden relative">
       
       <!-- Section Header -->
-      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-12">
         <div>
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00E676]/10 border border-[#00E676]/30 text-[#00E676] text-xs font-bold uppercase mb-2">
             <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
@@ -321,14 +333,24 @@
           <h2 class="text-2xl sm:text-4xl md:text-5xl font-sports font-bold text-white uppercase">
             EVENTOS Y TORNEOS
           </h2>
+          <p class="text-slate-400 text-xs sm:text-base max-w-md mt-1">
+            Participá de nuestros campeonatos de fin de semana, ligas y torneos relámpago con grandes premios.
+          </p>
         </div>
-        <p class="text-slate-400 text-xs sm:text-base max-w-md">
-          Participá de nuestros campeonatos de fin de semana, ligas y torneos relámpago con grandes premios.
-        </p>
+
+        <!-- Carousel Arrows -->
+        <div class="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
+          <button id="btn-eventos-prev" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Anterior">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          <button id="btn-eventos-next" class="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700 text-emerald-400 flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shadow-md hover:bg-slate-800 hover:border-[#00E676]" aria-label="Siguiente">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Tournaments & Events Horizontal Scroll Carousel on Mobile -->
-      <div id="eventos-grid" class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 px-4 no-scrollbar md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:px-0 md:pb-0">
+      <!-- Tournaments & Events Horizontal Scroll Carousel -->
+      <div id="eventos-slider" class="flex flex-nowrap gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth w-full pb-4 px-4 no-scrollbar" style="touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;">
         <!-- Rendered dynamically by app.js from /api/eventos -->
       </div>
 
@@ -460,7 +482,7 @@
   </section>
 
   <!-- ================= FOOTER ================= -->
-  <footer class="bg-[#070A10] border-t border-slate-800/80 py-8 md:py-12 pb-24 md:pb-12">
+  <footer class="bg-[#070A10] border-t border-slate-800/80 py-8 md:py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
       <div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-800/80">
@@ -503,22 +525,6 @@
 
     </div>
   </footer>
-
-  <!-- ================= BARRA INFERIOR FLOTANTE (BOTTOM NAV MOBILE) ================= -->
-  <nav class="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-slate-950/90 backdrop-blur-md border-t border-slate-800/80 py-2.5 px-6 flex justify-around items-center">
-    <a href="#inicio" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#00E676] transition-colors">
-      <i data-lucide="home" class="w-5 h-5"></i>
-      <span class="text-[10px] font-semibold">Inicio</span>
-    </a>
-    <a href="reservas.html" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#00E676] transition-colors">
-      <i data-lucide="calendar" class="w-5 h-5 text-[#00E676]"></i>
-      <span class="text-[10px] font-semibold text-[#00E676]">Reservar</span>
-    </a>
-    <a id="bottom-nav-wa" href="https://wa.me/5491112345678" target="_blank" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#25D366] transition-colors">
-      <i data-lucide="message-circle" class="w-5 h-5 text-[#25D366]"></i>
-      <span class="text-[10px] font-semibold">WhatsApp</span>
-    </a>
-  </nav>
 
   <!-- Scripts -->
   <script src="js/app.js"></script>
