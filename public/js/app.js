@@ -79,6 +79,16 @@ function formatFechaLarga(iso) {
   return `${DIAS_SEMANA[date.getDay()]} ${d} de ${MESES[m - 1]}`;
 }
 
+function sonMismoDia(fechaA, fechaB) {
+  if (!fechaA || !fechaB) return false;
+  if (fechaA === fechaB) return true;
+  if (fechaA.includes(fechaB) || fechaB.includes(fechaA)) return true;
+  const matchA = String(fechaA).match(/(?:^|\D)(\d{1,2})(?:\D|$)/);
+  const matchB = String(fechaB).match(/(?:^|\D)(\d{1,2})(?:\D|$)/);
+  return Boolean(matchA && matchB && matchA[1] === matchB[1]);
+}
+window.sonMismoDia = sonMismoDia;
+
 // Generate Pitch Silhouette SVG
 function getCourtSvgHtml(cancha) {
   if (cancha.deporte === 'padel') {
@@ -214,16 +224,17 @@ function horariosDisponibles(canchaId, fecha, duracion = 1) {
   // Build a set of all occupied individual 1-hour slots
   const ocupados = new Set();
   (window.state.turnos || [])
-    .filter(t => {
-      if (t.fecha !== fecha) return false;
-      if (!matchCancha(t, cancha)) return false;
-
-      // Bloquear tanto "Pendientes" como "Confirmados"; solo ignorar cancelados / liberados
-      const estado = String(t.estado || '').toLowerCase().trim();
+    .filter(r => {
+      if (!r) return false;
+      const estado = String(r.estado || '').toLowerCase().trim();
       if (['cancelado', 'liberado', 'anulado', 'disponible'].includes(estado)) {
         return false;
       }
-      return true;
+      const mismaCancha = (r.cancha || r.canchaNombre || '').toLowerCase().includes(cancha.nombre.toLowerCase().trim()) ||
+                          cancha.nombre.toLowerCase().trim().includes((r.cancha || r.canchaNombre || '').toLowerCase()) ||
+                          matchCancha(r, cancha);
+      const mismaFecha = sonMismoDia(r.fecha || r.fechaTexto, fecha);
+      return mismaCancha && mismaFecha;
     })
     .forEach(t => {
       const horas = getHorasOcupadas(t);
@@ -447,6 +458,9 @@ function renderHorarios() {
       <span class="sub-label">${slotRangeLabel}</span>
     `;
     btn.disabled = s.ocupado;
+    if (s.ocupado) {
+      btn.classList.add('opacity-40', 'pointer-events-none', 'bg-slate-800', 'line-through');
+    }
 
     if (!s.ocupado) {
       btn.addEventListener('click', () => {
@@ -1295,8 +1309,8 @@ function renderReservasPage() {
 
         if (s.ocupado) {
           return `
-            <button type="button" disabled class="py-2 px-2 rounded-xl bg-[#0B0F19]/60 border border-slate-800 text-slate-600 cursor-not-allowed text-xs font-semibold text-center opacity-50">
-              <span class="block font-sports line-through">${s.hora}</span>
+            <button type="button" disabled class="btn-slot-hora py-2 px-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed text-xs font-semibold text-center opacity-40 pointer-events-none line-through">
+              <span class="block font-sports">${s.hora}</span>
               <span class="text-[9px] block">Ocupado</span>
             </button>
           `;

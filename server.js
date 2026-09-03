@@ -386,18 +386,21 @@ async function deleteTurnoFromFirestoreCloud(id) {
 async function updateTurnoInFirestoreCloud(id, patchFields) {
   try {
     const fields = {};
+    const maskParams = [];
     for (const [k, v] of Object.entries(patchFields)) {
       fields[k] = jsValToFs(v);
+      maskParams.push(`updateMask.fieldPaths=${encodeURIComponent(k)}`);
     }
     const body = JSON.stringify({ fields });
+    const qs = maskParams.length ? `?${maskParams.join('&')}` : '';
 
     await Promise.all([
-      fetch(`${FIRESTORE_BASE_URL}/turnos/${id}`, {
+      fetch(`${FIRESTORE_BASE_URL}/turnos/${id}${qs}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body
       }).catch(() => null),
-      fetch(`${FIRESTORE_BASE_URL}/reservas/${id}`, {
+      fetch(`${FIRESTORE_BASE_URL}/reservas/${id}${qs}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body

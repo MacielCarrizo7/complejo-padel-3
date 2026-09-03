@@ -179,16 +179,64 @@ function getHorasOcupadas(reserva) {
   return [String(reserva.horario || reserva.hora || '')].filter(Boolean);
 }
 
+function normalizarFechaISO(f) {
+  if (!f) {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  const str = String(f).trim();
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  return str;
+}
+
 function formatFechaLegibleTexto(iso) {
   try {
-    const [y, m, d] = String(iso).split('-').map(Number);
-    const date = new Date(y, m - 1, d);
+    if (!iso) return '';
+    const match = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return String(iso);
+    const [, yStr, mStr, dStr] = match;
+    const date = new Date(Number(yStr), Number(mStr) - 1, Number(dStr));
     const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    return `${dias[date.getDay()]} ${d} de ${meses[m - 1]}`;
+    return `${dias[date.getDay()]} ${Number(dStr)} de ${meses[Number(mStr) - 1]}`;
   } catch (e) {
-    return iso;
+    return String(iso);
   }
+}
+
+function sonMismoDia(fechaA, fechaB) {
+  if (!fechaA || !fechaB) return false;
+  if (fechaA === fechaB) return true;
+  // Si una contiene a la otra
+  if (fechaA.includes(fechaB) || fechaB.includes(fechaA)) return true;
+  // Comparar por el número de día del mes (ej: '3' de '2026-09-03' y '3' de 'Jue 3 de septiembre')
+  const matchA = String(fechaA).match(/(?:^|\D)(\d{1,2})(?:\D|$)/);
+  const matchB = String(fechaB).match(/(?:^|\D)(\d{1,2})(?:\D|$)/);
+  return Boolean(matchA && matchB && matchA[1] === matchB[1]);
+}
+
+function estaSlotOcupado(cancha, fechaSeleccionada, slotHora, reservas = (window.todasLasReservas || window.state?.turnos || [])) {
+  if (!reservas || !Array.isArray(reservas)) return false;
+  return reservas.some(r => {
+    if (!r) return false;
+    const estado = String(r.estado || '').toLowerCase().trim();
+    if (estado === 'cancelado' || estado === 'liberado' || estado === 'anulado') return false;
+
+    const nombreCancha = typeof cancha === 'object' ? (cancha.nombre || '') : String(cancha || '');
+    const canchaR = String(r.cancha || r.canchaNombre || '').toLowerCase().trim();
+    const canchaTarget = nombreCancha.toLowerCase().trim();
+    const mismaCancha = canchaR.includes(canchaTarget) || canchaTarget.includes(canchaR);
+
+    const mismaFecha = sonMismoDia(r.fecha || r.fechaTexto, fechaSeleccionada);
+    const mismoHorario = (r.hora === slotHora) || (r.horario || '').includes(slotHora) || (typeof getHorasOcupadas === 'function' && getHorasOcupadas(r).includes(slotHora));
+
+    return mismaCancha && mismaFecha && mismoHorario;
+  });
 }
 
 function crearObjetoReserva({
@@ -207,7 +255,8 @@ function crearObjetoReserva({
   const nextH = (hStr + durNum) % 24;
   const horaInicio = String(hora || '00:00');
   const horaFin = `${String(nextH).padStart(2, '0')}:${String(mStr || 0).padStart(2, '0')}`;
-  const fechaISO = String(fecha || '').trim();
+  const fechaISO = normalizarFechaISO(fecha);
+  const fechaTextoFormateado = formatFechaLegibleTexto(fechaISO);
 
   const canchaNombre = typeof cancha === 'object' ? (cancha.nombre || '') : String(cancha || '');
   const deporteStr = (String(deporte || (typeof cancha === 'object' ? cancha.deporte : 'padel'))).toUpperCase().includes('FUT') ? 'FUTBOL' : 'PADEL';
@@ -222,7 +271,7 @@ function crearObjetoReserva({
     cancha: canchaNombre.trim(),
     deporte: deporteStr,
     fecha: fechaISO,
-    fechaTexto: formatFechaLegibleTexto(fechaISO),
+    fechaTexto: fechaTextoFormateado,
     hora: horaInicio,
     horario: `${horaInicio} a ${horaFin} hs`,
     duracion: durStr,
@@ -244,8 +293,11 @@ window.updateCanchasNav = updateCanchasNav;
 window.setupCanchasNav = setupCanchasNav;
 window.matchCancha = matchCancha;
 window.getHorasOcupadas = getHorasOcupadas;
-window.crearObjetoReserva = crearObjetoReserva;
+window.normalizarFechaISO = normalizarFechaISO;
 window.formatFechaLegibleTexto = formatFechaLegibleTexto;
+window.sonMismoDia = sonMismoDia;
+window.estaSlotOcupado = estaSlotOcupado;
+window.crearObjetoReserva = crearObjetoReserva;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Touch helper for horizontal scroll sliders

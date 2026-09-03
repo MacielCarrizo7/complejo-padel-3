@@ -71,6 +71,18 @@ function formatFechaLabel(iso) {
   return { dow: DIAS_SEMANA[date.getDay()], num: d };
 }
 
+function sonMismoDia(fechaA, fechaB) {
+  if (!fechaA || !fechaB) return false;
+  if (fechaA === fechaB) return true;
+  // Si una contiene a la otra
+  if (fechaA.includes(fechaB) || fechaB.includes(fechaA)) return true;
+  // Comparar por el número de día del mes (ej: '3' de '2026-09-03' y '3' de 'Jue 3 de septiembre')
+  const matchA = String(fechaA).match(/(?:^|\D)(\d{1,2})(?:\D|$)/);
+  const matchB = String(fechaB).match(/(?:^|\D)(\d{1,2})(?:\D|$)/);
+  return Boolean(matchA && matchB && matchA[1] === matchB[1]);
+}
+window.sonMismoDia = sonMismoDia;
+
 // Generate Pitch Silhouette SVG
 function getCourtSvgHtml(cancha) {
   if (cancha.deporte === 'padel') {
@@ -1260,21 +1272,17 @@ function renderSiluetasPorDia(fecha) {
                               cancha.nombre.toLowerCase().trim().includes((r.cancha || r.canchaNombre || '').toLowerCase()) ||
                               (typeof coincideCancha === 'function' && coincideCancha(r, cancha));
 
-          // Coincidencia de fecha en formato YYYY-MM-DD o por número de día
-          const diaR = (r.fecha || '').split('-')[2] || (r.fecha || '').match(/\d+/)?.[0];
-          const diaS = (fecha || '').split('-')[2] || (fecha || '').match(/\d+/)?.[0];
-          const matchFecha = r.fecha === fecha || (diaR && diaS && diaR === diaS) || (typeof fechasCoinciden === 'function' && fechasCoinciden(r.fecha, fecha));
-
+          const matchFecha = sonMismoDia(r.fecha || r.fechaTexto, fecha);
           const matchHora = (r.hora === horaSlot) || (r.horario || '').includes(horaSlot) || (typeof getHorasOcupadas === 'function' && getHorasOcupadas(r).includes(horaSlot));
 
           return matchCancha && matchFecha && matchHora;
         });
 
         if (turno) {
-          const clienteNombre = turno.cliente || turno.nombre || 'Reservado';
+          const clienteNombre = String(turno.cliente || turno.nombre || 'CLIENTE').toUpperCase();
           slotsHtml += `
             <button type="button" disabled class="w-full px-2.5 py-1.5 rounded-lg border bg-rose-950/40 text-rose-400 border-rose-800 text-xs font-bold flex items-center justify-between opacity-95 cursor-not-allowed shadow-inner" title="Ocupado - ${escapeHtml(clienteNombre)}">
-              <span>🔴 ${horaSlot} OCUPADO (${escapeHtml(clienteNombre)})</span>
+              <span>🔴 ${horaSlot} OCUPADO - ${escapeHtml(clienteNombre)}</span>
             </button>
           `;
         } else {
@@ -2032,16 +2040,22 @@ async function initAdmin() {
           const updateData = {
             estado: 'confirmado',
             confirmado: true,
-            confirmedAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date().toISOString()
           };
-          await firebaseFirestore.collection('reservas').doc(id).set(updateData, { merge: true }).catch(() => null);
-          await firebaseFirestore.collection('turnos').doc(id).set(updateData, { merge: true }).catch(() => null);
+          try {
+            await firebaseFirestore.collection('reservas').doc(id).update(updateData);
+          } catch (e) {
+            await firebaseFirestore.collection('reservas').doc(id).set(updateData, { merge: true });
+          }
+          try {
+            await firebaseFirestore.collection('turnos').doc(id).update(updateData);
+          } catch (e) {
+            await firebaseFirestore.collection('turnos').doc(id).set(updateData, { merge: true });
+          }
           console.log(`✓ Reserva ${id} confirmada en Firestore`);
         }
 
         fetch(`/api/turnos/${id}/confirmar`, { method: 'PATCH' }).catch(() => null);
-        saveToFirestore('turnos', { list: adminState.turnos });
 
         // Actualizar UI localmente de inmediato:
         const card = btnConfirmar.closest('.reserva-card, .glass-card') || btnConfirmar.parentElement;
@@ -2056,7 +2070,6 @@ async function initAdmin() {
         fetchMetrics().then(() => renderMetricsKpis());
       } catch (err) {
         console.error('Error al confirmar reserva en Firestore:', err);
-        alert('Error al confirmar: ' + err.message);
         btnConfirmar.disabled = false;
         btnConfirmar.innerHTML = '<i data-lucide="check" class="w-4 h-4 stroke-[3] text-black"></i><span>✓ CONFIRMAR</span>';
         if (window.lucide) window.lucide.createIcons();
