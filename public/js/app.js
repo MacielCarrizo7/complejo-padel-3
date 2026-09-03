@@ -89,44 +89,53 @@ function sonMismoDia(fechaA, fechaB) {
 }
 window.sonMismoDia = sonMismoDia;
 
+// Normalizar la Detección de Deporte
+function esCanchaPadel(cancha) {
+  if (!cancha) return true;
+  const deporteNormalizado = (cancha.deporte || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const esPadel = deporteNormalizado.includes('PADEL') || (cancha.nombre || '').toLowerCase().includes('pista');
+  return esPadel;
+}
+window.esCanchaPadel = esCanchaPadel;
+
 // Generate Pitch Silhouette SVG
 function getCourtSvgHtml(cancha) {
-  if (cancha.deporte === 'padel') {
+  const esPadel = esCanchaPadel(cancha);
+  if (esPadel) {
     return `
-      <div class="pitch-container pitch-padel">
-        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="6" y="6" width="188" height="78" fill="none" stroke="rgba(0, 210, 255, 0.7)" stroke-width="2" />
-          <rect x="8" y="8" width="184" height="74" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
-          <line x1="38" y1="8" x2="38" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
-          <line x1="162" y1="8" x2="162" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
-          <line x1="38" y1="45" x2="162" y2="45" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
-          <line x1="100" y1="4" x2="100" y2="86" stroke="#00E676" stroke-width="2.5" stroke-dasharray="3,2" />
-          <circle cx="100" cy="5" r="2.5" fill="#00E676" />
-          <circle cx="100" cy="85" r="2.5" fill="#00E676" />
+      <div class="pitch-container pitch-padel h-24 max-h-24 w-full flex items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-sky-500/30 my-2.5 overflow-hidden">
+        <svg viewBox="0 0 160 52" class="w-full h-full max-h-20" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Caja azul cian con paredes de cristal -->
+          <rect x="2" y="2" width="156" height="48" rx="3" fill="rgba(14, 165, 233, 0.08)" stroke="rgba(14, 165, 233, 0.7)" stroke-width="1.6" />
+          <!-- Líneas de saque -->
+          <rect x="18" y="5" width="124" height="42" fill="none" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1" />
+          <line x1="42" y1="5" x2="42" y2="47" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <line x1="118" y1="5" x2="118" y2="47" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <line x1="42" y1="26" x2="118" y2="26" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <!-- Red central segmentada -->
+          <line x1="80" y1="1" x2="80" y2="51" stroke="#00E676" stroke-width="2" stroke-dasharray="3,2" />
+          <circle cx="80" cy="3" r="1.5" fill="#00E676" />
+          <circle cx="80" cy="49" r="1.5" fill="#00E676" />
         </svg>
-        <div class="pitch-indicator">
-          <span>🎾 Pádel (4 jug. · 2 vs 2)</span>
-        </div>
       </div>
     `;
   } else {
     return `
-      <div class="pitch-container pitch-futbol">
-        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="5" width="190" height="80" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <line x1="100" y1="5" x2="100" y2="85" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <circle cx="100" cy="45" r="16" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <circle cx="100" cy="45" r="1.5" fill="#FFF" />
-          <rect x="5" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <rect x="169" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+      <div class="pitch-container pitch-futbol h-24 max-h-24 w-full flex items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-emerald-500/30 my-2.5 overflow-hidden">
+        <svg viewBox="0 0 160 52" class="w-full h-full max-h-20" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Campo verde con área y círculo central -->
+          <rect x="2" y="2" width="156" height="48" rx="3" fill="rgba(16, 185, 129, 0.08)" stroke="rgba(16, 185, 129, 0.6)" stroke-width="1.6" />
+          <line x1="80" y1="2" x2="80" y2="50" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+          <circle cx="80" cy="26" r="11" fill="none" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <circle cx="80" cy="26" r="1.5" fill="#00E676" />
+          <rect x="2" y="14" width="16" height="24" fill="none" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+          <rect x="142" y="14" width="16" height="24" fill="none" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
         </svg>
-        <div class="pitch-indicator">
-          <span>⚽ Fútbol ${cancha.jugadores || 5} (${cancha.jugadores || 5} vs ${cancha.jugadores || 5})</span>
-        </div>
       </div>
     `;
   }
 }
+window.getCourtSvgHtml = getCourtSvgHtml;
 
 // Generate active dates for next 14 days
 function generarProximasFechas() {
@@ -301,17 +310,34 @@ window.horariosDisponibles = horariosDisponibles;
 
 // Filter canchas
 function getCanchasFiltradas() {
-  let canchas = window.state.config.canchas || [];
-  if (window.state.selectedSport !== 'todos') {
-    const sportFilter = String(window.state.selectedSport).toLowerCase();
-    canchas = canchas.filter(c => String(c.deporte || '').toLowerCase().includes(sportFilter));
+  let canchas = (window.state?.config?.canchas || []).filter(c => c && c.activo !== false);
+
+  if (window.state?.selectedSport && window.state.selectedSport !== 'todos') {
+    const filterNorm = String(window.state.selectedSport).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    if (filterNorm.includes('PAD')) {
+      canchas = canchas.filter(c => esCanchaPadel(c));
+    } else if (filterNorm.includes('FUT')) {
+      canchas = canchas.filter(c => !esCanchaPadel(c));
+    }
   }
-  if (window.state.selectedLocation !== 'todos') {
+
+  if (window.state?.selectedLocation && window.state.selectedLocation !== 'todos') {
     const locFilter = String(window.state.selectedLocation).toLowerCase();
-    canchas = canchas.filter(c => String(c.ubicacion || '').toLowerCase().includes(locFilter));
+    canchas = canchas.filter(c => {
+      const ubi = String(c.ubicacion || '').toLowerCase();
+      if (locFilter.includes('int') || locFilter.includes('tech')) {
+        return ubi.includes('int') || ubi.includes('tech');
+      }
+      if (locFilter.includes('ext')) {
+        return ubi.includes('ext');
+      }
+      return ubi.includes(locFilter);
+    });
   }
+
   return canchas;
 }
+window.getCanchasFiltradas = getCanchasFiltradas;
 
 // ================= RENDER FUNCTIONS =================
 
@@ -371,11 +397,16 @@ function renderCanchas() {
     const card = document.createElement('div');
     card.className = `glass-card p-5 cursor-pointer transition-all duration-300 ${isSelected ? 'border-2 border-[#00E676] bg-[#1C273D] shadow-[0_0_25px_rgba(0,230,118,0.25)]' : 'border border-slate-800 hover:border-slate-600'}`;
 
-    const isPadel = cancha.deporte === 'padel';
-    const sportBadgeClass = isPadel ? 'badge-neon' : 'badge-location-interior';
-    const sportBadgeLabel = isPadel ? '🎾 Pádel' : `⚽ Fútbol ${cancha.jugadores || 5}`;
-    const locationBadgeClass = cancha.ubicacion === 'interior' ? 'badge-location-interior' : 'badge-location-exterior';
-    const locationBadgeLabel = cancha.ubicacion === 'interior' ? '🏠 Interior' : '☀️ Exterior';
+    const esPadel = esCanchaPadel(cancha);
+    const sportBadgeHtml = esPadel
+      ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">🎾 Pádel (2 vs 2)</span>'
+      : `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">⚽ ${cancha.formato || (cancha.jugadores ? 'Fútbol ' + cancha.jugadores : 'Fútbol')}</span>`;
+
+    const ubiNormalizado = String(cancha.ubicacion || '').toLowerCase();
+    const esInterior = ubiNormalizado.includes('int') || ubiNormalizado.includes('tech');
+    const locationBadgeHtml = esInterior
+      ? '<span class="badge-location-interior">🏠 Techada</span>'
+      : '<span class="badge-location-exterior">☀️ Exterior</span>';
 
     const pitchSvg = getCourtSvgHtml(cancha);
 
@@ -385,8 +416,8 @@ function renderCanchas() {
         ${isSelected ? '<span class="w-2.5 h-2.5 rounded-full bg-[#00E676] shadow-[0_0_8px_#00E676]"></span>' : ''}
       </div>
       <div class="flex items-center gap-2 mb-3">
-        <span class="${sportBadgeClass}">${sportBadgeLabel}</span>
-        <span class="${locationBadgeClass}">${locationBadgeLabel}</span>
+        ${sportBadgeHtml}
+        ${locationBadgeHtml}
       </div>
       ${pitchSvg}
       <div class="flex items-center justify-between pt-3 mt-2 border-t border-slate-800">
@@ -1344,17 +1375,22 @@ function renderReservasPage() {
   }
 
   canchas.forEach(cancha => {
-    const isPadel = cancha.deporte === 'padel';
+    const esPadel = esCanchaPadel(cancha);
     const slots = horariosDisponibles(cancha.id, window.state.selectedFecha, duracion);
     const disponiblesCount = slots.filter(s => !s.ocupado).length;
 
     const card = document.createElement('div');
     card.className = 'flex-shrink-0 w-[88vw] max-w-[340px] md:w-auto snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-4 shadow-xl flex flex-col justify-between group overflow-hidden transition-all duration-300 hover:border-slate-600';
 
-    const sportBadgeClass = isPadel ? 'badge-neon' : 'badge-location-interior';
-    const sportBadgeLabel = isPadel ? '🎾 Pádel' : `⚽ Fútbol ${cancha.jugadores || 5}`;
-    const locationBadgeClass = cancha.ubicacion === 'interior' ? 'badge-location-interior' : 'badge-location-exterior';
-    const locationBadgeLabel = cancha.ubicacion === 'interior' ? '🏠 Techada' : '☀️ Exterior';
+    const sportBadgeHtml = esPadel
+      ? '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">🎾 Pádel (2 vs 2)</span>'
+      : `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">⚽ ${cancha.formato || (cancha.jugadores ? 'Fútbol ' + cancha.jugadores : 'Fútbol')}</span>`;
+
+    const ubiNormalizado = String(cancha.ubicacion || '').toLowerCase();
+    const esInterior = ubiNormalizado.includes('int') || ubiNormalizado.includes('tech');
+    const locationBadgeHtml = esInterior
+      ? '<span class="badge-location-interior">🏠 Techada</span>'
+      : '<span class="badge-location-exterior">☀️ Exterior</span>';
 
     const pitchSvg = getCourtSvgHtml(cancha);
 
@@ -1400,8 +1436,8 @@ function renderReservasPage() {
         </div>
 
         <div class="flex items-center gap-2">
-          <span class="${sportBadgeClass}">${sportBadgeLabel}</span>
-          <span class="${locationBadgeClass}">${locationBadgeLabel}</span>
+          ${sportBadgeHtml}
+          ${locationBadgeHtml}
           <span class="text-xs ml-auto font-semibold ${disponiblesCount > 0 ? 'text-[#00E676]' : 'text-slate-500'}">
             ${disponiblesCount > 0 ? `🟢 ${disponiblesCount} libres` : '🔴 Completo'}
           </span>

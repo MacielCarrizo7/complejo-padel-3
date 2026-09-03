@@ -310,6 +310,87 @@ function crearObjetoReserva({
   };
 }
 
+// =========================================================
+// NORMALIZACIÓN DE DEPORTE, SILUETAS Y BADGES (CLIENTE)
+// =========================================================
+
+function esCanchaPadel(cancha) {
+  if (!cancha) return true;
+  const deporteNormalizado = (cancha.deporte || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const esPadel = deporteNormalizado.includes('PADEL') || (cancha.nombre || '').toLowerCase().includes('pista');
+  return esPadel;
+}
+
+function getSportBadgeHtml(cancha) {
+  const esPadel = esCanchaPadel(cancha);
+  if (esPadel) {
+    return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">🎾 Pádel (2 vs 2)</span>';
+  } else {
+    return `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">⚽ ${cancha.formato || (cancha.jugadores ? 'Fútbol ' + cancha.jugadores : 'Fútbol')}</span>`;
+  }
+}
+
+function getCourtSvgHtml(cancha) {
+  const esPadel = esCanchaPadel(cancha);
+  if (esPadel) {
+    return `
+      <div class="pitch-container pitch-padel h-24 max-h-24 w-full flex items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-sky-500/30 my-2.5 overflow-hidden">
+        <svg viewBox="0 0 160 52" class="w-full h-full max-h-20" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Caja azul cian con paredes de cristal -->
+          <rect x="2" y="2" width="156" height="48" rx="3" fill="rgba(14, 165, 233, 0.08)" stroke="rgba(14, 165, 233, 0.7)" stroke-width="1.6" />
+          <!-- Líneas de saque -->
+          <rect x="18" y="5" width="124" height="42" fill="none" stroke="rgba(255, 255, 255, 0.25)" stroke-width="1" />
+          <line x1="42" y1="5" x2="42" y2="47" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <line x1="118" y1="5" x2="118" y2="47" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <line x1="42" y1="26" x2="118" y2="26" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <!-- Red central segmentada -->
+          <line x1="80" y1="1" x2="80" y2="51" stroke="#00E676" stroke-width="2" stroke-dasharray="3,2" />
+          <circle cx="80" cy="3" r="1.5" fill="#00E676" />
+          <circle cx="80" cy="49" r="1.5" fill="#00E676" />
+        </svg>
+      </div>
+    `;
+  } else {
+    return `
+      <div class="pitch-container pitch-futbol h-24 max-h-24 w-full flex items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-emerald-500/30 my-2.5 overflow-hidden">
+        <svg viewBox="0 0 160 52" class="w-full h-full max-h-20" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Campo verde con área y círculo central -->
+          <rect x="2" y="2" width="156" height="48" rx="3" fill="rgba(16, 185, 129, 0.08)" stroke="rgba(16, 185, 129, 0.6)" stroke-width="1.6" />
+          <line x1="80" y1="2" x2="80" y2="50" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+          <circle cx="80" cy="26" r="11" fill="none" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <circle cx="80" cy="26" r="1.5" fill="#00E676" />
+          <rect x="2" y="14" width="16" height="24" fill="none" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+          <rect x="142" y="14" width="16" height="24" fill="none" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+        </svg>
+      </div>
+    `;
+  }
+}
+
+function sincronizarFiltrosDeportes() {
+  const sportButtons = document.querySelectorAll('.btn-filter-sport, [data-filter-sport]');
+  sportButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sportAttr = btn.getAttribute('data-sport') || btn.getAttribute('data-filter-sport') || 'todos';
+      if (window.state) {
+        window.state.selectedSport = sportAttr;
+        if (typeof window.renderReservasPage === 'function') {
+          window.renderReservasPage();
+        } else if (typeof window.renderCanchas === 'function') {
+          window.renderCanchas();
+        } else if (typeof window.render === 'function') {
+          window.render();
+        }
+      }
+    });
+  });
+}
+
+window.esCanchaPadel = esCanchaPadel;
+window.getSportBadgeHtml = getSportBadgeHtml;
+window.getCourtSvgHtml = getCourtSvgHtml;
+window.sincronizarFiltrosDeportes = sincronizarFiltrosDeportes;
+
 window.getScrollStep = getScrollStep;
 window.setupCarousel = setupCarousel;
 window.startAutoScroll = startAutoScroll;
@@ -408,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setupCanchasNav();
   setupMainFirestoreListeners();
+  sincronizarFiltrosDeportes();
 
   // Ensure Lucide icons are initialized on dynamic DOM changes
   if (window.lucide) {
