@@ -2,7 +2,7 @@
 <html lang="es" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>COMPLEJO PADEL 3 · Canchas de Pádel & Fútbol en Lavalle</title>
   <meta name="description" content="Complejo deportivo de primer nivel en Lavalle. Canchas de pádel panorámicas WPT y fútbol con césped sintético e iluminación LED. Reservá tu turno online en segundos.">
   <link rel="icon" type="image/png" href="assets/logo.png">
@@ -69,7 +69,7 @@
   <!-- Custom CSS Styles -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-[#0B0F19] text-white font-body selection:bg-[#00E676] selection:text-black antialiased relative">
+<body class="bg-[#0B0F19] text-white font-body selection:bg-[#00E676] selection:text-black antialiased relative overflow-x-hidden w-full max-w-[100vw]">
 
   <!-- Glow Meshes in Background -->
   <div class="hero-glow-mesh"></div>
@@ -286,7 +286,7 @@
 
   <!-- ================= INSTALACIONES Y SERVICIOS ================= -->
   <section id="servicios" class="py-8 md:py-20 bg-[#070A10]/60 border-y border-slate-800/80 relative">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden relative">
       
       <!-- Section Header -->
       <div class="text-center max-w-3xl mx-auto mb-6 md:mb-16 space-y-2">
@@ -300,7 +300,7 @@
       </div>
 
       <!-- Dynamic Services Horizontal Scroll Carousel -->
-      <div id="servicios-slider" class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 px-2 no-scrollbar" style="touch-action: pan-y;">
+      <div id="servicios-slider" class="flex flex-nowrap gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth w-full pb-4 px-4 no-scrollbar" style="touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch;">
         <!-- Inyección dinámica de tarjetas desde Firestore -->
       </div>
 

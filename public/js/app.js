@@ -464,7 +464,7 @@ function renderServicios() {
 
   servicios.filter(s => s.activo !== false).forEach(srv => {
     const card = document.createElement('div');
-    card.className = 'flex-shrink-0 w-[82vw] max-w-[320px] md:w-[340px] snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-3 shadow-lg flex flex-col justify-between group overflow-hidden transition-all duration-300 hover:border-[#00E676]/40 hover:shadow-[0_0_30px_rgba(0,230,118,0.15)]';
+    card.className = 'flex-shrink-0 w-[82vw] max-w-[320px] snap-center rounded-2xl bg-[#0e1626] border border-slate-800 p-4 shadow-lg flex flex-col justify-between group overflow-hidden transition-all duration-300 hover:border-[#00E676]/40 hover:shadow-[0_0_30px_rgba(0,230,118,0.15)]';
 
     const lucideName = iconMap[srv.icono] || 'check-circle-2';
     const tagsHtml = (srv.tags || []).map(t => `<span class="text-[10px] bg-[#1E293B] border border-slate-700/80 text-slate-300 px-2 py-0.5 rounded-md font-medium">${escapeHtml(t)}</span>`).join('');
