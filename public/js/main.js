@@ -32,7 +32,40 @@ function setupCarousel(sliderId, prevBtnId, nextBtnId, step = 380) {
   setTimeout(updateButtons, 300);
 }
 
+function startAutoScroll(sliderId, intervalTime = 3500) {
+  const slider = document.getElementById(sliderId);
+  if (!slider) return;
+
+  if (slider.dataset.autoScrollInit) return;
+  slider.dataset.autoScrollInit = 'true';
+
+  let isHovered = false;
+  let touchActive = false;
+
+  // Pausar cuando el usuario interactúa
+  slider.addEventListener('mouseenter', () => isHovered = true);
+  slider.addEventListener('mouseleave', () => isHovered = false);
+  slider.addEventListener('touchstart', () => touchActive = true, { passive: true });
+  slider.addEventListener('touchend', () => touchActive = false);
+
+  setInterval(() => {
+    // No mover si el usuario tiene el cursor encima o está tocando la pantalla
+    if (isHovered || touchActive) return;
+
+    const step = 380;
+    const maxScroll = slider.scrollWidth - slider.clientWidth - 10;
+
+    // Si llega al final, volver al inicio suavemente; de lo contrario, avanzar un paso
+    if (slider.scrollLeft >= maxScroll) {
+      slider.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      slider.scrollBy({ left: step, behavior: 'smooth' });
+    }
+  }, intervalTime);
+}
+
 window.setupCarousel = setupCarousel;
+window.startAutoScroll = startAutoScroll;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Touch helper for horizontal scroll sliders
@@ -41,9 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
     slider.style.webkitOverflowScrolling = 'touch';
   });
 
-  // Initialize Carousels
+  // Initialize Carousels & Autoplay
   setupCarousel('servicios-slider', 'btn-servicios-prev', 'btn-servicios-next');
   setupCarousel('eventos-slider', 'btn-eventos-prev', 'btn-eventos-next');
+  startAutoScroll('servicios-slider', 4000);
+  startAutoScroll('eventos-slider', 4500);
 
   // Ensure Lucide icons are initialized on dynamic DOM changes
   if (window.lucide) {

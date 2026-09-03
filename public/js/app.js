@@ -509,6 +509,9 @@ function renderServicios() {
   if (window.setupCarousel) {
     window.setupCarousel('servicios-slider', 'btn-servicios-prev', 'btn-servicios-next');
   }
+  if (window.startAutoScroll) {
+    window.startAutoScroll('servicios-slider', 4000);
+  }
 }
 
 function renderEventos() {
@@ -582,6 +585,9 @@ function renderEventos() {
   if (window.lucide) window.lucide.createIcons();
   if (window.setupCarousel) {
     window.setupCarousel('eventos-slider', 'btn-eventos-prev', 'btn-eventos-next');
+  }
+  if (window.startAutoScroll) {
+    window.startAutoScroll('eventos-slider', 4500);
   }
 }
 
