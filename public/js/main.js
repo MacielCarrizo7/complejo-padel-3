@@ -333,7 +333,20 @@ function setupMainFirestoreListeners() {
       db.collection('canchas').onSnapshot(snapshot => {
         if (!snapshot.empty) {
           const list = [];
-          snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+          snapshot.forEach(doc => {
+            const d = doc.data() || {};
+            const depStr = String(d.deporte || 'PADEL').trim().toUpperCase();
+            list.push({
+              id: doc.id,
+              nombre: String(d.nombre || '').trim() || 'Cancha sin nombre',
+              deporte: depStr.includes('F') ? 'FUTBOL' : 'PADEL',
+              ubicacion: String(d.ubicacion || 'Interior Techada').trim() || 'Interior Techada',
+              precio: Number(d.precio) || 0,
+              superficie: String(d.superficie || (depStr.includes('F') ? 'Sintético 50mm' : 'Césped Sintético Azul WPT')).trim(),
+              jugadores: Number(d.jugadores) || (depStr.includes('F') ? 5 : 4),
+              activo: d.activo !== false
+            });
+          });
           if (window.state) {
             window.state.config = window.state.config || {};
             window.state.config.canchas = list;

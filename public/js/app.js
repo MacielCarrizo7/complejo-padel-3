@@ -303,10 +303,12 @@ window.horariosDisponibles = horariosDisponibles;
 function getCanchasFiltradas() {
   let canchas = window.state.config.canchas || [];
   if (window.state.selectedSport !== 'todos') {
-    canchas = canchas.filter(c => c.deporte === window.state.selectedSport);
+    const sportFilter = String(window.state.selectedSport).toLowerCase();
+    canchas = canchas.filter(c => String(c.deporte || '').toLowerCase().includes(sportFilter));
   }
   if (window.state.selectedLocation !== 'todos') {
-    canchas = canchas.filter(c => c.ubicacion === window.state.selectedLocation);
+    const locFilter = String(window.state.selectedLocation).toLowerCase();
+    canchas = canchas.filter(c => String(c.ubicacion || '').toLowerCase().includes(locFilter));
   }
   return canchas;
 }
@@ -1184,7 +1186,18 @@ function setupFirestoreListeners() {
     if (!snapshot.empty) {
       const list = [];
       snapshot.forEach(doc => {
-        list.push({ id: doc.id, ...doc.data() });
+        const d = doc.data() || {};
+        const depStr = String(d.deporte || 'PADEL').trim().toUpperCase();
+        list.push({
+          id: doc.id,
+          nombre: String(d.nombre || '').trim() || 'Cancha sin nombre',
+          deporte: depStr.includes('F') ? 'FUTBOL' : 'PADEL',
+          ubicacion: String(d.ubicacion || 'Interior Techada').trim() || 'Interior Techada',
+          precio: Number(d.precio) || 0,
+          superficie: String(d.superficie || (depStr.includes('F') ? 'Sintético 50mm' : 'Césped Sintético Azul WPT')).trim(),
+          jugadores: Number(d.jugadores) || (depStr.includes('F') ? 5 : 4),
+          activo: d.activo !== false
+        });
       });
       window.state.config = window.state.config || {};
       window.state.config.canchas = list;

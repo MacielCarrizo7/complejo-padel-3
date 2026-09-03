@@ -110,6 +110,32 @@ function slotEstaOcupado(reserva, slotHora) {
 }
 window.slotEstaOcupado = slotEstaOcupado;
 
+// Sanitización Estricta de Datos para Canchas (Previene campos undefined en Firestore)
+function sanitizarCancha(c, fallbackId = '') {
+  if (!c || typeof c !== 'object') c = {};
+  const cId = String(c.id || fallbackId || '').trim();
+  const nombre = String(c.nombre || '').trim() || 'Cancha sin nombre';
+  const depStr = String(c.deporte || 'PADEL').trim().toUpperCase();
+  const deporte = depStr.includes('F') ? 'FUTBOL' : 'PADEL';
+  const ubicacion = String(c.ubicacion || 'Interior Techada').trim() || 'Interior Techada';
+  const precio = Number(c.precio) || 0;
+  const superficie = String(c.superficie || (deporte === 'PADEL' ? 'Césped Sintético Azul WPT' : 'Sintético 50mm')).trim();
+  const jugadores = Number(c.jugadores) || (deporte === 'PADEL' ? 4 : 5);
+
+  const res = {
+    nombre,
+    deporte,
+    ubicacion,
+    precio,
+    superficie,
+    jugadores,
+    activo: c.activo !== false
+  };
+  if (cId) res.id = cId;
+  return res;
+}
+window.sanitizarCancha = sanitizarCancha;
+
 // Siluetas Tácticas Compactas (Mini-Pistas h-20 / max-h-24)
 function getMiniCourtSvgHtml(deporte, ubicacion) {
   const isPadel = String(deporte || '').toLowerCase().includes('pad');
@@ -435,7 +461,7 @@ function setupAdminFirestoreListeners() {
     if (!snapshot.empty) {
       const list = [];
       snapshot.forEach(doc => {
-        list.push({ id: doc.id, ...doc.data() });
+        list.push(sanitizarCancha({ id: doc.id, ...doc.data() }, doc.id));
       });
       adminState.config = adminState.config || {};
       adminState.config.canchas = list;
@@ -1607,39 +1633,43 @@ async function saveCanchasConfig() {
   btn.textContent = 'Guardando Canchas en Firestore... ⏳';
 
   try {
-    const canchas = adminState.config?.canchas || [];
+    const rawCanchas = adminState.config?.canchas || [];
+    const canchasSanitizadas = [];
+
     if (firebaseFirestore) {
-      for (const c of canchas) {
+      for (const c of rawCanchas) {
         const cId = c.id || firebaseFirestore.collection('canchas').doc().id;
-        c.id = cId;
-        await firebaseFirestore.collection('canchas').doc(cId).set({
-          nombre: c.nombre,
-          deporte: c.deporte,
-          ubicacion: c.ubicacion,
-          precio: Number(c.precio) || 0,
-          superficie: c.superficie || '',
-          jugadores: c.jugadores || (c.deporte === 'padel' ? 4 : 5),
-          activo: true,
+        const canchaData = {
+          ...sanitizarCancha(c, cId),
+          id: cId,
           actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
             ? firebase.firestore.FieldValue.serverTimestamp()
             : new Date()
-        }, { merge: true });
+        };
+
+        await firebaseFirestore.collection('canchas').doc(cId).set(canchaData, { merge: true });
+        canchasSanitizadas.push(canchaData);
       }
 
+      adminState.config = adminState.config || {};
+      adminState.config.canchas = canchasSanitizadas;
+
       await firebaseFirestore.collection('configuracion').doc('general').set({
-        canchas,
+        canchas: canchasSanitizadas,
         actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
           ? firebase.firestore.FieldValue.serverTimestamp()
           : new Date()
       }, { merge: true });
 
       await firebaseFirestore.collection('config').doc('general').set({
-        canchas,
+        canchas: canchasSanitizadas,
         actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
           ? firebase.firestore.FieldValue.serverTimestamp()
           : new Date()
       }, { merge: true });
     }
+
+    renderCanchasTab();
 
     btn.textContent = '✓ ¡Canchas Guardadas en Firestore!';
     setTimeout(() => {
@@ -2026,7 +2056,7 @@ async function saveGeneralConfig() {
     diasAtencion,
     diasActivos,
     adminEmail,
-    canchas: adminState.config?.canchas || [],
+    canchas: (adminState.config?.canchas || []).map(c => sanitizarCancha(c, c.id)),
     actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
       ? firebase.firestore.FieldValue.serverTimestamp()
       : new Date()
@@ -2501,20 +2531,22 @@ async function initAdmin() {
 
   document.getElementById('form-edit-cancha')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('edit-cancha-id').value.trim();
-    const nombre = document.getElementById('edit-cancha-nombre').value.trim();
-    const deporte = document.getElementById('edit-cancha-deporte').value;
-    const ubicacion = document.getElementById('edit-cancha-ubicacion').value;
-    const precio = Number(document.getElementById('edit-cancha-precio').value) || 0;
+    const id = document.getElementById('edit-cancha-id')?.value?.trim() || '';
+    const nombreInput = document.getElementById('edit-cancha-nombre');
+    const deporteSelect = document.getElementById('edit-cancha-deporte');
+    const ubicacionSelect = document.getElementById('edit-cancha-ubicacion');
+    const precioInput = document.getElementById('edit-cancha-precio');
+
+    const rawData = {
+      id,
+      nombre: nombreInput ? nombreInput.value : '',
+      deporte: deporteSelect ? deporteSelect.value : 'padel',
+      ubicacion: ubicacionSelect ? ubicacionSelect.value : 'Interior Techada',
+      precio: precioInput ? Number(precioInput.value) : 20000
+    };
 
     const canchaData = {
-      nombre,
-      deporte,
-      ubicacion,
-      precio,
-      superficie: deporte === 'padel' ? 'Césped Sintético Azul WPT' : 'Sintético 50mm',
-      jugadores: deporte === 'padel' ? 4 : 5,
-      activo: true,
+      ...sanitizarCancha(rawData, id),
       actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
         ? firebase.firestore.FieldValue.serverTimestamp()
         : new Date()
