@@ -401,7 +401,7 @@
             </button>
           </div>
 
-          <div id="admin-canchas-manager-container" class="space-y-4">
+          <div id="admin-canchas-manager-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <!-- Dynamic courts rendered by admin.js -->
           </div>
 
@@ -876,6 +876,78 @@
           <button type="submit" id="btn-submit-edit-servicio" class="btn-neon-pill px-6 py-2.5 text-xs font-bold">
             <i data-lucide="save" class="w-4 h-4 text-black"></i>
             <span>GUARDAR CAMBIOS DEL SERVICIO</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= MODAL DE EDICIÓN DE CANCHAS ================= -->
+  <div id="modal-cancha" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full p-5 sm:p-6 space-y-4 border border-[#00E676]/40 shadow-[0_0_50px_rgba(0,230,118,0.2)]">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 id="modal-cancha-title" class="font-sports text-lg font-bold text-white uppercase leading-none">CONFIGURAR CANCHA</h3>
+            <span class="text-xs text-slate-400">Modificá nombre, deporte, ubicación y precio</span>
+          </div>
+        </div>
+        <button id="btn-close-modal-cancha" type="button" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Previsualización Táctica en Vivo (Compacta max-h-24 / h-20) -->
+      <div class="space-y-1">
+        <label class="block text-[11px] font-bold text-slate-400 uppercase">Previsualización Táctica en Vivo</label>
+        <div id="preview-cancha-container">
+          <!-- Dynamic mini-silueta -->
+        </div>
+      </div>
+
+      <form id="form-edit-cancha" class="space-y-3">
+        <input id="edit-cancha-id" type="hidden">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="edit-cancha-nombre" class="block text-xs font-bold text-slate-300 uppercase mb-1">Nombre *</label>
+            <input id="edit-cancha-nombre" type="text" required placeholder="Ej: Pista 1 - Cristal Pro" class="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-white text-xs focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label for="edit-cancha-deporte" class="block text-xs font-bold text-slate-300 uppercase mb-1">Deporte</label>
+            <select id="edit-cancha-deporte" class="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-white text-xs focus:outline-none focus:border-emerald-500">
+              <option value="padel">🎾 Pádel</option>
+              <option value="futbol">⚽ Fútbol</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="edit-cancha-ubicacion" class="block text-xs font-bold text-slate-300 uppercase mb-1">Formato / Ubicación</label>
+            <select id="edit-cancha-ubicacion" class="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-white text-xs focus:outline-none focus:border-emerald-500">
+              <option value="interior">🏠 Interior Techada</option>
+              <option value="exterior">☀️ Exterior</option>
+            </select>
+          </div>
+          <div>
+            <label for="edit-cancha-precio" class="block text-xs font-bold text-slate-300 uppercase mb-1">Precio / Turno ($)</label>
+            <input id="edit-cancha-precio" type="number" step="500" min="0" required placeholder="24000" class="w-full px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-emerald-400 font-bold text-xs focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2.5 border-t border-slate-800">
+          <button type="button" id="btn-cancel-modal-cancha" class="px-4 py-2 rounded-xl bg-[#161F30] hover:bg-[#1E293B] border border-slate-700 text-slate-300 text-xs font-bold transition-all">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-submit-cancha" class="btn-neon-pill px-5 py-2 text-xs font-bold">
+            <i data-lucide="save" class="w-4 h-4 text-black"></i>
+            <span>Guardar Cancha</span>
           </button>
         </div>
       </form>

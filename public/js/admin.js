@@ -110,12 +110,55 @@ function slotEstaOcupado(reserva, slotHora) {
 }
 window.slotEstaOcupado = slotEstaOcupado;
 
-// Generate Pitch Silhouette SVG
+// Siluetas Tácticas Compactas (Mini-Pistas h-20 / max-h-24)
+function getMiniCourtSvgHtml(deporte, ubicacion) {
+  const isPadel = String(deporte || '').toLowerCase().includes('pad');
+  if (isPadel) {
+    return `
+      <div class="h-20 w-full flex items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 my-2.5 overflow-hidden">
+        <svg viewBox="0 0 160 52" class="w-full h-full max-h-16" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Marco rectangular estilizado en cian/azul neón -->
+          <rect x="2" y="2" width="156" height="48" rx="3" fill="rgba(14, 165, 233, 0.05)" stroke="rgba(14, 165, 233, 0.6)" stroke-width="1.5" />
+          <!-- Líneas de juego interiores -->
+          <rect x="18" y="5" width="124" height="42" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
+          <!-- Líneas de saque y T central -->
+          <line x1="42" y1="5" x2="42" y2="47" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <line x1="118" y1="5" x2="118" y2="47" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <line x1="42" y1="26" x2="118" y2="26" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <!-- Red central punteada verde tenue -->
+          <line x1="80" y1="1" x2="80" y2="51" stroke="#10b981" stroke-width="2" stroke-dasharray="3,2" />
+          <circle cx="80" cy="3" r="1.5" fill="#10b981" />
+          <circle cx="80" cy="49" r="1.5" fill="#10b981" />
+        </svg>
+      </div>
+    `;
+  } else {
+    return `
+      <div class="h-20 w-full flex items-center justify-center p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 my-2.5 overflow-hidden">
+        <svg viewBox="0 0 160 52" class="w-full h-full max-h-16" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <!-- Marco verde esmeralda sutil -->
+          <rect x="2" y="2" width="156" height="48" rx="3" fill="rgba(16, 185, 129, 0.05)" stroke="rgba(16, 185, 129, 0.5)" stroke-width="1.5" />
+          <!-- Línea de medio campo -->
+          <line x1="80" y1="2" x2="80" y2="50" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+          <!-- Círculo central discreto -->
+          <circle cx="80" cy="26" r="11" fill="none" stroke="rgba(255, 255, 255, 0.35)" stroke-width="1" />
+          <circle cx="80" cy="26" r="1.5" fill="#10b981" />
+          <!-- Áreas de portería -->
+          <rect x="2" y="14" width="16" height="24" fill="none" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+          <rect x="142" y="14" width="16" height="24" fill="none" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1" />
+        </svg>
+      </div>
+    `;
+  }
+}
+window.getMiniCourtSvgHtml = getMiniCourtSvgHtml;
+
+// Generate Pitch Silhouette SVG (Compact h-20 for tactical view)
 function getCourtSvgHtml(cancha) {
   if (cancha.deporte === 'padel') {
     return `
-      <div class="pitch-container pitch-padel">
-        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="pitch-container pitch-padel h-20 max-h-20 my-2 overflow-hidden">
+        <svg class="pitch-svg max-h-16" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="6" y="6" width="188" height="78" fill="none" stroke="rgba(0, 210, 255, 0.7)" stroke-width="2" />
           <rect x="8" y="8" width="184" height="74" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
           <line x1="38" y1="8" x2="38" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
@@ -126,14 +169,14 @@ function getCourtSvgHtml(cancha) {
           <circle cx="100" cy="85" r="2.5" fill="#00E676" />
         </svg>
         <div class="pitch-indicator">
-          <span>🎾 Pádel (4 jug. · 2 vs 2)</span>
+          <span>🎾 Pádel</span>
         </div>
       </div>
     `;
   } else {
     return `
-      <div class="pitch-container pitch-futbol">
-        <svg class="pitch-svg" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="pitch-container pitch-futbol h-20 max-h-20 my-2 overflow-hidden">
+        <svg class="pitch-svg max-h-16" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="5" y="5" width="190" height="80" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
           <line x1="100" y1="5" x2="100" y2="85" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
           <circle cx="100" cy="45" r="16" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
@@ -142,7 +185,7 @@ function getCourtSvgHtml(cancha) {
           <rect x="169" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
         </svg>
         <div class="pitch-indicator">
-          <span>⚽ Fútbol ${cancha.jugadores || 5} (${cancha.jugadores || 5} vs ${cancha.jugadores || 5})</span>
+          <span>⚽ Fútbol ${cancha.jugadores || 5}</span>
         </div>
       </div>
     `;
@@ -1407,6 +1450,54 @@ window.aplicarFiltros = renderTurnosList;
 
 // ================= TAB 2: GESTIÓN DE CANCHAS =================
 
+function updateCanchaPreview() {
+  const container = document.getElementById('preview-cancha-container');
+  if (!container) return;
+  const deporte = document.getElementById('edit-cancha-deporte')?.value || 'padel';
+  const ubicacion = document.getElementById('edit-cancha-ubicacion')?.value || 'interior';
+  container.innerHTML = getMiniCourtSvgHtml(deporte, ubicacion);
+}
+
+function openEditCanchaModal(canchaId) {
+  const modal = document.getElementById('modal-cancha');
+  if (!modal) return;
+
+  const cancha = (adminState.config?.canchas || []).find(c => c.id === canchaId);
+  const titleEl = document.getElementById('modal-cancha-title');
+  const idInput = document.getElementById('edit-cancha-id');
+  const nombreInput = document.getElementById('edit-cancha-nombre');
+  const deporteSelect = document.getElementById('edit-cancha-deporte');
+  const ubicacionSelect = document.getElementById('edit-cancha-ubicacion');
+  const precioInput = document.getElementById('edit-cancha-precio');
+
+  if (cancha) {
+    if (titleEl) titleEl.textContent = 'EDITAR CANCHA';
+    if (idInput) idInput.value = cancha.id;
+    if (nombreInput) nombreInput.value = cancha.nombre || '';
+    if (deporteSelect) deporteSelect.value = cancha.deporte || 'padel';
+    if (ubicacionSelect) ubicacionSelect.value = cancha.ubicacion || 'interior';
+    if (precioInput) precioInput.value = cancha.precio || 20000;
+  } else {
+    if (titleEl) titleEl.textContent = 'AGREGAR NUEVA CANCHA';
+    const count = (adminState.config?.canchas?.length || 0) + 1;
+    const isPadel = count % 2 !== 0;
+    if (idInput) idInput.value = '';
+    if (nombreInput) nombreInput.value = isPadel ? `Pista ${count} - Cristal Pro` : `Cancha ${count} - Sintético`;
+    if (deporteSelect) deporteSelect.value = isPadel ? 'padel' : 'futbol';
+    if (ubicacionSelect) ubicacionSelect.value = 'interior';
+    if (precioInput) precioInput.value = isPadel ? 24000 : 28000;
+  }
+
+  updateCanchaPreview();
+  modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function closeEditCanchaModal() {
+  const modal = document.getElementById('modal-cancha');
+  if (modal) modal.classList.add('hidden');
+}
+
 function renderCanchasTab() {
   const container = document.getElementById('admin-canchas-manager-container');
   if (!container) return;
@@ -1414,152 +1505,100 @@ function renderCanchasTab() {
 
   const canchas = adminState.config?.canchas || [];
 
-  canchas.forEach((cancha, index) => {
-    const item = document.createElement('div');
-    item.className = 'glass-card p-5 border border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end';
+  if (canchas.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-500">
+        <i data-lucide="layers" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+        <p class="text-sm font-semibold">No hay canchas configuradas todavía.</p>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
 
-    const isPadel = cancha.deporte === 'padel';
+  canchas.forEach((cancha) => {
+    const isPadel = (cancha.deporte || '').toLowerCase() === 'padel';
+    const card = document.createElement('div');
+    card.className = 'glass-card p-4 rounded-2xl border border-slate-800 bg-[#0f172a]/90 hover:border-slate-700 transition-all flex flex-col justify-between shadow-lg';
+    card.setAttribute('data-cancha-id', cancha.id || '');
 
-    item.innerHTML = `
-      <div class="lg:col-span-2">
-        <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Nombre de Cancha</label>
-        <input type="text" value="${escapeHtml(cancha.nombre)}" data-idx="${index}" data-field="nombre" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
+    card.innerHTML = `
+      <!-- Header en una sola línea: Nombre de la Cancha en negrita + badges pequeños de Deporte y Ubicación -->
+      <div class="flex items-center justify-between gap-2">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide truncate" title="${escapeHtml(cancha.nombre)}">
+          ${escapeHtml(cancha.nombre)}
+        </h4>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isPadel ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}">
+            ${isPadel ? '🎾 Pádel' : '⚽ Fútbol'}
+          </span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-slate-800/80 text-slate-400 border border-slate-700">
+            ${cancha.ubicacion === 'interior' ? 'Interior' : 'Exterior'}
+          </span>
+        </div>
       </div>
 
-      <div>
-        <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Deporte</label>
-        <select data-idx="${index}" data-field="deporte" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
-          <option value="padel" ${isPadel ? 'selected' : ''}>🎾 Pádel</option>
-          <option value="futbol" ${!isPadel ? 'selected' : ''}>⚽ Fútbol</option>
-        </select>
-      </div>
+      <!-- Centro: Mini-silueta táctica compacta (h-20) -->
+      ${getMiniCourtSvgHtml(cancha.deporte, cancha.ubicacion)}
 
-      <div>
-        <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Ubicación</label>
-        <select data-idx="${index}" data-field="ubicacion" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-white text-xs focus:outline-none focus:border-[#00E676]">
-          <option value="interior" ${cancha.ubicacion === 'interior' ? 'selected' : ''}>🏠 Interior Techada</option>
-          <option value="exterior" ${cancha.ubicacion === 'exterior' ? 'selected' : ''}>☀️ Exterior</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-[11px] font-bold text-[#00E676] uppercase mb-1">Precio / Turno ($)</label>
-        <input type="number" min="0" step="500" value="${cancha.precio || 20000}" data-idx="${index}" data-field="precio" class="w-full px-3 py-2 rounded-lg bg-[#1E293B] border border-slate-700 text-[#00E676] font-bold text-xs focus:outline-none focus:border-[#00E676]">
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button type="button" class="btn-del-cancha w-full py-2 px-3 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white text-xs font-bold border border-red-500/30 transition-all flex items-center justify-center gap-1" data-del-idx="${index}">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          <span>Eliminar</span>
-        </button>
+      <!-- Footer de la tarjeta: Precio a la izquierda + Botones de acción compactos (w-7 h-7) a la derecha -->
+      <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between">
+        <div class="flex items-baseline gap-1">
+          <span class="font-bold text-emerald-400 text-sm">$ ${Number(cancha.precio || 20000).toLocaleString('es-AR')}</span>
+          <span class="text-[11px] text-slate-500 font-medium">/ h</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" class="btn-edit-cancha w-7 h-7 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 border border-sky-500/30 flex items-center justify-center transition-colors" data-id="${cancha.id}" title="Editar cancha">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          </button>
+          <button type="button" class="btn-del-cancha w-7 h-7 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 flex items-center justify-center transition-colors" data-id="${cancha.id}" title="Eliminar cancha">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
       </div>
     `;
 
-    container.appendChild(item);
+    container.appendChild(card);
   });
 
-  container.querySelectorAll('input, select').forEach(el => {
-    el.addEventListener('change', async (e) => {
-      const idx = parseInt(e.target.dataset.idx);
-      const field = e.target.dataset.field;
-      const c = adminState.config?.canchas[idx];
-      if (!c) return;
-
-      if (field === 'precio' || field === 'jugadores') {
-        c[field] = Number(e.target.value) || 0;
-      } else {
-        c[field] = e.target.value.trim();
-      }
-
-      if (field === 'deporte') {
-        if (e.target.value === 'padel') {
-          c.jugadores = 4;
-          c.superficie = 'Césped Sintético Azul WPT';
-        } else {
-          c.jugadores = 5;
-          c.superficie = 'Césped Sintético 50mm';
-        }
-        renderCanchasTab();
-      }
-
-      // Persistir inmediatamente en Firestore collection 'canchas'
-      if (c.id && firebaseFirestore) {
-        try {
-          await firebaseFirestore.collection('canchas').doc(c.id).set({
-            nombre: c.nombre,
-            deporte: c.deporte,
-            ubicacion: c.ubicacion,
-            precio: Number(c.precio) || 0,
-            superficie: c.superficie || '',
-            jugadores: c.jugadores || (c.deporte === 'padel' ? 4 : 5),
-            actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
-              ? firebase.firestore.FieldValue.serverTimestamp()
-              : new Date()
-          }, { merge: true });
-          console.log(`✓ [Firestore] Cancha ${c.id} actualizada`);
-        } catch (err) {
-          console.error('Error actualizando cancha en Firestore:', err);
-        }
-      }
+  // Attach Edit Listeners
+  container.querySelectorAll('.btn-edit-cancha').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      openEditCanchaModal(id);
     });
   });
 
+  // Attach Delete Listeners
   container.querySelectorAll('.btn-del-cancha').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const idx = parseInt(btn.dataset.delIdx);
+      const id = btn.dataset.id;
       if ((adminState.config?.canchas?.length || 0) <= 1) {
         alert('El complejo debe tener al menos una cancha configurada.');
         return;
       }
-      const c = adminState.config.canchas[idx];
-      if (confirm(`¿Eliminar la cancha "${c.nombre}"?`)) {
-        if (c.id && firebaseFirestore) {
+      const c = adminState.config?.canchas?.find(x => x.id === id);
+      const nombre = c?.nombre || 'esta cancha';
+      if (confirm(`¿Eliminar la cancha "${nombre}"?`)) {
+        if (id && firebaseFirestore) {
           try {
-            await firebaseFirestore.collection('canchas').doc(c.id).delete();
-            console.log(`✓ [Firestore] Cancha ${c.id} eliminada`);
+            await firebaseFirestore.collection('canchas').doc(id).delete();
+            console.log(`✓ [Firestore] Cancha ${id} eliminada`);
           } catch (err) {
             console.error('Error eliminando cancha de Firestore:', err);
           }
         }
-        adminState.config.canchas.splice(idx, 1);
+        adminState.config.canchas = (adminState.config.canchas || []).filter(x => x.id !== id);
         renderCanchasTab();
       }
     });
   });
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
-async function addNewCancha() {
-  const num = (adminState.config?.canchas?.length || 0) + 1;
-  const isPadel = num % 2 !== 0;
-  const nueva = {
-    deporte: isPadel ? 'padel' : 'futbol',
-    nombre: isPadel ? `Pista ${num} - Cristal Pro` : `Cancha ${num} - Sintético`,
-    ubicacion: 'interior',
-    superficie: isPadel ? 'Césped Sintético Azul WPT' : 'Sintético 50mm',
-    jugadores: isPadel ? 4 : 5,
-    precio: isPadel ? 24000 : 28000,
-    activo: true,
-    actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
-      ? firebase.firestore.FieldValue.serverTimestamp()
-      : new Date()
-  };
-
-  try {
-    if (firebaseFirestore) {
-      const docRef = await firebaseFirestore.collection('canchas').add(nueva);
-      nueva.id = docRef.id;
-      console.log('✓ [Firestore] Nueva cancha agregada con ID:', docRef.id);
-    } else {
-      nueva.id = `c_${Date.now()}`;
-    }
-  } catch (e) {
-    nueva.id = `c_${Date.now()}`;
-    console.error('Error al agregar cancha en Firestore:', e);
-  }
-
-  if (!adminState.config.canchas) adminState.config.canchas = [];
-  adminState.config.canchas.push(nueva);
-  renderCanchasTab();
+function addNewCancha() {
+  openEditCanchaModal(null);
 }
 
 async function saveCanchasConfig() {
@@ -2447,6 +2486,70 @@ async function initAdmin() {
     } catch (err) {
       console.error('Error al guardar servicio en Firestore:', err);
       alert('Error al guardar servicio en Firestore: ' + (err.message || ''));
+    }
+  });
+
+  // Canchas Modal Listeners
+  document.getElementById('btn-close-modal-cancha')?.addEventListener('click', closeEditCanchaModal);
+  document.getElementById('btn-cancel-modal-cancha')?.addEventListener('click', closeEditCanchaModal);
+  document.getElementById('modal-cancha')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-cancha') closeEditCanchaModal();
+  });
+
+  document.getElementById('edit-cancha-deporte')?.addEventListener('change', updateCanchaPreview);
+  document.getElementById('edit-cancha-ubicacion')?.addEventListener('change', updateCanchaPreview);
+
+  document.getElementById('form-edit-cancha')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-cancha-id').value.trim();
+    const nombre = document.getElementById('edit-cancha-nombre').value.trim();
+    const deporte = document.getElementById('edit-cancha-deporte').value;
+    const ubicacion = document.getElementById('edit-cancha-ubicacion').value;
+    const precio = Number(document.getElementById('edit-cancha-precio').value) || 0;
+
+    const canchaData = {
+      nombre,
+      deporte,
+      ubicacion,
+      precio,
+      superficie: deporte === 'padel' ? 'Césped Sintético Azul WPT' : 'Sintético 50mm',
+      jugadores: deporte === 'padel' ? 4 : 5,
+      activo: true,
+      actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+        ? firebase.firestore.FieldValue.serverTimestamp()
+        : new Date()
+    };
+
+    try {
+      if (id) {
+        canchaData.id = id;
+        if (firebaseFirestore) {
+          await firebaseFirestore.collection('canchas').doc(id).set(canchaData, { merge: true });
+          console.log(`✓ [Firestore] Cancha ${id} actualizada con éxito`);
+        }
+        const idx = (adminState.config?.canchas || []).findIndex(x => x.id === id);
+        if (idx !== -1) {
+          adminState.config.canchas[idx] = { ...adminState.config.canchas[idx], ...canchaData };
+        }
+      } else {
+        if (firebaseFirestore) {
+          const docRef = await firebaseFirestore.collection('canchas').add(canchaData);
+          canchaData.id = docRef.id;
+          console.log(`✓ [Firestore] Cancha creada con ID:`, docRef.id);
+        } else {
+          canchaData.id = `c_${Date.now()}`;
+        }
+        if (!adminState.config) adminState.config = {};
+        if (!adminState.config.canchas) adminState.config.canchas = [];
+        adminState.config.canchas.push(canchaData);
+      }
+
+      closeEditCanchaModal();
+      renderCanchasTab();
+      alert(id ? '✓ Cancha actualizada exitosamente en Firestore.' : '✓ Cancha creada exitosamente en Firestore.');
+    } catch (err) {
+      console.error('Error al guardar cancha en Firestore:', err);
+      alert('Error al guardar cancha en Firestore: ' + (err.message || ''));
     }
   });
 
