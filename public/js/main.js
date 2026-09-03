@@ -179,6 +179,64 @@ function getHorasOcupadas(reserva) {
   return [String(reserva.horario || reserva.hora || '')].filter(Boolean);
 }
 
+function formatFechaLegibleTexto(iso) {
+  try {
+    const [y, m, d] = String(iso).split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${dias[date.getDay()]} ${d} de ${meses[m - 1]}`;
+  } catch (e) {
+    return iso;
+  }
+}
+
+function crearObjetoReserva({
+  cliente,
+  telefono,
+  cancha,
+  deporte,
+  fecha,
+  hora,
+  duracion,
+  precio
+}) {
+  const durStr = String(duracion || '1').includes('2') || Number(duracion) === 2 ? '2h' : '1h';
+  const durNum = durStr === '2h' ? 2 : 1;
+  const [hStr, mStr] = String(hora || '00:00').split(':').map(Number);
+  const nextH = (hStr + durNum) % 24;
+  const horaInicio = String(hora || '00:00');
+  const horaFin = `${String(nextH).padStart(2, '0')}:${String(mStr || 0).padStart(2, '0')}`;
+  const fechaISO = String(fecha || '').trim();
+
+  const canchaNombre = typeof cancha === 'object' ? (cancha.nombre || '') : String(cancha || '');
+  const deporteStr = (String(deporte || (typeof cancha === 'object' ? cancha.deporte : 'padel'))).toUpperCase().includes('FUT') ? 'FUTBOL' : 'PADEL';
+
+  const ts = (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+    ? window.firebase.firestore.FieldValue.serverTimestamp()
+    : new Date().toISOString();
+
+  return {
+    cliente: String(cliente || '').trim(),
+    telefono: String(telefono || '').trim(),
+    cancha: canchaNombre.trim(),
+    deporte: deporteStr,
+    fecha: fechaISO,
+    fechaTexto: formatFechaLegibleTexto(fechaISO),
+    hora: horaInicio,
+    horario: `${horaInicio} a ${horaFin} hs`,
+    duracion: durStr,
+    precio: Number(precio) || 0,
+    estado: "pendiente",
+    creadoEn: ts,
+    // Mapeo retrocompatible seguro
+    nombre: String(cliente || '').trim(),
+    whatsapp: String(telefono || '').trim(),
+    canchaNombre: canchaNombre.trim(),
+    canchaId: typeof cancha === 'object' ? (cancha.id || '') : ''
+  };
+}
+
 window.getScrollStep = getScrollStep;
 window.setupCarousel = setupCarousel;
 window.startAutoScroll = startAutoScroll;
@@ -186,6 +244,8 @@ window.updateCanchasNav = updateCanchasNav;
 window.setupCanchasNav = setupCanchasNav;
 window.matchCancha = matchCancha;
 window.getHorasOcupadas = getHorasOcupadas;
+window.crearObjetoReserva = crearObjetoReserva;
+window.formatFechaLegibleTexto = formatFechaLegibleTexto;
 
 document.addEventListener('DOMContentLoaded', () => {
   // Touch helper for horizontal scroll sliders

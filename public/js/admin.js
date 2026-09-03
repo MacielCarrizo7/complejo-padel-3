@@ -301,6 +301,14 @@ function initFirebaseClient() {
   }
 }
 
+let todasLasReservas = [];
+window.todasLasReservas = todasLasReservas;
+
+function actualizarContadoresKPIs(reservas) {
+  fetchMetrics().then(() => renderMetricsKpis());
+}
+window.actualizarContadoresKPIs = actualizarContadoresKPIs;
+
 function setupAdminFirestoreListeners() {
   if (!firebaseFirestore) return;
 
@@ -340,19 +348,49 @@ function setupAdminFirestoreListeners() {
     }
   }, err => console.warn('Admin Firestore eventos onSnapshot error:', err));
 
-  // Escucha reactiva en tiempo real de la colección 'turnos'
-  firebaseFirestore.collection('turnos').onSnapshot(snapshot => {
-    if (!snapshot.empty) {
-      const list = [];
-      snapshot.forEach(doc => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      adminState.turnos = list;
-      window.turnosData = list;
-      window.todasLasReservas = list;
-      fetchMetrics().then(() => renderMetricsKpis());
+  // Escucha activa en tiempo real de la colección 'reservas' (y 'turnos')
+  const handleReservasSnapshot = (snapshot) => {
+    todasLasReservas = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    console.log("Reservas actualizadas en tiempo real:", todasLasReservas);
+    window.todasLasReservas = todasLasReservas;
+    window.turnosData = todasLasReservas;
+    adminState.turnos = todasLasReservas;
+
+    // Re-renderizar la vista activa de inmediato
+    const estaEnSiluetas = !document.getElementById('vista-siluetas-container')?.classList.contains('hidden');
+    if (estaEnSiluetas) {
+      const diaActivo = document.querySelector('.btn-dia-silueta.activo')?.dataset.date || adminState.selectedTacticalFecha || '2026-09-03';
+      renderTacticalPitchesView(diaActivo);
+    } else {
+      renderAgendaListItems(todasLasReservas);
     }
-  }, err => console.warn('Admin Firestore turnos onSnapshot error:', err));
+    actualizarContadoresKPIs(todasLasReservas);
+  };
+
+  try {
+    firebaseFirestore.collection("reservas").orderBy("creadoEn", "desc").onSnapshot(handleReservasSnapshot, (error) => {
+      console.warn("Aviso en query orderBy(creadoEn), escuchando sin ordenamiento:", error);
+      firebaseFirestore.collection("reservas").onSnapshot(handleReservasSnapshot, (err) => {
+        console.error("Error en escucha tiempo real de reservas:", err);
+      });
+    });
+  } catch (err) {
+    firebaseFirestore.collection("reservas").onSnapshot(handleReservasSnapshot, (error) => {
+      console.error("Error en escucha tiempo real de reservas:", error);
+    });
+  }
+
+  // Escucha reactiva sobre 'turnos' como respaldo para unificar ambas colecciones
+  try {
+    firebaseFirestore.collection("turnos").onSnapshot(snapshot => {
+      if (!snapshot.empty && (!todasLasReservas || todasLasReservas.length === 0)) {
+        handleReservasSnapshot(snapshot);
+      }
+    }, err => console.warn('Admin Firestore turnos onSnapshot error:', err));
+  } catch (e) {}
 }
 
 async function saveToFirestore(docId, data) {
@@ -972,63 +1010,56 @@ function renderAgendaListItems() {
   let currentDay = null;
 
   list.forEach(t => {
-    if (t.fecha !== currentDay) {
-      currentDay = t.fecha;
+    const r = t;
+    const nombreCliente = r.cliente || r.nombre || 'Cliente sin nombre';
+    const telCliente = r.telefono || r.whatsapp || 'Sin teléfono';
+    const nombreCancha = r.cancha || r.canchaNombre || 'Cancha general';
+    const fechaMostrar = r.fechaTexto || r.fecha || 'Fecha no definida';
+    const horarioMostrar = r.horario || (r.hora ? `${r.hora} hs` : 'Horario no definido');
+    const precioMostrar = (Number(r.precio) || 0).toLocaleString('es-AR');
+
+    if (r.fecha !== currentDay) {
+      currentDay = r.fecha;
       const dayHeader = document.createElement('div');
       dayHeader.className = 'pt-4 pb-2 border-b border-slate-800 text-xs font-bold uppercase tracking-wider text-[#00E676] flex items-center gap-2';
-      dayHeader.innerHTML = `<i data-lucide="calendar" class="w-4 h-4"></i><span>${formatFechaLarga(t.fecha)}</span>`;
+      dayHeader.innerHTML = `<i data-lucide="calendar" class="w-4 h-4"></i><span>${escapeHtml(fechaMostrar)}</span>`;
       container.appendChild(dayHeader);
     }
 
     const card = document.createElement('div');
     card.className = 'glass-card reserva-card p-4 sm:p-5 border border-slate-800/90 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 hover:border-slate-700/80 group';
-    card.setAttribute('data-turno-card', t.id);
+    card.setAttribute('data-turno-card', r.id);
 
-    const isPadel = (t.deporte || '').toLowerCase() === 'padel';
-    const dur = Number(t.duracion) || 1;
-    const [hStr, mStr] = (t.hora || '00:00').split(':').map(Number);
-    const nextH = (hStr + dur) % 24;
-    const horaFin = t.horaFin || `${pad2(nextH)}:${pad2(mStr || 0)}`;
-    const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
-    const pasado = isTurnoPasado(t);
-    const isPendiente = !isConfirmed && !pasado && (String(t.estado || 'pendiente').toLowerCase().trim() === 'pendiente');
-
-    // Formato de nombre de cancha con deporte y superficie (ej: CANCHA 1 (FÚTBOL 5 - CÉSPED SINTÉTICO) o PISTA 1 - CRISTAL PRO)
-    const courtObj = (adminState.config?.canchas || []).find(c => c.id === t.canchaId);
-    let courtDisplayTitle = String(t.canchaNombre || 'CANCHA').toUpperCase();
-    if (courtObj) {
-      const sportInfo = courtObj.deporte === 'padel' ? 'PÁDEL' : `FÚTBOL ${courtObj.jugadores || 5}`;
-      const supInfo = courtObj.superficie ? ` - ${courtObj.superficie.toUpperCase()}` : '';
-      if (!courtDisplayTitle.includes('(') && !courtDisplayTitle.includes(sportInfo)) {
-        courtDisplayTitle = `${courtObj.nombre.toUpperCase()} (${sportInfo}${supInfo})`;
-      }
-    }
+    const isPadel = (r.deporte || '').toLowerCase().includes('padel');
+    const isConfirmed = Boolean(r.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(r.estado || '').toLowerCase().trim());
+    const pasado = isTurnoPasado(r);
+    const isPendiente = !isConfirmed && !pasado && (String(r.estado || 'pendiente').toLowerCase().trim() === 'pendiente');
 
     // Botón WhatsApp "Consultar Asistencia" para turnos pendientes
-    let cleanPhone = String(t.whatsapp || t.telefono || '').replace(/\D/g, '');
+    let cleanPhone = String(telCliente).replace(/\D/g, '');
     if (cleanPhone.length === 10 && !cleanPhone.startsWith('54')) {
       cleanPhone = '549' + cleanPhone;
     } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
       cleanPhone = '549' + cleanPhone.substring(1);
     }
-    const msgAsistencia = encodeURIComponent(`Hola ${t.nombre || t.cliente || 'Cliente'}! Te escribimos desde el complejo para confirmar si vas a asistir a tu turno de ${t.deporte === 'futbol' ? 'Fútbol' : 'Pádel'} el día ${t.fecha} a las ${t.hora} hs en ${courtDisplayTitle}. ¿Nos confirmás? Muchas gracias!`);
+    const msgAsistencia = encodeURIComponent(`Hola ${nombreCliente}! Te escribimos desde el complejo para confirmar si vas a asistir a tu turno en ${nombreCancha} el día ${fechaMostrar} a las ${horarioMostrar}. ¿Nos confirmás? Muchas gracias!`);
     const whatsappLink = cleanPhone ? `https://wa.me/${cleanPhone}?text=${msgAsistencia}` : '#';
 
     // Badge de estado
     let badgeHtml = '';
     if (pasado) {
-      badgeHtml = `<div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700 text-xs"><span>🏁 Finalizado</span></div>`;
+      badgeHtml = `<div id="badge-status-${r.id}" class="estado-badge flex items-center gap-1 font-bold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700 text-xs"><span>🏁 Finalizado</span></div>`;
     } else if (isConfirmed) {
-      badgeHtml = `<div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold text-[#00E676] bg-[#00E676]/10 px-2.5 py-1 rounded-lg border border-[#00E676]/30 text-xs"><span>✓ Confirmado</span></div>`;
+      badgeHtml = `<div id="badge-status-${r.id}" class="estado-badge flex items-center gap-1 font-bold text-[#00E676] bg-[#00E676]/10 px-2.5 py-1 rounded-lg border border-[#00E676]/30 text-xs"><span>✓ Confirmado</span></div>`;
     } else {
-      badgeHtml = `<div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 text-xs"><span>⏳ Pendiente</span></div>`;
+      badgeHtml = `<div id="badge-status-${r.id}" class="estado-badge flex items-center gap-1 font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 text-xs"><span>⏳ Pendiente</span></div>`;
     }
 
     // Bloque de acciones
     let actionsHtml = '';
     if (pasado) {
       actionsHtml = `
-        <button class="btn-liberar-cancha px-3.5 py-2 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-slate-400 hover:text-red-300 border border-slate-700 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${t.id}" title="Eliminar del historial">
+        <button class="btn-liberar-cancha px-3.5 py-2 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-slate-400 hover:text-red-300 border border-slate-700 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${r.id}" title="Eliminar del historial">
           <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
           <span>Eliminar</span>
         </button>
@@ -1040,12 +1071,12 @@ function renderAgendaListItems() {
           💬 Consultar Asistencia
         </a>` : ''}
 
-        <button id="btn-confirm-${t.id}" class="btn-confirmar btn-confirm-turno px-4 py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00E676]/90 text-black font-sports font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(0,230,118,0.25)] flex items-center gap-1.5 ${isConfirmed ? 'hidden' : ''}" data-id="${t.id}">
+        <button id="btn-confirm-${r.id}" class="btn-confirmar btn-confirm-turno px-4 py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00E676]/90 text-black font-sports font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(0,230,118,0.25)] flex items-center gap-1.5 ${isConfirmed ? 'hidden' : ''}" data-id="${r.id}">
           <i data-lucide="check" class="w-4 h-4 stroke-[3] text-black"></i>
           <span>✓ CONFIRMAR</span>
         </button>
 
-        <button class="btn-liberar-cancha px-4 py-2.5 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${t.id}" title="Liberar Cancha">
+        <button class="btn-liberar-cancha px-4 py-2.5 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${r.id}" title="Liberar Cancha">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
           <span>Liberar Cancha</span>
         </button>
@@ -1060,33 +1091,32 @@ function renderAgendaListItems() {
         </div>
 
         <div class="space-y-1.5 flex-1 min-w-0">
-          <!-- Encabezado del turno: Cancha + Badges de fecha y hora -->
+          <!-- Encabezado del turno: Cancha | Fecha | Horario -->
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="font-sports font-bold text-white text-base sm:text-lg tracking-wide uppercase truncate">
-              ${escapeHtml(courtDisplayTitle)}
+              ${escapeHtml(nombreCancha)}
             </h3>
             <span class="px-2.5 py-0.5 rounded-lg bg-[#162032] border border-slate-700/80 text-slate-300 text-xs font-semibold">
-              ${formatFechaLarga(t.fecha)}
+              📅 Fecha: ${escapeHtml(fechaMostrar)}
             </span>
             <span class="px-2.5 py-0.5 rounded-lg bg-[#00E676]/10 border border-[#00E676]/30 text-[#00E676] text-xs font-mono font-bold">
-              ⏰ ${t.hora} a ${horaFin} hs (${dur}h)
+              ⏰ Horario: ${escapeHtml(horarioMostrar)}
             </span>
           </div>
 
-          <!-- Datos del cliente -->
+          <!-- Datos del cliente: Cliente | Tel | Precio -->
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
             <div class="flex items-center gap-1.5 font-bold text-slate-100">
               <span class="text-sm">👤</span>
-              <span class="uppercase tracking-wide">${escapeHtml(t.nombre || 'CLIENTE')}</span>
+              <span>Cliente: <strong class="uppercase text-white">${escapeHtml(nombreCliente)}</strong></span>
             </div>
-            ${t.whatsapp ? `
             <div class="flex items-center gap-1.5 text-slate-300">
               <span class="text-sm">📱</span>
-              <span class="font-mono">${escapeHtml(t.whatsapp)}</span>
-            </div>` : ''}
+              <span>Tel: <strong class="font-mono text-slate-200">${escapeHtml(telCliente)}</strong></span>
+            </div>
             <div class="flex items-center gap-1 font-bold text-[#00E676]">
               <span>💰</span>
-              <span>${formatCurrency(t.precio)}</span>
+              <span>Precio: $${precioMostrar}</span>
             </div>
             ${badgeHtml}
           </div>
@@ -1223,44 +1253,35 @@ function renderSiluetasPorDia(fecha) {
 
       let slotsHtml = '';
       slots.forEach(horaSlot => {
-        const turno = allTurnos.find(r => {
-          if (!r) return false;
-          // Match flexible de cancha
-          const cRes = String(r.cancha || r.canchaNombre || r.nombreCancha || r.canchaId || '').toLowerCase();
-          const cAct = String(cancha.nombre || cancha.id || '').toLowerCase();
-          const mismaCancha = cRes.includes(cAct) || cAct.includes(cRes) || coincideCancha(r, cancha);
+        const turno = (todasLasReservas && todasLasReservas.length > 0 ? todasLasReservas : allTurnos).find(r => {
+          if (!r || r.estado === 'cancelado' || r.estado === 'liberado') return false;
 
-          // Match flexible de fecha (soporta ISO '2026-09-03', texto 'Jue 3 de septiembre' o número de día)
-          const fRes = String(r.fecha || r.dia || '').toLowerCase();
-          const fSel = String(fecha || '').toLowerCase();
-          const numRes = fRes.match(/\b\d{1,2}\b/)?.[0] || fRes.match(/\d+/)?.[0];
-          const numSel = fSel.match(/\b\d{1,2}\b/)?.[0] || fSel.match(/\d+/)?.[0];
-          const mismaFecha = fRes === fSel || fRes.includes(fSel) || fSel.includes(fRes) || (numRes && numSel && numRes === numSel) || fechasCoinciden(fRes, fSel);
+          const matchCancha = (r.cancha || r.canchaNombre || '').toLowerCase().includes(cancha.nombre.toLowerCase().trim()) ||
+                              cancha.nombre.toLowerCase().trim().includes((r.cancha || r.canchaNombre || '').toLowerCase()) ||
+                              (typeof coincideCancha === 'function' && coincideCancha(r, cancha));
 
-          // Match de horario
-          const hRes = String(r.horario || r.hora || '');
-          const ocupadas = typeof getHorasOcupadas === 'function' ? getHorasOcupadas(r) : [];
-          const mismaHora = hRes.includes(horaSlot) || hRes.startsWith(horaSlot) || ocupadas.includes(horaSlot);
+          // Coincidencia de fecha en formato YYYY-MM-DD o por número de día
+          const diaR = (r.fecha || '').split('-')[2] || (r.fecha || '').match(/\d+/)?.[0];
+          const diaS = (fecha || '').split('-')[2] || (fecha || '').match(/\d+/)?.[0];
+          const matchFecha = r.fecha === fecha || (diaR && diaS && diaR === diaS) || (typeof fechasCoinciden === 'function' && fechasCoinciden(r.fecha, fecha));
 
-          const estadoValido = r.estado?.toLowerCase() !== 'cancelado' && r.estado?.toLowerCase() !== 'liberado' && r.estado?.toLowerCase() !== 'anulado';
+          const matchHora = (r.hora === horaSlot) || (r.horario || '').includes(horaSlot) || (typeof getHorasOcupadas === 'function' && getHorasOcupadas(r).includes(horaSlot));
 
-          return mismaCancha && mismaFecha && mismaHora && estadoValido;
+          return matchCancha && matchFecha && matchHora;
         });
 
         if (turno) {
-          const clienteNombre = turno.nombre || turno.cliente || 'Ocupado';
+          const clienteNombre = turno.cliente || turno.nombre || 'Reservado';
           slotsHtml += `
             <button type="button" disabled class="w-full px-2.5 py-1.5 rounded-lg border bg-rose-950/40 text-rose-400 border-rose-800 text-xs font-bold flex items-center justify-between opacity-95 cursor-not-allowed shadow-inner" title="Ocupado - ${escapeHtml(clienteNombre)}">
-              <span>🔴 ${horaSlot} OCUPADO</span>
-              <span class="text-[10px] text-rose-300 font-medium truncate max-w-[90px]">(${escapeHtml(clienteNombre)})</span>
+              <span>🔴 ${horaSlot} OCUPADO (${escapeHtml(clienteNombre)})</span>
             </button>
           `;
         } else {
           slotsHtml += `
-            <div class="px-2.5 py-1.5 rounded-lg bg-[#1E293B]/60 border border-slate-800 text-slate-400 text-xs flex items-center justify-between hover:border-emerald-500/30 transition-colors">
-              <span class="text-emerald-400/90 font-medium">⚪ ${horaSlot}</span>
-              <span class="text-[10px] text-emerald-400/80 font-bold uppercase tracking-wider">Libre</span>
-            </div>
+            <button type="button" class="w-full px-2.5 py-1.5 rounded-lg bg-emerald-950/30 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center justify-between hover:bg-emerald-900/30 hover:border-emerald-400 transition-colors cursor-pointer" title="Libre">
+              <span>⚪ ${horaSlot} LIBRE</span>
+            </button>
           `;
         }
       });

@@ -270,6 +270,18 @@ function formatCurrency(amount, symbol = '$') {
   return `${symbol} ${Number(amount || 0).toLocaleString('es-AR')}`;
 }
 
+function formatFechaLegibleTexto(iso) {
+  try {
+    const [y, m, d] = String(iso).split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${dias[date.getDay()]} ${d} de ${meses[m - 1]}`;
+  } catch (e) {
+    return iso;
+  }
+}
+
 // ================= FIRESTORE CLOUD INTEGRATION (PERMANENTE EN RENDER) =================
 const FIRESTORE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'complejo-padel-3';
 const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}/databases/(default)/documents`;
@@ -626,25 +638,32 @@ app.post('/api/turnos', async (req, res) => {
 
     const nuevoTurno = {
       id: `turno_${canchaId}_${fecha.replace(/-/g, '')}_${hora.replace(':', '')}_${Date.now()}`,
+      cliente: String(nombre).trim(),
+      telefono: whatsapp ? String(whatsapp).trim() : '',
+      cancha: String(cancha.nombre).trim(),
+      deporte: (cancha.deporte || 'padel').toUpperCase() === 'FUTBOL' ? 'FUTBOL' : 'PADEL',
+      fecha,
+      fechaTexto: formatFechaLegibleTexto(fecha),
+      hora,
+      horario: `${hora} a ${horaFinCalculada} hs`,
+      duracion: duracionHoras === 2 ? '2h' : '1h',
+      precio: Number(precioTotal) || 0,
+      estado: 'pendiente',
+      creadoEn: new Date().toISOString(),
+      // Mapeo retrocompatible
       canchaId: cancha.id,
       canchaNombre: cancha.nombre,
-      deporte: cancha.deporte,
       ubicacion: cancha.ubicacion,
       superficie: cancha.superficie,
       jugadores: cancha.jugadores,
-      fecha,
-      hora,
       horaFin: horaFinCalculada,
-      duracion: duracionHoras,
       horasCubiertas: horasRequeridas,
       nombre: String(nombre).trim(),
       whatsapp: whatsapp ? String(whatsapp).trim() : '',
       equipo: equipo ? String(equipo).trim() : '',
       precioUnitario: precioUnitario,
-      precio: precioTotal,
       precioFormateado: formatCurrency(precioTotal, db.config.monedaSimbolo || '$'),
       confirmado: false,
-      estado: 'pendiente',
       ts: Date.now()
     };
 

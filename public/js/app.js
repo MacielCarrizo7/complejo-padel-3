@@ -766,8 +766,43 @@ async function reservarTurno() {
     window.state.turnos.push(data.turno);
 
     if (dbFs) {
-      dbFs.collection('turnos').doc(data.turno.id).set(data.turno).catch(e => console.warn('Error Firestore turnos:', e));
-      dbFs.collection('reservas').doc(data.turno.id).set(data.turno).catch(e => console.warn('Error Firestore reservas:', e));
+      const canchaObj = (window.state.config?.canchas || []).find(c => c.id === window.state.selectedCanchaId);
+      const durStr = String(window.state.selectedDuration || 1).includes('2') || Number(window.state.selectedDuration) === 2 ? '2h' : '1h';
+      const durNum = durStr === '2h' ? 2 : 1;
+      const [hIniStr, mIniStr] = String(window.state.selectedHora || '00:00').split(':').map(Number);
+      const nextH = (hIniStr + durNum) % 24;
+      const horaFin = `${pad2(nextH)}:${pad2(mIniStr || 0)}`;
+
+      const precioUnit = Number(canchaObj?.precio) >= 0 ? Number(canchaObj.precio) : 24000;
+      const precioTotal = precioUnit * durNum;
+
+      const serverTs = (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+        ? firebase.firestore.FieldValue.serverTimestamp()
+        : new Date().toISOString();
+
+      const nuevaReserva = {
+        cliente: String(nombre).trim(),
+        telefono: String(whatsapp || '').trim(),
+        cancha: String(canchaObj?.nombre || data.turno.canchaNombre || 'Pista').trim(),
+        deporte: (canchaObj?.deporte || data.turno.deporte || 'padel').toUpperCase().includes('FUT') ? 'FUTBOL' : 'PADEL',
+        fecha: window.state.selectedFecha,
+        fechaTexto: (typeof formatFechaLarga === 'function') ? formatFechaLarga(window.state.selectedFecha) : window.state.selectedFecha,
+        hora: window.state.selectedHora,
+        horario: `${window.state.selectedHora} a ${horaFin} hs`,
+        duracion: durStr,
+        precio: Number(precioTotal) || 0,
+        estado: "pendiente",
+        creadoEn: serverTs,
+        // Campos retrocompatibles seguros
+        id: data.turno.id,
+        nombre: String(nombre).trim(),
+        whatsapp: String(whatsapp || '').trim(),
+        canchaNombre: String(canchaObj?.nombre || data.turno.canchaNombre || 'Pista').trim(),
+        canchaId: window.state.selectedCanchaId || ''
+      };
+
+      dbFs.collection('reservas').doc(data.turno.id).set(nuevaReserva, { merge: true }).catch(e => console.warn('Error Firestore reservas:', e));
+      dbFs.collection('turnos').doc(data.turno.id).set(nuevaReserva, { merge: true }).catch(e => console.warn('Error Firestore turnos:', e));
     }
 
     document.getElementById('cliente-nombre').value = '';
@@ -1454,6 +1489,46 @@ function setupReservasPage() {
         window.state.lastBooking = data.turno;
         if (!Array.isArray(window.state.turnos)) window.state.turnos = [];
         window.state.turnos.push(data.turno);
+
+        if (dbFs) {
+          const canchaObj = (window.state.config?.canchas || []).find(c => c.id === window.state.selectedCanchaId);
+          const durStr = String(window.state.selectedDuration || 1).includes('2') || Number(window.state.selectedDuration) === 2 ? '2h' : '1h';
+          const durNum = durStr === '2h' ? 2 : 1;
+          const [hIniStr, mIniStr] = String(window.state.selectedHora || '00:00').split(':').map(Number);
+          const nextH = (hIniStr + durNum) % 24;
+          const horaFin = `${pad2(nextH)}:${pad2(mIniStr || 0)}`;
+
+          const precioUnit = Number(canchaObj?.precio) >= 0 ? Number(canchaObj.precio) : 24000;
+          const precioTotal = precioUnit * durNum;
+
+          const serverTs = (window.firebase?.firestore?.FieldValue?.serverTimestamp)
+            ? firebase.firestore.FieldValue.serverTimestamp()
+            : new Date().toISOString();
+
+          const nuevaReserva = {
+            cliente: String(nombre).trim(),
+            telefono: String(whatsapp || '').trim(),
+            cancha: String(canchaObj?.nombre || data.turno.canchaNombre || 'Pista').trim(),
+            deporte: (canchaObj?.deporte || data.turno.deporte || 'padel').toUpperCase().includes('FUT') ? 'FUTBOL' : 'PADEL',
+            fecha: window.state.selectedFecha,
+            fechaTexto: (typeof formatFechaLarga === 'function') ? formatFechaLarga(window.state.selectedFecha) : window.state.selectedFecha,
+            hora: window.state.selectedHora,
+            horario: `${window.state.selectedHora} a ${horaFin} hs`,
+            duracion: durStr,
+            precio: Number(precioTotal) || 0,
+            estado: "pendiente",
+            creadoEn: serverTs,
+            // Campos retrocompatibles seguros
+            id: data.turno.id,
+            nombre: String(nombre).trim(),
+            whatsapp: String(whatsapp || '').trim(),
+            canchaNombre: String(canchaObj?.nombre || data.turno.canchaNombre || 'Pista').trim(),
+            canchaId: window.state.selectedCanchaId || ''
+          };
+
+          dbFs.collection('reservas').doc(data.turno.id).set(nuevaReserva, { merge: true }).catch(e => console.warn('Error Firestore reservas:', e));
+          dbFs.collection('turnos').doc(data.turno.id).set(nuevaReserva, { merge: true }).catch(e => console.warn('Error Firestore turnos:', e));
+        }
 
         // Open WhatsApp confirmation
         const cfg = window.state.config;
