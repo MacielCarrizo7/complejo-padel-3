@@ -671,6 +671,29 @@ function populateAgendaFilters() {
   }
 }
 
+function isTurnoPasado(t) {
+  if (!t || !t.fecha) return false;
+  try {
+    const [y, m, d] = String(t.fecha).split('-').map(Number);
+    const dur = Number(t.duracion) || 1;
+    let hh = 0;
+    let mm = 0;
+    if (t.horaFin && t.horaFin.includes(':')) {
+      const [hfH, hfM] = String(t.horaFin).split(':').map(Number);
+      hh = hfH;
+      mm = hfM;
+    } else if (t.hora && t.hora.includes(':')) {
+      const [hIni, mIni] = String(t.hora).split(':').map(Number);
+      hh = (hIni + dur) % 24;
+      mm = mIni || 0;
+    }
+    const endOfTurno = new Date(y, m - 1, d, hh === 0 ? 24 : hh, mm, 0);
+    return endOfTurno < new Date();
+  } catch (e) {
+    return false;
+  }
+}
+
 function getFilteredTurnos() {
   const { cancha, fechaPreset, deporte, estado, search } = adminState.filters;
   const hoy = hoyISO();
@@ -695,11 +718,17 @@ function getFilteredTurnos() {
       if (tCanchaId !== canchaFilter && tCanchaNom !== canchaFilter) return false;
     }
 
-    // 3. Filtro Estado (Normalizado con soporte para todas las variantes)
+    // 3. Filtro Estado (Normalizado con soporte para 'finalizados', 'confirmados' y 'pendientes')
     if (estFilter !== 'todos') {
       const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
-      if ((estFilter === 'confirmados' || estFilter === 'confirmado') && !isConfirmed) return false;
-      if ((estFilter === 'pendientes' || estFilter === 'pendiente') && isConfirmed) return false;
+      const pasado = isTurnoPasado(t);
+      if (estFilter === 'finalizados' || estFilter === 'finalizado') {
+        if (!pasado) return false;
+      } else if (estFilter === 'confirmados' || estFilter === 'confirmado') {
+        if (pasado || !isConfirmed) return false;
+      } else if (estFilter === 'pendientes' || estFilter === 'pendiente') {
+        if (pasado || isConfirmed) return false;
+      }
     }
 
     // 4. Filtro de Fechas (formato local YYYY-MM-DD sin desfase UTC)
@@ -741,12 +770,12 @@ function renderAgendaTab() {
   const tacticalView = document.getElementById('admin-tactical-view');
 
   if (adminState.agendaSubView === 'lista') {
-    listView.classList.remove('hidden');
-    tacticalView.classList.add('hidden');
+    if (listView) listView.classList.remove('hidden');
+    if (tacticalView) tacticalView.classList.add('hidden');
     renderAgendaListItems();
   } else {
-    listView.classList.add('hidden');
-    tacticalView.classList.remove('hidden');
+    if (listView) listView.classList.add('hidden');
+    if (tacticalView) tacticalView.classList.remove('hidden');
     renderTacticalPitchesView();
   }
 }
@@ -789,6 +818,7 @@ function renderAgendaListItems() {
     const nextH = (hStr + dur) % 24;
     const horaFin = t.horaFin || `${pad2(nextH)}:${pad2(mStr || 0)}`;
     const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
+    const pasado = isTurnoPasado(t);
 
     // Formato de nombre de cancha con deporte y superficie (ej: CANCHA 1 (FÚTBOL 5 - CÉSPED SINTÉTICO) o PISTA 1 - CRISTAL PRO)
     const courtObj = (adminState.config?.canchas || []).find(c => c.id === t.canchaId);
@@ -799,6 +829,54 @@ function renderAgendaListItems() {
       if (!courtDisplayTitle.includes('(') && !courtDisplayTitle.includes(sportInfo)) {
         courtDisplayTitle = `${courtObj.nombre.toUpperCase()} (${sportInfo}${supInfo})`;
       }
+    }
+
+    // Botón WhatsApp "Consultar Asistencia" para turnos pendientes
+    let cleanPhone = String(t.whatsapp || t.telefono || '').replace(/\D/g, '');
+    if (cleanPhone.length === 10 && !cleanPhone.startsWith('54')) {
+      cleanPhone = '549' + cleanPhone;
+    } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+      cleanPhone = '549' + cleanPhone.substring(1);
+    }
+    const msgAsistencia = encodeURIComponent(`Hola ${t.nombre || t.cliente || 'Cliente'}! Te escribimos desde el complejo para confirmar si vas a asistir a tu turno de ${t.deporte === 'futbol' ? 'Fútbol' : 'Pádel'} el día ${t.fecha} a las ${t.hora} hs en ${courtDisplayTitle}. ¿Nos confirmás? Muchas gracias!`);
+    const whatsappLink = cleanPhone ? `https://wa.me/${cleanPhone}?text=${msgAsistencia}` : '#';
+
+    // Badge de estado
+    let badgeHtml = '';
+    if (pasado) {
+      badgeHtml = `<div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700 text-xs"><span>🏁 Finalizado</span></div>`;
+    } else if (isConfirmed) {
+      badgeHtml = `<div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold text-[#00E676] bg-[#00E676]/10 px-2.5 py-1 rounded-lg border border-[#00E676]/30 text-xs"><span>✓ Confirmado</span></div>`;
+    } else {
+      badgeHtml = `<div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30 text-xs"><span>⏳ Pendiente</span></div>`;
+    }
+
+    // Bloque de acciones
+    let actionsHtml = '';
+    if (pasado) {
+      actionsHtml = `
+        <button class="btn-liberar-cancha px-3.5 py-2 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-slate-400 hover:text-red-300 border border-slate-700 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${t.id}" title="Eliminar del historial">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Eliminar</span>
+        </button>
+      `;
+    } else {
+      actionsHtml = `
+        ${(!isConfirmed && cleanPhone) ? `
+        <a href="${whatsappLink}" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-600/30 flex items-center gap-1 text-xs font-semibold transition-all shadow-sm" title="Consultar Asistencia por WhatsApp">
+          💬 Consultar Asistencia
+        </a>` : ''}
+
+        <button id="btn-confirm-${t.id}" class="btn-confirmar btn-confirm-turno px-4 py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00E676]/90 text-black font-sports font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(0,230,118,0.25)] flex items-center gap-1.5 ${isConfirmed ? 'hidden' : ''}" data-id="${t.id}">
+          <i data-lucide="check" class="w-4 h-4 stroke-[3] text-black"></i>
+          <span>✓ CONFIRMAR</span>
+        </button>
+
+        <button class="btn-liberar-cancha px-4 py-2.5 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${t.id}" title="Liberar Cancha">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+          <span>Liberar Cancha</span>
+        </button>
+      `;
     }
 
     card.innerHTML = `
@@ -837,24 +915,14 @@ function renderAgendaListItems() {
               <span>💰</span>
               <span>${formatCurrency(t.precio)}</span>
             </div>
-            <div id="badge-status-${t.id}" class="estado-badge flex items-center gap-1 font-bold ${isConfirmed ? 'text-[#00E676]' : 'text-amber-400'}">
-              <span>${isConfirmed ? '✓ Confirmado' : '⏳ Pendiente'}</span>
-            </div>
+            ${badgeHtml}
           </div>
         </div>
       </div>
 
       <!-- Acciones a la derecha -->
-      <div class="flex items-center gap-2.5 shrink-0 self-end md:self-center pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 w-full md:w-auto justify-end">
-        <button id="btn-confirm-${t.id}" class="btn-confirmar btn-confirm-turno px-4 py-2.5 rounded-xl bg-[#00E676] hover:bg-[#00E676]/90 text-black font-sports font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(0,230,118,0.25)] flex items-center gap-1.5 ${isConfirmed ? 'hidden' : ''}" data-id="${t.id}">
-          <i data-lucide="check" class="w-4 h-4 stroke-[3] text-black"></i>
-          <span>✓ CONFIRMAR</span>
-        </button>
-
-        <button class="btn-liberar-cancha px-4 py-2.5 rounded-xl bg-[#161F30] hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/40 hover:border-red-500 font-sports font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5" data-id="${t.id}" title="Liberar Cancha">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-          <span>Liberar Cancha</span>
-        </button>
+      <div class="flex items-center gap-2.5 shrink-0 self-end md:self-center pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 w-full md:w-auto justify-end flex-wrap">
+        ${actionsHtml}
       </div>
     `;
 
@@ -872,23 +940,27 @@ function exportAgendaToCSV() {
     return;
   }
 
-  const headers = ['Fecha', 'Hora', 'Cliente', 'Teléfono', 'Cancha', 'Deporte', 'Estado', 'Precio', 'Duración'];
-  const rows = listToExport.map(t => {
-    const isConfirmed = Boolean(t.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(t.estado || '').toLowerCase().trim());
+  const headers = ["Fecha", "Hora", "Cliente", "Teléfono", "Cancha", "Deporte", "Estado", "Precio", "Duración"].join(";") + "\r\n";
+  const rows = listToExport.map(reserva => {
+    const isConfirmed = Boolean(reserva.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(reserva.estado || '').toLowerCase().trim());
+    const pasado = isTurnoPasado(reserva);
+    const estadoTxt = pasado ? 'Finalizado' : (isConfirmed ? 'Confirmado' : 'Pendiente');
+    const horaTxt = reserva.hora ? `${reserva.hora}${reserva.horaFin ? ` a ${reserva.horaFin}` : ''}` : (reserva.horario || '');
+
     return [
-      `"${t.fecha || ''}"`,
-      `"${t.hora || ''}${t.horaFin ? ` a ${t.horaFin}` : ''}"`,
-      `"${String(t.nombre || '').replace(/"/g, '""')}"`,
-      `"${String(t.whatsapp || '').replace(/"/g, '""')}"`,
-      `"${String(t.canchaNombre || '').replace(/"/g, '""')}"`,
-      `"${String(t.deporte || '').toUpperCase()}"`,
-      `"${isConfirmed ? 'Confirmado' : 'Pendiente'}"`,
-      `"${t.precio || 0}"`,
-      `"${t.duracion || 1}h"`
-    ];
+      reserva.fecha || '',
+      horaTxt,
+      reserva.nombre || reserva.cliente || 'Sin nombre',
+      reserva.whatsapp || reserva.telefono || '',
+      `"${(reserva.canchaNombre || reserva.cancha || '').replace(/"/g, '""')}"`,
+      reserva.deporte || 'Pádel',
+      estadoTxt,
+      reserva.precio || '0',
+      reserva.duracion ? `${reserva.duracion}h` : '1h'
+    ].join(';');
   });
 
-  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const csvContent = "\uFEFF" + headers + rows.join("\r\n");
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -905,8 +977,16 @@ function renderTacticalPitchesView() {
   const pitchesGrid = document.getElementById('admin-tactical-pitches-grid');
   if (!fechasCont || !pitchesGrid) return;
 
-  const fechas = Array.from(new Set(adminState.turnos.map(t => t.fecha))).sort();
-  if (!fechas.includes(hoyISO())) fechas.unshift(hoyISO());
+  const proximas = [];
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(hoy);
+    d.setDate(hoy.getDate() + i);
+    proximas.push(formatDateISO(d));
+  }
+  const fechasSet = new Set([...proximas, ...(adminState.turnos || []).map(t => t.fecha).filter(Boolean)]);
+  const fechas = Array.from(fechasSet).sort();
 
   if (!adminState.selectedTacticalFecha || !fechas.includes(adminState.selectedTacticalFecha)) {
     adminState.selectedTacticalFecha = fechas[0];
@@ -915,10 +995,14 @@ function renderTacticalPitchesView() {
   fechasCont.innerHTML = '';
   fechas.forEach(iso => {
     const { dow, num } = formatFechaLabel(iso);
+    const isSelected = iso === adminState.selectedTacticalFecha;
     const pill = document.createElement('button');
     pill.type = 'button';
-    pill.className = `fecha-pill-modern ${iso === adminState.selectedTacticalFecha ? 'active' : ''}`;
-    pill.innerHTML = `<div class="dow">${dow}</div><div class="num">${num}</div>`;
+    pill.className = `min-w-[65px] px-3 py-2 rounded-xl text-center border font-sports transition-all flex-shrink-0 ${isSelected ? 'bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.4)]' : 'bg-[#161F30] text-slate-300 border-slate-700 hover:text-white'}`;
+    pill.innerHTML = `
+      <div class="text-[10px] uppercase font-bold tracking-wider ${isSelected ? 'text-black' : 'text-slate-400'}">${dow}</div>
+      <div class="text-lg font-bold leading-none mt-0.5 ${isSelected ? 'text-black' : 'text-white'}">${num}</div>
+    `;
     pill.addEventListener('click', () => {
       adminState.selectedTacticalFecha = iso;
       renderTacticalPitchesView();
@@ -938,17 +1022,34 @@ function renderTacticalPitchesView() {
 
     let slotsHtml = '';
     slots.forEach(h => {
-      const turno = adminState.turnos.find(t => {
-        if (t.canchaId !== cancha.id || t.fecha !== adminState.selectedTacticalFecha) return false;
-        if (t.hora === h) return true;
-        if (Array.isArray(t.horasCubiertas)) return t.horasCubiertas.includes(h);
-        return false;
+      const turno = (adminState.turnos || []).find(t => {
+        if (!matchCancha(t, cancha) || t.fecha !== adminState.selectedTacticalFecha) return false;
+        const estado = String(t.estado || '').toLowerCase().trim();
+        if (['cancelado', 'liberado', 'anulado'].includes(estado)) return false;
+        const ocupadas = typeof getHorasOcupadas === 'function' ? getHorasOcupadas(t) : [t.hora];
+        return ocupadas.includes(h);
       });
 
       if (turno) {
+        const isConfirmed = Boolean(turno.confirmado) || ['confirmado', 'whatsapp', 'confirmed'].includes(String(turno.estado || '').toLowerCase().trim());
+        const pasado = isTurnoPasado(turno);
+        let badgeStyle = '';
+        let iconTxt = '';
+
+        if (pasado) {
+          badgeStyle = 'bg-slate-800/80 border-slate-700 text-slate-400';
+          iconTxt = '🏁';
+        } else if (isConfirmed) {
+          badgeStyle = 'bg-[#00E676]/20 border-[#00E676]/40 text-[#00E676]';
+          iconTxt = '🟢';
+        } else {
+          badgeStyle = 'bg-amber-500/20 border-amber-500/40 text-amber-300';
+          iconTxt = '⏳';
+        }
+
         slotsHtml += `
-          <div class="px-2.5 py-1.5 rounded-lg bg-[#00E676]/20 border border-[#00E676]/40 text-[#00E676] text-xs font-bold flex items-center justify-between" title="Reservado por ${escapeHtml(turno.nombre)}">
-            <span>🟢 ${h}</span>
+          <div class="px-2.5 py-1.5 rounded-lg border ${badgeStyle} text-xs font-bold flex items-center justify-between" title="${pasado ? 'Finalizado' : (isConfirmed ? 'Confirmado' : 'Pendiente')} - ${escapeHtml(turno.nombre)}">
+            <span>${iconTxt} ${h}</span>
             <span class="text-[10px] text-white font-normal truncate max-w-[80px]">${escapeHtml(turno.nombre)}</span>
           </div>
         `;
@@ -1619,19 +1720,28 @@ async function initAdmin() {
     renderAgendaListItems();
   });
 
-  // Subview toggle listeners
-  document.getElementById('btn-subview-lista')?.addEventListener('click', () => {
-    adminState.agendaSubView = 'lista';
-    document.getElementById('btn-subview-lista').className = 'px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all';
-    document.getElementById('btn-subview-tactica').className = 'px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+  // Subview toggle listeners ("Lista de Turnos" vs "Vista Siluetas Tácticas")
+  const setSubViewMode = (mode) => {
+    adminState.agendaSubView = mode;
+    const btnLista = document.getElementById('btn-subview-lista') || document.getElementById('btn-vista-lista');
+    const btnTactica = document.getElementById('btn-subview-tactica') || document.getElementById('btn-vista-siluetas');
+
+    if (mode === 'lista') {
+      if (btnLista) btnLista.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
+      if (btnTactica) btnTactica.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+    } else {
+      if (btnTactica) btnTactica.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]';
+      if (btnLista) btnLista.className = 'btn-toggle-subview px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
+    }
     renderAgendaTab();
+  };
+
+  ['btn-subview-lista', 'btn-vista-lista'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => setSubViewMode('lista'));
   });
 
-  document.getElementById('btn-subview-tactica')?.addEventListener('click', () => {
-    adminState.agendaSubView = 'tactica';
-    document.getElementById('btn-subview-tactica').className = 'px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all';
-    document.getElementById('btn-subview-lista').className = 'px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all';
-    renderAgendaTab();
+  ['btn-subview-tactica', 'btn-vista-siluetas'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => setSubViewMode('tactica'));
   });
 
   // Global Event Delegation for Turnos & Reservas actions (Confirmar y Liberar)

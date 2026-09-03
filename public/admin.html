@@ -281,14 +281,14 @@
 
         </div>
 
-        <!-- Sub-view toggle (Lista de Turnos vs Siluetas Tácticas) -->
+        <!-- View Mode Switcher -->
         <div class="flex items-center justify-between gap-4 flex-wrap">
           <div class="flex items-center gap-2">
-            <button id="btn-subview-lista" class="px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all">
+            <button id="btn-subview-lista" data-view-mode="lista" class="btn-toggle-subview px-4 py-2 rounded-lg bg-[#00E676] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(0,230,118,0.3)]">
               <i data-lucide="list" class="w-3.5 h-3.5"></i>
               <span>Lista de Turnos</span>
             </button>
-            <button id="btn-subview-tactica" class="px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all">
+            <button id="btn-subview-tactica" data-view-mode="tactica" class="btn-toggle-subview px-4 py-2 rounded-lg bg-[#161F30] text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all">
               <i data-lucide="grid" class="w-3.5 h-3.5"></i>
               <span>Vista Siluetas Tácticas</span>
             </button>
@@ -354,6 +354,7 @@
                   <option value="todos">Todos los estados</option>
                   <option value="confirmados">Confirmado ✓</option>
                   <option value="pendientes">Pendiente ⏳</option>
+                  <option value="finalizados">Finalizado 🏁</option>
                 </select>
               </div>
 
