@@ -220,6 +220,32 @@ function sonMismoDia(fechaA, fechaB) {
   return Boolean(matchA && matchB && matchA[1] === matchB[1]);
 }
 
+function slotEstaOcupado(reserva, slotHora) {
+  if (!reserva || !slotHora) return false;
+  const horaSlotNum = parseInt(String(slotHora).split(':')[0], 10);
+  
+  // Si tiene horario en formato "14:00 a 16:00"
+  const textoHorario = reserva.horario || reserva.hora || '';
+  const matches = String(textoHorario).match(/(\d\d):(\d\d)/g);
+  
+  if (matches && matches.length >= 2) {
+    const inicioNum = parseInt(matches[0].split(':')[0], 10);
+    const finNum = parseInt(matches[1].split(':')[0], 10);
+    // Ocupa desde el inicio hasta estrictamente antes del fin: inicio <= slot < fin
+    return horaSlotNum >= inicioNum && horaSlotNum < finNum;
+  }
+  
+  // Si solo tiene hora simple "14:00"
+  if (reserva.hora) {
+    const inicioNum = parseInt(String(reserva.hora).split(':')[0], 10);
+    const durStr = String(reserva.duracion || '');
+    const duracionHoras = (durStr === '2h' || durStr === '2 horas' || durStr.includes('2') || Number(reserva.duracion) === 2) ? 2 : 1;
+    return horaSlotNum >= inicioNum && horaSlotNum < (inicioNum + duracionHoras);
+  }
+  
+  return false;
+}
+
 function estaSlotOcupado(cancha, fechaSeleccionada, slotHora, reservas = (window.todasLasReservas || window.state?.turnos || [])) {
   if (!reservas || !Array.isArray(reservas)) return false;
   return reservas.some(r => {
@@ -233,9 +259,7 @@ function estaSlotOcupado(cancha, fechaSeleccionada, slotHora, reservas = (window
     const mismaCancha = canchaR.includes(canchaTarget) || canchaTarget.includes(canchaR);
 
     const mismaFecha = sonMismoDia(r.fecha || r.fechaTexto, fechaSeleccionada);
-    const mismoHorario = (r.hora === slotHora) || (r.horario || '').includes(slotHora) || (typeof getHorasOcupadas === 'function' && getHorasOcupadas(r).includes(slotHora));
-
-    return mismaCancha && mismaFecha && mismoHorario;
+    return mismaCancha && mismaFecha && slotEstaOcupado(r, slotHora);
   });
 }
 
@@ -297,6 +321,7 @@ window.normalizarFechaISO = normalizarFechaISO;
 window.formatFechaLegibleTexto = formatFechaLegibleTexto;
 window.sonMismoDia = sonMismoDia;
 window.estaSlotOcupado = estaSlotOcupado;
+window.slotEstaOcupado = slotEstaOcupado;
 window.crearObjetoReserva = crearObjetoReserva;
 
 document.addEventListener('DOMContentLoaded', () => {

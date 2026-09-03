@@ -216,32 +216,50 @@ function getHorasOcupadas(reserva) {
   return [String(reserva.horario || reserva.hora || '')].filter(Boolean);
 }
 
+function slotEstaOcupado(reserva, slotHora) {
+  if (!reserva || !slotHora) return false;
+  const horaSlotNum = parseInt(String(slotHora).split(':')[0], 10);
+  
+  // Si tiene horario en formato "14:00 a 16:00"
+  const textoHorario = reserva.horario || reserva.hora || '';
+  const matches = String(textoHorario).match(/(\d\d):(\d\d)/g);
+  
+  if (matches && matches.length >= 2) {
+    const inicioNum = parseInt(matches[0].split(':')[0], 10);
+    const finNum = parseInt(matches[1].split(':')[0], 10);
+    // Ocupa desde el inicio hasta estrictamente antes del fin: inicio <= slot < fin
+    return horaSlotNum >= inicioNum && horaSlotNum < finNum;
+  }
+  
+  // Si solo tiene hora simple "14:00"
+  if (reserva.hora) {
+    const inicioNum = parseInt(String(reserva.hora).split(':')[0], 10);
+    const durStr = String(reserva.duracion || '');
+    const duracionHoras = (durStr === '2h' || durStr === '2 horas' || durStr.includes('2') || Number(reserva.duracion) === 2) ? 2 : 1;
+    return horaSlotNum >= inicioNum && horaSlotNum < (inicioNum + duracionHoras);
+  }
+  
+  return false;
+}
+window.slotEstaOcupado = slotEstaOcupado;
+
 function horariosDisponibles(canchaId, fecha, duracion = 1) {
   const todos = generarHorarios();
   const duracionHoras = Number(duracion) === 2 ? 2 : 1;
   const cancha = (window.state.config.canchas || []).find(c => c.id === canchaId) || { id: canchaId, nombre: '' };
 
-  // Build a set of all occupied individual 1-hour slots
-  const ocupados = new Set();
-  (window.state.turnos || [])
-    .filter(r => {
-      if (!r) return false;
-      const estado = String(r.estado || '').toLowerCase().trim();
-      if (['cancelado', 'liberado', 'anulado', 'disponible'].includes(estado)) {
-        return false;
-      }
-      const mismaCancha = (r.cancha || r.canchaNombre || '').toLowerCase().includes(cancha.nombre.toLowerCase().trim()) ||
-                          cancha.nombre.toLowerCase().trim().includes((r.cancha || r.canchaNombre || '').toLowerCase()) ||
-                          matchCancha(r, cancha);
-      const mismaFecha = sonMismoDia(r.fecha || r.fechaTexto, fecha);
-      return mismaCancha && mismaFecha;
-    })
-    .forEach(t => {
-      const horas = getHorasOcupadas(t);
-      horas.forEach(h => {
-        if (h) ocupados.add(h);
-      });
-    });
+  const reservasDelDia = (window.state.turnos || []).filter(r => {
+    if (!r) return false;
+    const estado = String(r.estado || '').toLowerCase().trim();
+    if (['cancelado', 'liberado', 'anulado', 'disponible'].includes(estado)) {
+      return false;
+    }
+    const mismaCancha = (r.cancha || r.canchaNombre || '').toLowerCase().includes(cancha.nombre.toLowerCase().trim()) ||
+                        cancha.nombre.toLowerCase().trim().includes((r.cancha || r.canchaNombre || '').toLowerCase()) ||
+                        matchCancha(r, cancha);
+    const mismaFecha = sonMismoDia(r.fecha || r.fechaTexto, fecha);
+    return mismaCancha && mismaFecha;
+  });
 
   const esHoy = fecha === hoyISO();
   const ahora = horaActualMin();
@@ -258,11 +276,13 @@ function horariosDisponibles(canchaId, fecha, duracion = 1) {
     const finSlotMin = (hh + duracionHoras) * 60 + mm;
     const excedeCierre = finSlotMin > cierreMin;
 
-    let estaOcupado = ocupados.has(h) || pasado || excedeCierre;
+    const ocupadoH = reservasDelDia.some(r => slotEstaOcupado(r, h));
+    let estaOcupado = ocupadoH || pasado || excedeCierre;
 
     if (!estaOcupado && duracionHoras === 2) {
       const siguienteHora = `${pad2((hh + 1) % 24)}:${pad2(mm)}`;
-      if (ocupados.has(siguienteHora) || !todos.includes(siguienteHora)) {
+      const ocupadoSiguiente = reservasDelDia.some(r => slotEstaOcupado(r, siguienteHora));
+      if (ocupadoSiguiente || !todos.includes(siguienteHora)) {
         estaOcupado = true;
       }
     }

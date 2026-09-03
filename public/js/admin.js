@@ -83,6 +83,33 @@ function sonMismoDia(fechaA, fechaB) {
 }
 window.sonMismoDia = sonMismoDia;
 
+function slotEstaOcupado(reserva, slotHora) {
+  if (!reserva || !slotHora) return false;
+  const horaSlotNum = parseInt(String(slotHora).split(':')[0], 10);
+  
+  // Si tiene horario en formato "14:00 a 16:00"
+  const textoHorario = reserva.horario || reserva.hora || '';
+  const matches = String(textoHorario).match(/(\d\d):(\d\d)/g);
+  
+  if (matches && matches.length >= 2) {
+    const inicioNum = parseInt(matches[0].split(':')[0], 10);
+    const finNum = parseInt(matches[1].split(':')[0], 10);
+    // Ocupa desde el inicio hasta estrictamente antes del fin: inicio <= slot < fin
+    return horaSlotNum >= inicioNum && horaSlotNum < finNum;
+  }
+  
+  // Si solo tiene hora simple "14:00"
+  if (reserva.hora) {
+    const inicioNum = parseInt(String(reserva.hora).split(':')[0], 10);
+    const durStr = String(reserva.duracion || '');
+    const duracionHoras = (durStr === '2h' || durStr === '2 horas' || durStr.includes('2') || Number(reserva.duracion) === 2) ? 2 : 1;
+    return horaSlotNum >= inicioNum && horaSlotNum < (inicioNum + duracionHoras);
+  }
+  
+  return false;
+}
+window.slotEstaOcupado = slotEstaOcupado;
+
 // Generate Pitch Silhouette SVG
 function getCourtSvgHtml(cancha) {
   if (cancha.deporte === 'padel') {
@@ -1268,14 +1295,12 @@ function renderSiluetasPorDia(fecha) {
         const turno = (todasLasReservas && todasLasReservas.length > 0 ? todasLasReservas : allTurnos).find(r => {
           if (!r || r.estado === 'cancelado' || r.estado === 'liberado') return false;
 
-          const matchCancha = (r.cancha || r.canchaNombre || '').toLowerCase().includes(cancha.nombre.toLowerCase().trim()) ||
-                              cancha.nombre.toLowerCase().trim().includes((r.cancha || r.canchaNombre || '').toLowerCase()) ||
-                              (typeof coincideCancha === 'function' && coincideCancha(r, cancha));
+          const mismaCancha = coincideCancha(r.cancha, cancha.nombre) ||
+                              coincideCancha(r.canchaNombre, cancha.nombre) ||
+                              coincideCancha(r, cancha);
 
-          const matchFecha = sonMismoDia(r.fecha || r.fechaTexto, fecha);
-          const matchHora = (r.hora === horaSlot) || (r.horario || '').includes(horaSlot) || (typeof getHorasOcupadas === 'function' && getHorasOcupadas(r).includes(horaSlot));
-
-          return matchCancha && matchFecha && matchHora;
+          const mismaFecha = sonMismoDia(r.fecha || r.fechaTexto, fecha);
+          return mismaCancha && mismaFecha && slotEstaOcupado(r, horaSlot);
         });
 
         if (turno) {
