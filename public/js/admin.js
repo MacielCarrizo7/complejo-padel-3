@@ -1642,9 +1642,7 @@ async function saveCanchasConfig() {
         const canchaData = {
           ...sanitizarCancha(c, cId),
           id: cId,
-          actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
-            ? firebase.firestore.FieldValue.serverTimestamp()
-            : new Date()
+          actualizadoEn: new Date().toISOString()
         };
 
         await firebaseFirestore.collection('canchas').doc(cId).set(canchaData, { merge: true });
@@ -1654,19 +1652,22 @@ async function saveCanchasConfig() {
       adminState.config = adminState.config || {};
       adminState.config.canchas = canchasSanitizadas;
 
-      await firebaseFirestore.collection('configuracion').doc('general').set({
-        canchas: canchasSanitizadas,
-        actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
-          ? firebase.firestore.FieldValue.serverTimestamp()
-          : new Date()
-      }, { merge: true });
+      const payloadCanchasDoc = {
+        actualizadoEn: new Date().toISOString(),
+        canchas: canchasSanitizadas.map(c => ({
+          id: c.id,
+          nombre: String(c.nombre || '').trim(),
+          deporte: c.deporte || 'PADEL',
+          ubicacion: c.ubicacion || 'Interior Techada',
+          precio: Number(c.precio) || 0,
+          superficie: c.superficie || 'Césped Sintético',
+          jugadores: Number(c.jugadores) || 4,
+          activo: c.activo !== false
+        }))
+      };
 
-      await firebaseFirestore.collection('config').doc('general').set({
-        canchas: canchasSanitizadas,
-        actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
-          ? firebase.firestore.FieldValue.serverTimestamp()
-          : new Date()
-      }, { merge: true });
+      await firebaseFirestore.collection('configuracion').doc('general').set(payloadCanchasDoc, { merge: true });
+      await firebaseFirestore.collection('config').doc('general').set(payloadCanchasDoc, { merge: true });
     }
 
     renderCanchasTab();
@@ -2056,10 +2057,17 @@ async function saveGeneralConfig() {
     diasAtencion,
     diasActivos,
     adminEmail,
-    canchas: (adminState.config?.canchas || []).map(c => sanitizarCancha(c, c.id)),
-    actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
-      ? firebase.firestore.FieldValue.serverTimestamp()
-      : new Date()
+    actualizadoEn: new Date().toISOString(),
+    canchas: (adminState.config?.canchas || []).map(c => ({
+      id: c.id,
+      nombre: String(c.nombre || '').trim(),
+      deporte: c.deporte || 'PADEL',
+      ubicacion: c.ubicacion || 'Interior Techada',
+      precio: Number(c.precio) || 0,
+      superficie: c.superficie || 'Césped Sintético',
+      jugadores: Number(c.jugadores) || 4,
+      activo: c.activo !== false
+    }))
   };
 
   const saveBtn = document.getElementById('btn-save-general-config');
@@ -2547,9 +2555,7 @@ async function initAdmin() {
 
     const canchaData = {
       ...sanitizarCancha(rawData, id),
-      actualizadoEn: (window.firebase?.firestore?.FieldValue?.serverTimestamp)
-        ? firebase.firestore.FieldValue.serverTimestamp()
-        : new Date()
+      actualizadoEn: new Date().toISOString()
     };
 
     try {
