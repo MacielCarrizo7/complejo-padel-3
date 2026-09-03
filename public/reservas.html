@@ -264,7 +264,7 @@
             </div>
 
             <!-- Date Pills Scrollable Container -->
-            <div id="fechas-container" class="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-3 pt-1 no-scrollbar">
+            <div id="fechas-container" class="flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-3 pt-1 no-scrollbar">
               <!-- Dynamically populated by app.js -->
             </div>
           </div>
@@ -277,12 +277,12 @@
               <span class="text-xs font-bold uppercase tracking-wider text-slate-300 block">
                 2. Duración del Turno:
               </span>
-              <div class="grid grid-cols-2 gap-3">
-                <button type="button" class="btn-duracion active px-4 py-3 rounded-xl border font-sports text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.3)]" data-duracion="1">
+              <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                <button type="button" class="btn-duracion active px-3 sm:px-4 py-3 rounded-xl border font-sports text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.3)]" data-duracion="1">
                   <i data-lucide="clock" class="w-4 h-4"></i>
                   <span>1 Hora (Estándar)</span>
                 </button>
-                <button type="button" class="btn-duracion px-4 py-3 rounded-xl border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white font-sports text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all font-semibold" data-duracion="2">
+                <button type="button" class="btn-duracion px-3 sm:px-4 py-3 rounded-xl border border-slate-700 bg-[#161F30] text-slate-300 hover:text-white font-sports text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-all font-semibold" data-duracion="2">
                   <i data-lucide="flame" class="w-4 h-4 text-[#00E5FF]"></i>
                   <span>2 Horas (Doble Turno)</span>
                 </button>
@@ -294,14 +294,14 @@
               <span class="text-xs font-bold uppercase tracking-wider text-slate-300 block">
                 Deporte:
               </span>
-              <div class="flex rounded-xl bg-[#161F30] p-1 border border-slate-700">
-                <button type="button" class="btn-filter-sport active flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-[#00E676] text-black" data-sport="todos">
+              <div class="flex rounded-xl bg-[#161F30] p-1 border border-slate-700 overflow-x-auto no-scrollbar">
+                <button type="button" class="btn-filter-sport active flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase transition-all whitespace-nowrap bg-[#00E676] text-black" data-sport="todos">
                   Todos
                 </button>
-                <button type="button" class="btn-filter-sport flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-sport="padel">
+                <button type="button" class="btn-filter-sport flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all whitespace-nowrap" data-sport="padel">
                   🎾 Pádel
                 </button>
-                <button type="button" class="btn-filter-sport flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-sport="futbol">
+                <button type="button" class="btn-filter-sport flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all whitespace-nowrap" data-sport="futbol">
                   ⚽ Fútbol
                 </button>
               </div>
@@ -312,14 +312,14 @@
               <span class="text-xs font-bold uppercase tracking-wider text-slate-300 block">
                 Ubicación:
               </span>
-              <div class="flex rounded-xl bg-[#161F30] p-1 border border-slate-700">
-                <button type="button" class="btn-filter-loc active flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-[#00E676] text-black" data-loc="todos">
+              <div class="flex rounded-xl bg-[#161F30] p-1 border border-slate-700 overflow-x-auto no-scrollbar">
+                <button type="button" class="btn-filter-loc active flex-1 py-2 px-3 rounded-lg text-xs font-bold uppercase transition-all whitespace-nowrap bg-[#00E676] text-black" data-loc="todos">
                   Todas
                 </button>
-                <button type="button" class="btn-filter-loc flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-loc="interior">
+                <button type="button" class="btn-filter-loc flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all whitespace-nowrap" data-loc="interior">
                   🏠 Techada
                 </button>
-                <button type="button" class="btn-filter-loc flex-1 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all" data-loc="exterior">
+                <button type="button" class="btn-filter-loc flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-slate-300 hover:text-white uppercase transition-all whitespace-nowrap" data-loc="exterior">
                   ☀️ Exterior
                 </button>
               </div>
@@ -419,7 +419,7 @@
   </div>
 
   <!-- ================= FOOTER ================= -->
-  <footer class="bg-[#070A10] border-t border-slate-800/80 py-8 md:py-10 pb-24 md:pb-10">
+  <footer class="bg-[#070A10] border-t border-slate-800/80 py-8 md:py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <img src="assets/logo.png" alt="Logo" class="w-8 h-8 object-contain">
@@ -430,22 +430,6 @@
       </p>
     </div>
   </footer>
-
-  <!-- ================= BARRA INFERIOR FLOTANTE (BOTTOM NAV MOBILE) ================= -->
-  <nav class="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-slate-950/90 backdrop-blur-md border-t border-slate-800/80 py-2.5 px-6 flex justify-around items-center">
-    <a href="index.html#inicio" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#00E676] transition-colors">
-      <i data-lucide="home" class="w-5 h-5"></i>
-      <span class="text-[10px] font-semibold">Inicio</span>
-    </a>
-    <a href="#reservar" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#00E676] transition-colors">
-      <i data-lucide="calendar" class="w-5 h-5 text-[#00E676]"></i>
-      <span class="text-[10px] font-semibold text-[#00E676]">Reservar</span>
-    </a>
-    <a id="bottom-nav-wa" href="https://wa.me/5491112345678" target="_blank" class="flex flex-col items-center gap-1 text-slate-300 hover:text-[#25D366] transition-colors">
-      <i data-lucide="message-circle" class="w-5 h-5 text-[#25D366]"></i>
-      <span class="text-[10px] font-semibold">WhatsApp</span>
-    </a>
-  </nav>
 
   <!-- Scripts -->
   <script src="js/app.js"></script>

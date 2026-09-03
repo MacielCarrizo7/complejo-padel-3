@@ -1119,7 +1119,7 @@ function renderReservasPage() {
 
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `flex flex-col items-center justify-center min-w-[70px] py-3 px-4 rounded-2xl border transition-all flex-shrink-0 snap-center ${
+      btn.className = `flex flex-col items-center justify-center min-w-[65px] py-2.5 px-3 rounded-2xl border transition-all flex-shrink-0 snap-start ${
         isSelected
           ? 'bg-[#00E676] text-black border-[#00E676] font-bold shadow-[0_0_15px_rgba(0,230,118,0.4)] scale-105'
           : 'bg-[#161F30] text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
