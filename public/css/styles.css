@@ -380,6 +380,7 @@ h1, h2, h3, h4, .font-sports {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
+  scroll-padding: 0 1rem;
 }
 
 .line-clamp-2 {

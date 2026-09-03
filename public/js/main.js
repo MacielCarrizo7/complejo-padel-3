@@ -2,7 +2,15 @@
 // COMPLEJO PADEL 3 - MOBILE-FIRST UI & NAVIGATION HELPERS
 // =========================================================
 
-function setupCarousel(sliderId, prevBtnId, nextBtnId, step = 380) {
+function getScrollStep(slider) {
+  const firstCard = slider ? slider.firstElementChild : null;
+  if (!firstCard) return 320;
+  const cardWidth = firstCard.getBoundingClientRect().width;
+  const gap = parseFloat(window.getComputedStyle(slider).gap) || 16;
+  return cardWidth + gap;
+}
+
+function setupCarousel(sliderId, prevBtnId, nextBtnId) {
   const slider = document.getElementById(sliderId);
   const prevBtn = document.getElementById(prevBtnId);
   const nextBtn = document.getElementById(nextBtnId);
@@ -17,10 +25,12 @@ function setupCarousel(sliderId, prevBtnId, nextBtnId, step = 380) {
   if (!prevBtn.dataset.carouselBound) {
     prevBtn.dataset.carouselBound = 'true';
     nextBtn.addEventListener('click', () => {
+      const step = getScrollStep(slider);
       slider.scrollBy({ left: step, behavior: 'smooth' });
     });
 
     prevBtn.addEventListener('click', () => {
+      const step = getScrollStep(slider);
       slider.scrollBy({ left: -step, behavior: 'smooth' });
     });
 
@@ -52,7 +62,7 @@ function startAutoScroll(sliderId, intervalTime = 3500) {
     // No mover si el usuario tiene el cursor encima o está tocando la pantalla
     if (isHovered || touchActive) return;
 
-    const step = 380;
+    const step = getScrollStep(slider);
     const maxScroll = slider.scrollWidth - slider.clientWidth - 10;
 
     // Si llega al final, volver al inicio suavemente; de lo contrario, avanzar un paso
@@ -63,6 +73,8 @@ function startAutoScroll(sliderId, intervalTime = 3500) {
     }
   }, intervalTime);
 }
+
+window.getScrollStep = getScrollStep;
 
 window.setupCarousel = setupCarousel;
 window.startAutoScroll = startAutoScroll;
