@@ -179,39 +179,32 @@ function getMiniCourtSvgHtml(deporte, ubicacion) {
 }
 window.getMiniCourtSvgHtml = getMiniCourtSvgHtml;
 
-// Generate Pitch Silhouette SVG (Compact h-20 for tactical view)
+// Generate Pitch Silhouette (Compact h-20 for tactical view)
 function getCourtSvgHtml(cancha) {
-  if (cancha.deporte === 'padel') {
+  if (!cancha) cancha = {};
+  const deporteStr = (cancha.deporte || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const nombreStr = (cancha.nombre || '').toLowerCase();
+  const esPadel = deporteStr.includes('PADEL') || nombreStr.includes('pista') || nombreStr.includes('cristal');
+
+  if (esPadel) {
     return `
-      <div class="pitch-container pitch-padel h-20 max-h-20 my-2 overflow-hidden">
-        <svg class="pitch-svg max-h-16" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="6" y="6" width="188" height="78" fill="none" stroke="rgba(0, 210, 255, 0.7)" stroke-width="2" />
-          <rect x="8" y="8" width="184" height="74" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
-          <line x1="38" y1="8" x2="38" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
-          <line x1="162" y1="8" x2="162" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
-          <line x1="38" y1="45" x2="162" y2="45" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" />
-          <line x1="100" y1="4" x2="100" y2="86" stroke="#00E676" stroke-width="2.5" stroke-dasharray="3,2" />
-          <circle cx="100" cy="5" r="2.5" fill="#00E676" />
-          <circle cx="100" cy="85" r="2.5" fill="#00E676" />
-        </svg>
-        <div class="pitch-indicator">
-          <span>🎾 Pádel</span>
+      <div class="relative h-20 w-full rounded-xl bg-slate-950/60 border border-sky-500/40 flex items-center justify-center overflow-hidden my-2.5">
+        <!-- Líneas de saque de pádel y red central -->
+        <div class="absolute inset-x-2 inset-y-1.5 border border-sky-500/30"></div>
+        <div class="absolute inset-y-1.5 left-1/2 w-0 border-r-2 border-dashed border-emerald-400"></div>
+        <div class="absolute bottom-1 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-sky-950/80 text-sky-400 border border-sky-700/50">
+          🎾 Pádel
         </div>
       </div>
     `;
   } else {
     return `
-      <div class="pitch-container pitch-futbol h-20 max-h-20 my-2 overflow-hidden">
-        <svg class="pitch-svg max-h-16" viewBox="0 0 200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="5" width="190" height="80" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <line x1="100" y1="5" x2="100" y2="85" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <circle cx="100" cy="45" r="16" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <circle cx="100" cy="45" r="1.5" fill="#FFF" />
-          <rect x="5" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-          <rect x="169" y="22" width="26" height="46" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-        </svg>
-        <div class="pitch-indicator">
-          <span>⚽ Fútbol ${cancha.jugadores || 5}</span>
+      <div class="relative h-20 w-full rounded-xl bg-slate-950/60 border border-emerald-500/40 flex items-center justify-center overflow-hidden my-2.5">
+        <div class="absolute inset-x-2 inset-y-1.5 border border-emerald-500/30"></div>
+        <div class="absolute w-8 h-8 rounded-full border border-emerald-500/30 left-1/2 -translate-x-1/2"></div>
+        <div class="absolute inset-y-1.5 left-1/2 w-0 border-r border-emerald-500/30"></div>
+        <div class="absolute bottom-1 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-700/50">
+          ⚽ Fútbol
         </div>
       </div>
     `;
